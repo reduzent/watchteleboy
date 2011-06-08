@@ -21,24 +21,41 @@ fi
 
 PROG="ard 111.stream
 zdf 101.stream
+arte 1611.stream
 3sat 141.stream
 sf1 11.stream
 sf2 81.stream
+sfinfo 241.stream
 orf1 91.stream
 orf2 291.stream
 zdfneo 121.stream
 atv 211.stream
 ntv 401.stream
+euronews 2161.stream
+phoenix 531.stream
+sport1 331.stream
+eurosport 391.stream
 swr 541.stream
 mdr 511.stream
 ndr 521.stream
 wdr 301.stream
 rtl 51.stream
+rtl2 321.stream
+superrtl 351.stream
 vox 131.stream
 pro7 61.stream
 sat1 71.stream
-pro7 61.stream
+kabel1 311.stream
+dasvierte 1721.stream
+dmax 151.stream
+3plus 1701.stream
+telezueri 1971.stream
+nickelodeon 221.stream
+deluxe 1921.stream
+viva 171.stream
+joiz 5011.stream
 "
+
 p="3sat" # default chan
 
 BROWSER='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1'
