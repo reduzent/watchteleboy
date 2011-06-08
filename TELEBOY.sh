@@ -12,6 +12,13 @@
 USER="xxx"
 PASS="xxx"
 
+CONFIG=~/.watchteleboyrc
+if [ -f $CONFIG ]
+then
+  cat $CONFIG
+  . $CONFIG
+fi
+
 PROG="ard 111.stream
 zdf 101.stream
 3sat 141.stream
