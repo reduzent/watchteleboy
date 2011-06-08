@@ -91,55 +91,36 @@ function login {
   fi
 }
 
-function session {
-  URL='http://www.teleboy.ch/tv/player/player.php'
-  wget -U "$UAGENT" \
-    --quiet \
-    --referer http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php \
-    --load-cookies $TMPPATH/cookiejar \
-    --save-cookies $TMPPATTH/cookiejar2 -\
-    --keep-session-cookies \
-    -O $TMPPATH/step2.html \
-    $URL
-}
 
 echo "Login..."
 login $USER $PASS
-echo "Establish Session..."
-session
+#echo "Establish Session..."
+#session
 
 
 # loooooooooooooooooooooop
-while true;do
+#while true;do
 
-echo "step 3 get rtmp session ids"
-URL='http://www.teleboy.ch//tv/player/includes/ajax.php?'
+  echo "get rtmp session ids"
+  URL='http://www.teleboy.ch//tv/player/includes/ajax.php?'
+  wget -U "$UAGENT" \
+    --quiet \
+    --referer http://www.teleboy.ch/tv/player/player.php \
+    --load-cookies $TMPPATH/cookiejar \
+    --post-data "cmd=getLiveChannelParams&cid=14&cid2=0" \
+    --keep-session-cookies \
+    -O $TMPPATH/step3.html \
+     $URL
 
-SEND="cmd=getLiveChannelParams&cid=1&cid2=159" # sf1
-SEND="cmd=getLiveChannelParams&cid=11&cid2=0" # ard
-SEND="cmd=getLiveChannelParams&cid=10&cid2=0" # zdf
-SEND="cmd=getLiveChannelParams&cid=8&cid2=108" # sf2
-SEND="cmd=getLiveChannelParams&cid=14&cid2=0" # 3sat
+  ch=$(cat ${TMPPATH}/step3.html | cut -d "|" -f1)
+  app=$(cat ${TMPPATH}/step3.html | cut -d "|" -f2)
+  c1=$(cat ${TMPPATH}/step3.html | cut -d "|" -f3)
+  c2=$(cat ${TMPPATH}/step3.html | cut -d "|" -f4)
+  c3=$(cat ${TMPPATH}/step3.html | cut -d "|" -f5)
+  c4=$(cat ${TMPPATH}/step3.html | cut -d "|" -f6)
+  c5=$(cat ${TMPPATH}/step3.html | cut -d "|" -f7)
+  c6=$(cat ${TMPPATH}/step3.html | cut -d "|" -f8)
 
-wget -U "$UAGENT" \
---quiet \
---referer http://www.teleboy.ch/tv/player/player.php \
---load-cookies $TMPPATTH/cookiejar \
---save-cookies $TMPPATTH/cookiejar2 --keep-session-cookies \
---post-data $SEND \
--O $TMPPATH/step3.html \
-$URL
-
-ch=$(cat /tmp/step3.html | cut -d "|" -f1)
-app=$(cat /tmp/step3.html | cut -d "|" -f2)
-c1=$(cat /tmp/step3.html | cut -d "|" -f3)
-c2=$(cat /tmp/step3.html | cut -d "|" -f4)
-c3=$(cat /tmp/step3.html | cut -d "|" -f5)
-c4=$(cat /tmp/step3.html | cut -d "|" -f6)
-c5=$(cat /tmp/step3.html | cut -d "|" -f7)
-c6=$(cat /tmp/step3.html | cut -d "|" -f8)
-
-echo "*************** $p *************************"
 #ch=$(echo "$ch"|sed -e "s/ /_/")
 
 echo "channels............"
@@ -155,10 +136,10 @@ fi
 playpath=$(echo "$PROG" | grep "^$p" | head -n1|cut -d " " -f 2)
 #echo $playpath
 
-DOIT="rtmpdump -r rtmp://62.65.136.20/nellotv -a $app -f LNX 10,3,181,14 -W http://www.teleboy.ch/tv/player/includes/flash/flashplayer_cinergy_v1_1_6.swf -p http://www.teleboy.ch/tv/player/player.php -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 -C S:$c6 -y $playpath -o /tmp/$p.flv"
+DOIT="rtmpdump -r rtmp://62.65.136.20/nellotv -a $app -f LNX 10,3,181,14 -W http://www.teleboy.ch/tv/player/includes/flash/flashplayer_cinergy_v1_1_6.swf -p http://www.teleboy.ch/tv/player/player.php -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 -C S:$c6 -y $playpath -o ${TMPPATH}/${p}.flv"
 
 echo "$DOIT"
-#$DOIT
+$DOIT
 
 # run player in seperate process 
 TERM=xterm
@@ -166,7 +147,7 @@ P=$(dirname $0)
 script=$P/teleboy-ply.sh
 #$TERM  -T "$p" -geometry 60x4 -e  $script "$DOIT" &
 
-done
+
 
 exit  1
 
