@@ -6,19 +6,31 @@
 # License:  GNU GPL v2
 # Author:   Alexander Tuchacek
 # written:  2011-05-21
-# program version  1.0
+# modified by: Roman Haefeli
+# modified on: 2011-06-08
+# program version  1.1~unreleased
 ################################################
 
+# Set some default variables
 USER="xxx"
 PASS="xxx"
+TMPPATH=/tmp/watchteleboy
+UAGENT='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1'
 
+# Read config
 CONFIG=~/.watchteleboyrc
 if [ -f $CONFIG ]
 then
-  cat $CONFIG
   . $CONFIG
 fi
 
+# Create TMPDIR if required
+if  [ ! -d $TMPPATH ]
+then
+  mkdir -p $TMPPATH
+fi
+
+# Channel list
 PROG="ard 111.stream
 zdf 101.stream
 arte 1611.stream
@@ -58,37 +70,44 @@ joiz 5011.stream
 
 p="3sat" # default chan
 
-BROWSER='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1'
-SEND="login=$USER&password=$PASS&x=13&y=17&followup=%2Ftv%2Fplayer%2Fplayer.php"
-URL="http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php"
-TMPPATTH="/tmp"
+function login {
+  # usage: getcookies USER PASS
+  SEND="login=$1&password=$2&x=13&y=17&followup=%2Ftv%2Fplayer%2Fplayer.php"
+  URL="http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php"
+  wget -U "$UAGENT" \
+    --quiet \
+    --no-check-certificate \
+    --save-cookies $TMPPATH/cookiejar --keep-session-cookies \
+    --post-data $SEND \
+    -O $TMPPATH/step1.html \
+    $URL
+  cat $TMPPATH/step1.html | grep "Falsche Eingaben">/dev/null
+  if [ $? -eq 0 ]
+  then
+    echo "login failed!!!!"
+    exit 0
+  else
+    echo "login ok..." 
+  fi
+}
 
-echo "login"
-wget -U "$BROWSER" \
---quiet \
---no-check-certificate \
---save-cookies $TMPPATTH/cookiejar --keep-session-cookies \
---post-data $SEND \
--O $TMPPATTH/step1.html \
-$URL
+function session {
+  URL='http://www.teleboy.ch/tv/player/player.php'
+  wget -U "$UAGENT" \
+    --quiet \
+    --referer http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php \
+    --load-cookies $TMPPATH/cookiejar \
+    --save-cookies $TMPPATTH/cookiejar2 -\
+    --keep-session-cookies \
+    -O $TMPPATH/step2.html \
+    $URL
+}
 
-cat $TMPPATTH/step1.html | grep "Falsche Eingaben">/dev/null
-if [ $? -eq 0 ] ; then
- echo "login faild!!!!"
- exit 0
-else
- echo "login ok..." 
-fi
+echo "Login..."
+login $USER $PASS
+echo "Establish Session..."
+session
 
-echo "step 2: fun"
-URL='http://www.teleboy.ch/tv/player/player.php'
-wget -U "$BROWSER" \
---quiet \
---referer http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php \
---load-cookies $TMPPATTH/cookiejar \
---save-cookies $TMPPATTH/cookiejar2 --keep-session-cookies \
--O $TMPPATTH/step2.html \
-$URL
 
 # loooooooooooooooooooooop
 while true;do
@@ -102,13 +121,13 @@ SEND="cmd=getLiveChannelParams&cid=10&cid2=0" # zdf
 SEND="cmd=getLiveChannelParams&cid=8&cid2=108" # sf2
 SEND="cmd=getLiveChannelParams&cid=14&cid2=0" # 3sat
 
-wget -U "$BROWSER" \
+wget -U "$UAGENT" \
 --quiet \
 --referer http://www.teleboy.ch/tv/player/player.php \
 --load-cookies $TMPPATTH/cookiejar \
 --save-cookies $TMPPATTH/cookiejar2 --keep-session-cookies \
 --post-data $SEND \
--O $TMPPATTH/step3.html \
+-O $TMPPATH/step3.html \
 $URL
 
 ch=$(cat /tmp/step3.html | cut -d "|" -f1)
@@ -145,7 +164,7 @@ echo "$DOIT"
 TERM=xterm
 P=$(dirname $0)
 script=$P/teleboy-ply.sh
-$TERM  -T "$p" -geometry 60x4 -e  $script "$DOIT" &
+#$TERM  -T "$p" -geometry 60x4 -e  $script "$DOIT" &
 
 done
 
