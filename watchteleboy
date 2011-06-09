@@ -72,36 +72,36 @@ joiz 5011.stream
 
 p="3sat" # default chan
 
-function login {
-  # usage: login USER PASS
-  POST="login=$1&password=$2&x=13&y=17&followup=%2Ftv%2Fplayer%2Fplayer.php"
-  URL="http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php"
-  COOKIE=$(wget -U "$UAGENT" \
-    --quiet \
-    --no-check-certificate \
-    --save-cookies /dev/stdout \
-    --keep-session-cookies \
-    --post-data $POST \
-    -O $TMPPATH/step1.html \
-    $URL)
-  cat $TMPPATH/step1.html | grep "Falsche Eingaben">/dev/null
-  if [ $? -eq 0 ]
-  then
-    echo "login failed!!!!"
-    exit 0
-  else
-    echo "login ok..." 
-  fi
-}
+# perform the login
+POST="login=${USER}&password=${PASS}&x=13&y=17&followup=%2Ftv%2Fplayer%2Fplayer.php"
+URL="http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php"
+COOKIE=$(wget -U "$UAGENT" \
+  --quiet \
+  --no-check-certificate \
+  --save-cookies /dev/stdout \
+  --keep-session-cookies \
+  --post-data $POST \
+  -O $TMPPATH/step1.html \
+  $URL)
 
+# check if login was succesful
+cat $TMPPATH/step1.html | grep "Falsche Eingaben">/dev/null
+if [ $? -eq 0 ]
+then
+  echo "login failed!!!!"
+  exit 0
+else
+  echo "login ok..." 
+fi
 
-echo "Login..."
-login $USER $PASS
-#echo "Establish Session..."
-#session
+# get flashplayer url
+SWFFILE=$(wget \
+  -O - \
+  --quiet \
+  "http://www.teleboy.ch/tv/player/player.php" | \
+  grep "nelloplayer" | \
+  cut -d'"' -f2)
 
-
-# loooooooooooooooooooooop
 while true
 do
   URLBASE="http://www.teleboy.ch/tv/player"
@@ -139,9 +139,11 @@ do
     -r rtmp://62.65.136.20/nellotv 
     -a $app 
     -f LNX 10,3,181,14 
-    -W http://www.teleboy.ch/tv/player/includes/flash/flashplayer_cinergy_v1_1_6.swf 
+    -W ${URLBASE}/${SWFFILE} 
     -p http://www.teleboy.ch/tv/player/player.php 
-    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 -C S:$c6 
+    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 
+    -C S:$c5 
+    -C S:$c6 
     -y $playpath 
     -q 
     -o - "
@@ -149,7 +151,6 @@ do
   mplayer="mplayer 
     -really-quiet 
     - "
-
   $rtmp | $mplayer 2> /dev/null
 done
 
