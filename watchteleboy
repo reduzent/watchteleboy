@@ -64,7 +64,7 @@ joiz 5011.stream
 # Default channel
 CH="3sat"
 
-# Check for necessary binaries
+# Check dependencies
 programlist="rtmpdump mplayer wget grep cut crontab date"
 for program in $programlist
 do
@@ -78,7 +78,7 @@ do
     fi
 done
 
-# Read config: !!CONFIG overrides default values!!
+# Read config (overrides default values)
 CONFIG=~/.watchteleboyrc
 if [ -f $CONFIG ]
 then
@@ -92,6 +92,7 @@ endtime=false
 help=false
 list=false
 path=false
+record=false
 showname=false
 starttime=false
 version=false
@@ -105,8 +106,8 @@ do
     -l|--list) list=true;;
     -n|--showname) showname=true; SHOWNAME="$2"; shift;;
     -p|--path) path=true; RECORDPATH="$2"; shift;;
-    -r|--record) record=true; shift;;
-    -t|--starttime) starttime=true; STARTTTIME="$2"; shift;;
+    -r|--record) record=true;;
+    -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
     -v|--version) version=true;;
     -*) echo "$(basename $0): error - unrecognized option '$1'" 1>&2
         echo "use '$(basename $0) --help' to get a list of available options"
@@ -151,12 +152,12 @@ GENERAL OPTIONS:
 
 OPTIONS FOR RECORDING (require -r|--record):
 
-  -e|--endtime TIME      schedule the end time of the recording
-  -d|--duration SECONDS	 specify the duration of the recording
-  -n|--showname SHOWNAME specify file name prefix
-  -p|--path DIR		 specify target directory
-  -r|--record            record a stream instead of watching it
-  -t|--starttime TIME	 schedule the start time for a recording
+  -e|--endtime TIME       schedule the end time of the recording
+  -d|--duration SECONDS	  specify the duration of the recording
+  -n|--showname SHOWNAME  specify file name prefix
+  -p|--path DIR		  specify target directory
+  -r|--record             record a stream instead of watching it
+  -t|--starttime TIME	  schedule the start time for a recording
 
 EOF
   exit
@@ -198,6 +199,17 @@ SWFFILE=$(wget \
   "http://www.teleboy.ch/tv/player/player.php" | \
   grep "nelloplayer" | \
   cut -d'"' -f2)
+
+# Da Time Valeditee Checkah
+function check_time_validity {
+  # ARGS:
+  # 1: datetime string
+  if ! date -d "$1" > /dev/null
+  then
+    echo "Could not understand time format." 1>&2
+    exit 1
+  fi
+}
 
 function compose_rtmp_command {
   # ARGS:
@@ -241,7 +253,7 @@ function compose_rtmp_command {
 }
 
 # test channel input validity
-function chanvalidity {
+function chan_validity {
   # ARGS:
   # 1: channel
   echo $CHANNELS | grep $1 > /dev/null
@@ -257,7 +269,7 @@ function chanselectah {
     read -p "TV Channel (default is $CH): " -e SEL
     if [ -n "$SEL" ]
     then
-      chanvalidity $SEL && \
+      chan_validity $SEL && \
         CH="$SEL" && \
         break
       echo "Channel '$SEL' is not available..." 
@@ -266,20 +278,93 @@ function chanselectah {
   done 
 }
 
+# Option starttime
+if $starttime && $record
+then
+  if $endtime || $duration
+  then
+    check_time_validity "$STARTTIME"
+    starttimeepoch=$(date -d "$STARTTIME" +%s)
+    if [ $starttimeepoch -lt $(date +%s) ]
+    then
+      echo "The specified start time is already over." 1>&2
+      echo $starttimeepoch
+      date +%s
+      exit 1
+    fi
+    if $endtime
+    then
+      check_time_validity "$ENDTIME"
+      endtimeepoch=$(date -d "$ENDTIME" +%s)
+      if [ $endtimeepoch -lt $starttimeepoch ]
+      then
+        echo "The specified end time is before the start time." 1>&2
+        exit 1
+      fi
+      let DURATION=$endtimeepoch-$starttimeepoch
+    elif $duration
+    then
+      if ! [ $DURATION -ge 0 ]
+      then
+        echo "The specified duration '$duration' is not a number." 1>&2
+        exit 1
+      fi
+    fi
+    echo "Now we have a valid starttime ($STARTTIME) and duration ($DURATION) :-)"  
+    exit 0
+  else
+    echo "You must specify either --duration or --endtime" 1>&2
+    exit 1
+  fi
+elif $starttime
+then
+  echo "The '--starttime' option requires the '--record' option" 1>&2
+  exit 1
+fi
+
 # Compose mplayer command
 MPLAYER="mplayer $MPLAYEROPTS - "
+
+# Compose rmtpdump output filename
+function compose_outfile {
+  # ARGS:
+  # 1: Channel
+  if $record
+  then
+    if $showname
+    then
+      OUTFILE=${RECORDPATH}/${SHOWNAME}_$(date +%Y%m%d%H%M).flv
+    else
+      OUTFILE=${RECORDPATH}/${1}_$(date +%Y%m%d%H%M).flv
+    fi
+  else
+    OUTFILE="-"
+  fi
+} 
+
+function player_recorder {
+  # ARGS:
+  # 1: Channel
+  compose_outfile $1
+  compose_rtmp_command $1 $OUTFILE
+  if $record
+  then
+    $RTMP
+  else
+    $RTMP | $MPLAYER 2> /dev/null
+  fi
+}
 
 # option -c|--channel
 if $channel
 then
-  if chanvalidity $CH
+  if chan_validity $CH
   then
-    compose_rtmp_command $CH "-"
     echo "Now playing ${CH}..."
-    $RTMP | $MPLAYER 2> /dev/null
+    player_recorder $CH
     exit 0
   else
-    echo "Channel '$CH' is not available..."
+    echo "Channel '$CH' is not available..." 1>&2
     exit 1
   fi
 fi
@@ -288,10 +373,8 @@ fi
 while true
 do
   chanselectah
-  compose_rtmp_command $CH "-"
   echo "Now playing ${CH}..."
-  $RTMP | $MPLAYER 2> /dev/null
-  #$RTMP
+  player_recorder $CH
 done
 
 exit 0
