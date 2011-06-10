@@ -335,7 +335,7 @@ then
       exit 1
     fi
     crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
-    echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename $0) " >> $crontempfile
+    echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename $0) --record " >> $crontempfile
     echo -ne "--channel ${CH} --duration ${DURATION} " >> $crontempfile
     echo -ne "--deleteme ${RANDOM}${RANDOM} " >> $crontempfile
     $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
