@@ -85,6 +85,7 @@ fi
 
 # Comandline argument parsing
 channel=false
+deleteme=false
 duration=false
 endtime=false
 help=false
@@ -160,6 +161,20 @@ OPTIONS FOR RECORDING (require -r|--record):
 
 EOF
   exit
+fi
+
+# Check record path validity
+if $record
+then
+  if [ ! -d "$RECORDPATH" ]
+  then
+    echo "There is no such directory: $RECORDPATH" 1>&2
+    exit 1
+  elif [ ! -w "$RECORDPATH" ]
+  then
+    echo "You don't have permission to write to $RECORDPATH" 1>&2
+    exit 1
+  fi
 fi
 
 # Create TMPDIR if required
@@ -277,7 +292,7 @@ function chanselectah {
   done 
 }
 
-# Option starttime
+# option -t|--starttime
 crontempfile="/tmp/crontab.${USER}.watchteleboy"
 if $starttime && $record
 then
@@ -390,11 +405,39 @@ function player_recorder {
   compose_rtmp_command $1 $OUTFILE
   if $record
   then
-    $RTMP
+    $RTMP &
+    PID=$!
   else
     $RTMP | $MPLAYER 2> /dev/null
   fi
 }
+
+# option -d|--duration
+if $duration && $record
+then
+  if ! [ "$DURATION" -ge 0 ] 2>&-
+  then
+    echo "The specified duration '$DURATION' is not a number." 1>&2
+    exit 1
+  fi
+  if chan_validity $CH
+  then
+    player_recorder ${CH}
+    echo "Now recording $CH for $DURATION seconds."
+    sleep $DURATION
+    kill $PID
+    echo "Stopped recording."
+    exit
+  else
+    echo "'$CH' is not a valid channel." 1>&2
+    echo "Use '--list' to display available channels." 1>&2
+    exit 1
+  fi
+elif $duration
+then
+  echo "The '--duration' option requires the '--record' option" 1>&2
+  exit 1
+fi
 
 # option -c|--channel
 if $channel
