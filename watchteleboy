@@ -107,6 +107,7 @@ do
     -r|--record) record=true;;
     -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
     -v|--version) version=true;;
+    --deleteme) deleteme=true; DELETEME="$2"; shift;;
     -*) echo "$(basename $0): error - unrecognized option '$1'" 1>&2
         echo "use '$(basename $0) --help' to get a list of available options"
         exit 1;;
@@ -351,6 +352,15 @@ elif $starttime
 then
   echo "The '--starttime' option requires the '--record' option" 1>&2
   exit 1
+fi
+
+# option --deleteme
+if $deleteme
+then
+  crontab -l > $crontempfile
+  sed -i "/$DELETEME/ d" $crontempfile
+  crontab < $crontempfile
+  rm $crontempfile
 fi
 
 # Compose mplayer command
