@@ -1,7 +1,8 @@
 #!/bin/bash
 ################################################
-# Bash script for watching/recording online TV streams from teleboy.ch without
-# browser and =no f*** flash=.
+# Bash script for watching/recording online TV 
+# streams from teleboy.ch without browser and 
+# =no f*** flash=.
 #
 # License:  GNU GPL v2
 # Author:   Alexander Tuchacek
@@ -12,13 +13,15 @@
 ################################################
 
 # Set some default variables
-USER="xxx"
-PASS="xxx"
+USER="username"
+PASS="password"
 TMPPATH=/tmp/watchteleboy
 UAGENT='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1'
+MPLAYEROPTS="-really-quiet"
 
 # Channel list
-PROG="ard 111.stream
+CHANNELS="
+ard 111.stream
 zdf 101.stream
 arte 1611.stream
 3sat 141.stream
@@ -55,10 +58,10 @@ deluxe 1921.stream
 viva 171.stream
 joiz 5011.stream
 "
-p="3sat" # default chan
+# Default channel
+CH="3sat"
 
-# Read config
-# CONFIG overrides default values!!
+# Read config: !!CONFIG overrides default values!!
 CONFIG=~/.watchteleboyrc
 if [ -f $CONFIG ]
 then
@@ -103,12 +106,16 @@ SWFFILE=$(wget \
   cut -d'"' -f2)
 
 function compose_rtmp_command {
+  # ARGS:
+  # 1: channel
+  # 2: output file
   URLBASE="http://www.teleboy.ch/tv/player"
+  POST="cmd=getLiveChannelParams&cid=14&cid2=0"
   STREAMINFO=$(wget -U "$UAGENT" \
     --quiet \
     --referer "${URLBASE}/player.php" \
     --load-cookies <(echo "$COOKIE") \
-    --post-data "cmd=getLiveChannelParams&cid=14&cid2=0" \
+    --post-data $POST \
     --keep-session-cookies \
     --output-document /dev/stdout \
     "${URLBASE}/includes/ajax.php")
@@ -122,8 +129,9 @@ function compose_rtmp_command {
   c4=$(echo "$STREAMINFO"  | cut -d "|" -f6)
   c5=$(echo "$STREAMINFO"  | cut -d "|" -f7)
   c6=$(echo "$STREAMINFO"  | cut -d "|" -f8)
-  playpath=$(echo "$PROG" | grep "^$1" | head -n1 | cut -d " " -f 2)
+  playpath=$(echo "$CHANNELS" | grep "^$1" | head -n1 | cut -d " " -f 2)
 
+  # rtmpdump command
   RTMP="rtmpdump 
     -r rtmp://62.65.136.20/nellotv 
     -a $app 
@@ -135,27 +143,38 @@ function compose_rtmp_command {
     -C S:$c6 
     -y $playpath 
     -q 
-    -o - "
+    -o $2 "
 }
 
-MPLAYER="mplayer 
-  -really-quiet 
-  - "
+function chanselectah {
+  while true
+  do
+    echo -e "\nCHANNELS:"
+    echo "$CHANNELS" | cut -d " " -f 1 | tr "\n" " "
+    echo ""
+    read -p "TV Channel (default is $CH): " -e SEL
+    if [ -n "$SEL" ]
+    then
+      echo $CHANNELS | grep $SEL > /dev/null && \
+        CH="$SEL" && \
+        break
+      echo "Channel $SEL is not available..." 
+      sleep 1
+    fi
+  done 
+}
+
+# Compose mplayer command
+MPLAYER="mplayer $MPLAYEROPTS - "
 
 # Loop for interactive mode
 while true
 do
-  echo "CHANNELS:"
-  echo "$PROG"|cut -d " " -f 1|tr "\n" " "
-  echo ""
-  read -p "TV Channel (default is $p): " -e t1
-  if [ -n "$t1" ]
-  then
-    p="$t1"
-  fi
-  compose_rtmp_command $p
-  echo "Now playing $p..."
+  chanselectah
+  compose_rtmp_command $CH "-"
+  echo "Now playing ${CH}..."
   $RTMP | $MPLAYER 2> /dev/null
+  #$RTMP
 done
 
 exit 0
