@@ -12,6 +12,8 @@
 # program version  1.1~unreleased
 ################################################
 
+VERSION="1.1~unreleased"
+
 # Set some default variables
 USER="username"
 PASS="password"
@@ -61,11 +63,78 @@ joiz 5011.stream
 # Default channel
 CH="3sat"
 
+# Check for necessary binaries
+programlist="rtmpdump mplayer wget grep cut"
+for program in $programlist
+do
+    if ! which $program > /dev/null
+    then
+        echo "ERROR:"
+        echo "Could not find ${program}. Is it installed?"
+        echo ""
+        echo "Exiting..."
+        exit 1
+    fi
+done
+
 # Read config: !!CONFIG overrides default values!!
 CONFIG=~/.watchteleboyrc
 if [ -f $CONFIG ]
 then
   . $CONFIG
+fi
+
+# Comandline argument parsing
+channel=false
+list=false
+help=false
+version=false
+while [ $# -gt 0 ]
+do
+  case "$1" in
+    -c|--channel) channel=true; CH=$2; shift;;
+    -l|--list) list=true;;
+    -h|--help) help=true;;
+    -v|--version) version=true;;
+    -*) echo "$(basename $0): error - unrecognized option '$1'" 1>&2
+        echo "use '$(basename $0) --help' to get a list of available options"
+        exit 1;;
+    *)  break;;
+  esac
+  shift
+done
+
+# option -v|--version
+if $version
+then
+  echo "watchteleboy $VERSION"
+  echo "written by Alexander Tuchacek & Roman Haefeli"
+  echo "Licensed under the GNU Public License 2.0 (GPL-2)"
+  exit
+fi
+
+# option -l|--list
+if $list
+then
+  echo "$CHANNELS" | cut -d " " -f 1 
+  exit
+fi
+
+# option -h|--help
+if $help
+then
+  cat << EOF
+
+watchteleboy
+------------
+-c|--channel CHANNEL    play channel CHANNEL
+-h|--help               show this help and exit
+-l|--list               print a list of all channels and exit
+-v|--version            print the version of this program
+<no options>            go into interactive mode
+
+EOF
+  exit
 fi
 
 # Create TMPDIR if required
@@ -146,6 +215,14 @@ function compose_rtmp_command {
     -o $2 "
 }
 
+# test channel input validity
+function chanvalidity {
+  # ARGS:
+  # 1: channel
+  echo $CHANNELS | grep $1 > /dev/null
+}
+
+# channel selector
 function chanselectah {
   while true
   do
@@ -155,10 +232,10 @@ function chanselectah {
     read -p "TV Channel (default is $CH): " -e SEL
     if [ -n "$SEL" ]
     then
-      echo $CHANNELS | grep $SEL > /dev/null && \
+      chanvalidity $SEL && \
         CH="$SEL" && \
         break
-      echo "Channel $SEL is not available..." 
+      echo "Channel '$SEL' is not available..." 
       sleep 1
     fi
   done 
@@ -166,6 +243,21 @@ function chanselectah {
 
 # Compose mplayer command
 MPLAYER="mplayer $MPLAYEROPTS - "
+
+# option -c|--channel
+if $channel
+then
+  if chanvalidity $CH
+  then
+    compose_rtmp_command $CH "-"
+    echo "Now playing ${CH}..."
+    $RTMP | $MPLAYER 2> /dev/null
+    exit 0
+  else
+    echo "Channel '$CH' is not available..."
+    exit 1
+  fi
+fi
 
 # Loop for interactive mode
 while true
