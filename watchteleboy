@@ -70,10 +70,8 @@ for program in $programlist
 do
     if ! which $program > /dev/null
     then
-        echo "ERROR:"
-        echo "Could not find ${program}. Is it installed?"
-        echo ""
-        echo "Exiting..."
+        echo "ERROR:" 1>&2
+        echo "Could not find ${program}. Is it installed?" 1>&2
         exit 1
     fi
 done
@@ -186,7 +184,7 @@ cat $TMPPATH/step1.html | grep "Falsche Eingaben" > /dev/null || \
 cat $TMPPATH/step1.html | grep "<h1>Login f&uuml;r Member</h1>" > /dev/null
 if [ $? -eq 0 ]
 then
-  echo "login failed!!!!"
+  echo "login failed!!!!" 1>&2
   exit 1
 else
   echo "login ok..." 
@@ -279,6 +277,7 @@ function chanselectah {
 }
 
 # Option starttime
+crontempfile="/tmp/crontab.${USER}.watchteleboy"
 if $starttime && $record
 then
   if $endtime || $duration
@@ -288,8 +287,6 @@ then
     if [ $starttimeepoch -lt $(date +%s) ]
     then
       echo "The specified start time is already over." 1>&2
-      echo $starttimeepoch
-      date +%s
       exit 1
     fi
     if $endtime
@@ -304,15 +301,49 @@ then
       let DURATION=$endtimeepoch-$starttimeepoch
     elif $duration
     then
-      if ! [ $DURATION -ge 0 ]
+      if ! [ "$DURATION" -ge 0 ] 2>&-
       then
-        echo "The specified duration '$duration' is not a number." 1>&2
+        echo "The specified duration '$DURATION' is not a number." 1>&2
         exit 1
       fi
     fi
-    echo "Now we have a valid starttime ($STARTTIME) and duration ($DURATION) :-)"  
+    if $channel
+    then
+      if ! chan_validity $CH
+      then
+        echo "'$CH' is not a valid channel." 1>&2
+        echo "Use '--list' to display available channels." 1>&2
+        exit 1
+      fi
+    else
+      echo "You need to specify a channel with '--channel'" 1>&2
+      exit 1
+    fi
+    # Now we have validated all required parameters
+    echo "Scheduled for recording:"
+    echo -e "Start time:\t$(date -d "$STARTTIME" "+%a, %F %H:%M")"
+    $endtime && echo -e "End time:\t$(date -d "$ENDTIME" "+%a, %F %H:%M")"
+    $duration && echo -e "Duration:\t${DURATION} sec"
+    echo -e "Channel:\t$CH"
+    echo -e "Directory:\t$RECORDPATH"
+    $showname && echo -e "Show:\t\t$SHOWNAME"
+    read -p "Are those settings correct? (Y/n) "
+    if [ "$REPLY" == "n" ]
+    then
+      echo "Cancelled by user. Quit." 1>&2
+      exit 1
+    fi
+    crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
+    echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename $0) " >> $crontempfile
+    echo -ne "--channel ${CH} --duration ${DURATION} " >> $crontempfile
+    echo -ne "--deleteme ${RANDOM}${RANDOM} " >> $crontempfile
+    $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
+    echo -ne "--path ${RECORDPATH}\n" >> $crontempfile
+    crontab < $crontempfile
+    rm $crontempfile
+    echo "Done."
     exit 0
-  else
+  else 
     echo "You must specify either --duration or --endtime" 1>&2
     exit 1
   fi
