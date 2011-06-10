@@ -20,6 +20,7 @@ PASS="password"
 TMPPATH=/tmp/watchteleboy
 UAGENT='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1'
 MPLAYEROPTS="-really-quiet"
+RECORDPATH=$(pwd)
 
 # Channel list
 CHANNELS="
@@ -64,7 +65,7 @@ joiz 5011.stream
 CH="3sat"
 
 # Check for necessary binaries
-programlist="rtmpdump mplayer wget grep cut"
+programlist="rtmpdump mplayer wget grep cut crontab date"
 for program in $programlist
 do
     if ! which $program > /dev/null
@@ -86,15 +87,26 @@ fi
 
 # Comandline argument parsing
 channel=false
-list=false
+duration=false
+endtime=false
 help=false
+list=false
+path=false
+showname=false
+starttime=false
 version=false
 while [ $# -gt 0 ]
 do
   case "$1" in
     -c|--channel) channel=true; CH=$2; shift;;
-    -l|--list) list=true;;
+    -d|--duration) duration=true; DURATION="$2"; shift;;
+    -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
     -h|--help) help=true;;
+    -l|--list) list=true;;
+    -n|--showname) showname=true; SHOWNAME="$2"; shift;;
+    -p|--path) path=true; RECORDPATH="$2"; shift;;
+    -r|--record) record=true; shift;;
+    -t|--starttime) starttime=true; STARTTTIME="$2"; shift;;
     -v|--version) version=true;;
     -*) echo "$(basename $0): error - unrecognized option '$1'" 1>&2
         echo "use '$(basename $0) --help' to get a list of available options"
@@ -127,11 +139,24 @@ then
 
 watchteleboy
 ------------
--c|--channel CHANNEL    play channel CHANNEL
--h|--help               show this help and exit
--l|--list               print a list of all channels and exit
--v|--version            print the version of this program
-<no options>            go into interactive mode
+
+  <no options>            go into interactive mode
+
+GENERAL OPTIONS:
+
+  -c|--channel CHANNEL    specify a channel
+  -h|--help               show this help and exit
+  -l|--list               print a list of all channels and exit
+  -v|--version            print the version of this program
+
+OPTIONS FOR RECORDING (require -r|--record):
+
+  -e|--endtime TIME      schedule the end time of the recording
+  -d|--duration SECONDS	 specify the duration of the recording
+  -n|--showname SHOWNAME specify file name prefix
+  -p|--path DIR		 specify target directory
+  -r|--record            record a stream instead of watching it
+  -t|--starttime TIME	 schedule the start time for a recording
 
 EOF
   exit
