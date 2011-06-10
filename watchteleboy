@@ -350,7 +350,7 @@ then
       exit 1
     fi
     crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
-    echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename $0) --record " >> $crontempfile
+    echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t${0} --record " >> $crontempfile
     echo -ne "--channel ${CH} --duration ${DURATION} " >> $crontempfile
     echo -ne "--deleteme ${RANDOM}${RANDOM} " >> $crontempfile
     $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
@@ -412,6 +412,15 @@ function player_recorder {
   fi
 }
 
+# Da Keestroke Waitah
+function  waitskey {
+  echo "Press the 's' key to stop the recording." 
+  while [ "$keypress" != "s" ]
+  do
+    read -s -n1  keypress
+  done
+}
+
 # option -d|--duration
 if $duration && $record
 then
@@ -422,7 +431,7 @@ then
   fi
   if chan_validity $CH
   then
-    player_recorder ${CH}
+    player_recorder $CH
     echo "Now recording $CH for $DURATION seconds."
     sleep $DURATION
     kill $PID
@@ -444,8 +453,18 @@ if $channel
 then
   if chan_validity $CH
   then
-    echo "Now playing ${CH}..."
-    player_recorder $CH
+    if $record
+    then
+      player_recorder $CH
+      echo "Now recording ${CH}..."
+      waitskey
+      kill $PID
+      echo "Stopped recording."
+      exit 0
+    else
+      echo "Now playing ${CH}..."
+      player_recorder $CH
+    fi
     exit 0
   else
     echo "Channel '$CH' is not available..." 1>&2
