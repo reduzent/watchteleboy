@@ -14,7 +14,7 @@
 
 VERSION="1.1~unreleased"
 
-# Set some default variables
+# Set some default values
 TMPPATH=/tmp/watchteleboy
 UAGENT='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110422 Ubuntu/10.04 (lucid) Firefox/3.6.17'
 MPLAYEROPTS="-really-quiet"
@@ -59,8 +59,6 @@ deluxe 1921.stream
 viva 171.stream
 joiz 5011.stream
 "
-# Default channel
-CH="3sat"
 
 # Check dependencies
 programlist="rtmpdump mplayer wget grep cut crontab date"
@@ -268,11 +266,22 @@ function compose_rtmp_command {
 function chan_validity {
   # ARGS:
   # 1: channel
-  echo $CHANNELS | grep $1 > /dev/null
+  if [ -z "$CH" ]
+  then
+    echo "Please specify a channel"
+    return 1
+  elif echo $CHANNELS | grep $1 > /dev/null
+  then
+    return 0
+  else
+    echo "'$CH' is not a valid channel." 1>&2
+    echo "Use '--list' to display available channels." 1>&2
+    return 1
+  fi
 }
 
 # channel selector
-function chanselectah {
+function chan_selectah {
   while true
   do
     echo -e "\nCHANNELS:"
@@ -281,7 +290,7 @@ function chanselectah {
     read -p "TV Channel (default is $CH): " -e SEL
     if [ -n "$SEL" ]
     then
-      chan_validity $SEL && \
+      echo $CHANNELS | grep $SEL > /dev/null && \
         CH="$SEL" && \
         break
       echo "Channel '$SEL' is not available..." 
@@ -290,10 +299,23 @@ function chanselectah {
   done 
 }
 
+function require_r_opt {
+  # ARGS:
+  # 1: option name
+  if $record
+  then
+    return 0
+  else
+    echo "The option '--${1}' requires the '--record' option" 1>&2
+    exit 1
+  fi
+}
+
 # option -t|--starttime
 crontempfile="/tmp/crontab.${USER}.watchteleboy"
-if $starttime && $record
+if $starttime
 then
+  require_r_opt "starttime"
   if $endtime || $duration
   then
     check_time_validity "$STARTTIME"
@@ -323,12 +345,7 @@ then
     fi
     if $channel
     then
-      if ! chan_validity $CH
-      then
-        echo "'$CH' is not a valid channel." 1>&2
-        echo "Use '--list' to display available channels." 1>&2
-        exit 1
-      fi
+      chan_validity $CH || exit 1
     else
       echo "You need to specify a channel with '--channel'" 1>&2
       exit 1
@@ -361,10 +378,6 @@ then
     echo "You must specify either --duration or --endtime" 1>&2
     exit 1
   fi
-elif $starttime
-then
-  echo "The '--starttime' option requires the '--record' option" 1>&2
-  exit 1
 fi
 
 # option --deleteme
@@ -411,8 +424,9 @@ function player_recorder {
 }
 
 # Da Keestroke Waitah
-function  waitskey {
+function  wait_s_key {
   echo "Press the 's' key to stop the recording." 
+  keypress=""
   while [ "$keypress" != "s" ]
   do
     read -s -n1  keypress
@@ -422,6 +436,7 @@ function  waitskey {
 # option -e|--endtime
 if $endtime && ! $duration
 then
+  require_r_opt "endtime"
   check_time_validity "$ENDTIME"
   endtimeepoch=$(date -d "$ENDTIME" +%s)
   nowepoch=$(date +%s)
@@ -435,30 +450,21 @@ then
 fi
 
 # option -d|--duration
-if $duration && $record
+if $duration
 then
+  require_r_opt "duration"
   if ! [ "$DURATION" -ge 0 ] 2>&-
   then
     echo "The specified duration '$DURATION' is not a number." 1>&2
     exit 1
   fi
-  if chan_validity $CH
-  then
-    player_recorder $CH
-    echo "Now recording $CH for $DURATION seconds."
-    sleep $DURATION
-    kill $PID
-    echo "Stopped recording."
-    exit
-  else
-    echo "'$CH' is not a valid channel." 1>&2
-    echo "Use '--list' to display available channels." 1>&2
-    exit 1
-  fi
-elif $duration
-then
-  echo "The '--duration' option requires the '--record' option" 1>&2
-  exit 1
+  chan_validity $CH || exit 1
+  player_recorder $CH
+  echo "Now recording $CH for $DURATION seconds."
+  sleep $DURATION
+  kill $PID
+  echo "Stopped recording."
+  exit 0
 fi
 
 # option -c|--channel
@@ -470,7 +476,7 @@ then
     then
       player_recorder $CH
       echo "Now recording ${CH}..."
-      waitskey
+      wait_s_key
       kill $PID
       echo "Stopped recording."
       exit 0
@@ -488,9 +494,18 @@ fi
 # Loop for interactive mode
 while true
 do
-  chanselectah
-  echo "Now playing ${CH}..."
-  player_recorder $CH
+  chan_selectah
+  if $record
+  then
+    player_recorder $CH
+    echo "Now recording ${CH}..."
+    wait_s_key
+    kill $PID
+    echo "Stopped recording."
+  else
+    echo "Now playing ${CH}..."
+    player_recorder $CH
+  fi
 done
 
 exit 0
