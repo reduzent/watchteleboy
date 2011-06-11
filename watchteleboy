@@ -180,7 +180,7 @@ OPTIONS FOR RECORDING (require -r|--record):
 
 MPLAYER SPECIFIC OPTIONS:
 
-  -m|--mplayer-opts OPTS  options passed to mplayer command
+  -m|--mplayer-opts OPTS  pass options to mplayer
 
 EOF
   exit
@@ -313,7 +313,7 @@ function chan_validity {
 function chan_selectah {
   while true
   do
-    echo -e "\nCHANNELS:"
+    echo -e "\nAVAILABLE CHANNELS:"
     echo "$CHANNELS" | cut -d " " -f 1 | tr "\n" " "
     echo ""
     read -p "Select TV Channel: " -e SEL
