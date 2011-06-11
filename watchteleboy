@@ -72,7 +72,7 @@ do
     fi
 done
 
-# Read config (overrides default values)
+# Read config (overrides default values) or create it
 CONFIG=~/.watchteleboyrc
 if [ -f $CONFIG ]
 then
@@ -81,16 +81,24 @@ else
   echo "In order for this script to work properly you need to"
   echo "provide your user credentials for the teleboy.ch"
   echo "service."
-  read -p "Please enter your user name: " USER
-  read -s -p "Please enter your password:  " PASS
-  echo ""
-  read -s -p "Confirm your password:       " PASS2
-  echo "" 
-  echo "CAUTION: writing password in plain text to the config file!"
+  while true
+  do
+    read -p "Please enter your user name: " USER
+    read -s -p "Please enter your password:  " PASS
+    echo ""
+    read -s -p "Confirm your password:       " PASS2
+    echo "" 
+    if [ "$PASS" = "$PASS2" ]
+    then
+      break
+    else
+      echo "The password entries don't match."
+    fi
+  done  
+  echo "CAUTION: writing plain text password to the config file!"
   echo "USER='$USER'" >> $CONFIG
   echo "PASS='$PASS'" >> $CONFIG
-  echo "created config file $CONFIG"
-  exit 1   
+  echo "created config file $CONFIG"  
 fi
 
 # Comandline argument parsing
@@ -121,7 +129,7 @@ do
     -v|--version) version=true;;
     --deleteme) deleteme=true; DELETEME="$2"; shift;;
     -*) echo "$(basename $0): error - unrecognized option '$1'" 1>&2
-        echo "use '$(basename $0) --help' to get a list of available options"
+        echo "use '$(basename $0) --help' to get a list of available options" 1>&2
         exit 1;;
     *)  break;;
   esac
@@ -216,6 +224,8 @@ cat $TMPPATH/step1.html | grep "<h1>Login f&uuml;r Member</h1>" > /dev/null
 if [ $? -eq 0 ]
 then
   echo "login failed!!!!" 1>&2
+  echo "Please check your credentials in the config file:" 1>&2
+  echo "$CONFIG" 1>&2
   exit 1
 else
   echo "login ok..." 
