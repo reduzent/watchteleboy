@@ -15,10 +15,8 @@
 VERSION="1.1~unreleased"
 
 # Set some default variables
-USER="username"
-PASS="password"
 TMPPATH=/tmp/watchteleboy
-UAGENT='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1'
+UAGENT='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110422 Ubuntu/10.04 (lucid) Firefox/3.6.17'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
 
@@ -420,6 +418,21 @@ function  waitskey {
     read -s -n1  keypress
   done
 }
+
+# option -e|--endtime
+if $endtime && ! $duration
+then
+  check_time_validity "$ENDTIME"
+  endtimeepoch=$(date -d "$ENDTIME" +%s)
+  nowepoch=$(date +%s)
+  if [ $endtimeepoch -lt $nowepoch ]
+  then
+    echo "The specified end time is already over." 1>&2
+    exit 1
+  fi
+  let DURATION=${endtimeepoch}-${nowepoch}
+  duration=true
+fi
 
 # option -d|--duration
 if $duration && $record
