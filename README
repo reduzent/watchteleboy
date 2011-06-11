@@ -1,12 +1,59 @@
+============
+watchteleboy
+============
 
-=== WATCHTELEBOY ===============================
+is a script to watch and record live TV streams from 
+http://www.teleboy.ch without browser nor flash.
 
-is a script to watch live TV streams from 
-http://www.teleboy.ch without browser
-nor flash
+The service was reverse-engineered  by:
+Alexander Tuchacek
 
-The service was reverse-engineered  by
+THIS MOST LIKELY WORKS ONLY FROM SWITZERLAND, SINCE THE IPTV SERVICE
+FROM TELEBOY.CH IS ONLY AVAILABLE TO SWISS IP ADDRESSES.
 
-  Alexander Tuchacek
+see: http://github.com/reduzent/watchteleboy
 
- 
+Copyright: Roman Haefeli, 2011
+           Alexander Tuchacek, 2011
+
+License:   GPL-2 
+
+
+Requirements
+------------
+
+This script is based on the following binary programs:
+
+     o MPlayer - The Movie Player
+       Most likely mplayer is delivered by your distribution. If you need
+       a bleeding edge version, go to:
+       http://www.mplayerhq.hu/
+
+     o rtmpdump - a dumping tool for rtmp streams
+       http://rtmpdump.mplayerhq.hu/
+
+     o wget
+
+     o crontab
+
+     o date
+
+
+Usage
+-----
+
+Do 'watchteleboy --help' in order to get a quick summary of the available
+options. When invoked without options it starts in interactive mode.
+
+
+Bugs
+----
+
+There aren't any known or outstanding bugs. If you find some or if you have
+a feature request, post them to the author:
+Roman Haefeli <reduzent@gmail>
+
+
+HAVE FUN!
+
+
