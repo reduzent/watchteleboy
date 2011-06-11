@@ -77,6 +77,20 @@ CONFIG=~/.watchteleboyrc
 if [ -f $CONFIG ]
 then
   . $CONFIG
+else
+  echo "In order for this script to work properly you need to"
+  echo "provide your user credentials for the teleboy.ch"
+  echo "service."
+  read -p "Please enter your user name: " USER
+  read -s -p "Please enter your password:  " PASS
+  echo ""
+  read -s -p "Confirm your password:       " PASS2
+  echo "" 
+  echo "CAUTION: writing password in plain text to the config file!"
+  echo "USER='$USER'" >> $CONFIG
+  echo "PASS='$PASS'" >> $CONFIG
+  echo "created config file $CONFIG"
+  exit 1   
 fi
 
 # Comandline argument parsing
@@ -100,6 +114,7 @@ do
     -h|--help) help=true;;
     -l|--list) list=true;;
     -n|--showname) showname=true; SHOWNAME="$2"; shift;;
+    -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
     -p|--path) path=true; RECORDPATH="$2"; shift;;
     -r|--record) record=true;;
     -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
@@ -154,6 +169,10 @@ OPTIONS FOR RECORDING (require -r|--record):
   -p|--path DIR		  specify target directory
   -r|--record             record a stream instead of watching it
   -t|--starttime TIME	  schedule the start time for a recording
+
+MPLAYER SPECIFIC OPTIONS:
+
+  -m|--mplayer-opts OPTS  options passed to mplayer command
 
 EOF
   exit
@@ -287,7 +306,7 @@ function chan_selectah {
     echo -e "\nCHANNELS:"
     echo "$CHANNELS" | cut -d " " -f 1 | tr "\n" " "
     echo ""
-    read -p "TV Channel (default is $CH): " -e SEL
+    read -p "Select TV Channel: " -e SEL
     if [ -n "$SEL" ]
     then
       echo $CHANNELS | grep $SEL > /dev/null && \
