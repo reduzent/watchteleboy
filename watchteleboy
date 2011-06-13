@@ -116,7 +116,7 @@ version=false
 while [ $# -gt 0 ]
 do
   case "$1" in
-    -c|--channel) channel=true; CH=$2; shift;;
+    -c|--channel) channel=true; CHANNEL=$2; shift;;
     -d|--duration) duration=true; DURATION="$2"; shift;;
     -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
     -h|--help) help=true;;
@@ -295,7 +295,7 @@ function compose_rtmp_command {
 function chan_validity {
   # ARGS:
   # 1: channel
-  if [ -z "$CH" ]
+  if [ -z "$CHANNEL" ]
   then
     echo "Please specify a channel"
     return 1
@@ -303,7 +303,7 @@ function chan_validity {
   then
     return 0
   else
-    echo "'$CH' is not a valid channel." 1>&2
+    echo "'$CHANNEL' is not a valid channel." 1>&2
     echo "Use '--list' to display available channels." 1>&2
     return 1
   fi
@@ -320,7 +320,7 @@ function chan_selectah {
     if [ -n "$SEL" ]
     then
       echo $CHANNELS | grep $SEL > /dev/null && \
-        CH="$SEL" && \
+        CHANNEL="$SEL" && \
         break
       echo "Channel '$SEL' is not available..." 
       sleep 1
@@ -374,7 +374,7 @@ then
     fi
     if $channel
     then
-      chan_validity $CH || exit 1
+      chan_validity $CHANNEL || exit 1
     else
       echo "You need to specify a channel with '--channel'" 1>&2
       exit 1
@@ -384,7 +384,7 @@ then
     echo -e "Start time:\t$(date -d "$STARTTIME" "+%a, %F %H:%M")"
     $endtime && echo -e "End time:\t$(date -d "$ENDTIME" "+%a, %F %H:%M")"
     $duration && echo -e "Duration:\t${DURATION} sec"
-    echo -e "Channel:\t$CH"
+    echo -e "Channel:\t$CHANNEL"
     echo -e "Directory:\t$RECORDPATH"
     $showname && echo -e "Show:\t\t$SHOWNAME"
     read -p "Are those settings correct? (Y/n) "
@@ -395,7 +395,7 @@ then
     fi
     crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
     echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t${0} --record " >> $crontempfile
-    echo -ne "--channel ${CH} --duration ${DURATION} " >> $crontempfile
+    echo -ne "--channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
     echo -ne "--deleteme ${RANDOM}${RANDOM} " >> $crontempfile
     $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
     echo -ne "--path ${RECORDPATH}\n" >> $crontempfile
@@ -487,9 +487,9 @@ then
     echo "The specified duration '$DURATION' is not a number." 1>&2
     exit 1
   fi
-  chan_validity $CH || exit 1
-  player_recorder $CH
-  echo "Now recording $CH for $DURATION seconds."
+  chan_validity $CHANNEL || exit 1
+  player_recorder $CHANNEL
+  echo "Now recording $CHANNEL for $DURATION seconds."
   sleep $DURATION
   kill $PID
   echo "Stopped recording."
@@ -499,23 +499,23 @@ fi
 # option -c|--channel
 if $channel
 then
-  if chan_validity $CH
+  if chan_validity $CHANNEL
   then
     if $record
     then
-      player_recorder $CH
-      echo "Now recording ${CH}..."
+      player_recorder $CHANNEL
+      echo "Now recording ${CHANNEL}..."
       wait_s_key
       kill $PID
       echo "Stopped recording."
       exit 0
     else
-      echo "Now playing ${CH}..."
-      player_recorder $CH
+      echo "Now playing ${CHANNEL}..."
+      player_recorder $CHANNEL
     fi
     exit 0
   else
-    echo "Channel '$CH' is not available..." 1>&2
+    echo "Channel '$CHANNEL' is not available..." 1>&2
     exit 1
   fi
 fi
@@ -526,14 +526,14 @@ do
   chan_selectah
   if $record
   then
-    player_recorder $CH
-    echo "Now recording ${CH}..."
+    player_recorder $CHANNEL
+    echo "Now recording ${CHANNEL}..."
     wait_s_key
     kill $PID
     echo "Stopped recording."
   else
-    echo "Now playing ${CH}..."
-    player_recorder $CH
+    echo "Now playing ${CHANNEL}..."
+    player_recorder $CHANNEL
   fi
 done
 
