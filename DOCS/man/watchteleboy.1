@@ -1,0 +1,177 @@
+.TH watchteleboy "1" "2011 June 13" "GNU2"
+.SH NAME
+watchteleboy \- watch and record online TV streams from teleboy.ch
+.SH SYNOPSYS
+.B watchteleboy
+[
+.B --help
+|
+.B --list
+|
+.B --version
+]
+.br
+.B watchteleboy 
+[
+.B --path
+.I DIRECTORY
+] [
+.B --showname
+.I NAME
+]
+.B --starttime
+.I TIME 
+.B --endtime 
+.I TIME 
+.B --channel
+.I CHANNEL
+.br
+.B watchteleboy
+[
+.B --path
+.I DIRECTORY
+] [
+.B --showname
+.I NAME
+]
+.B --duration 
+.I SECONDS
+|
+.B --endtime
+.I TIME
+.B --channel
+.I CHANNEL
+.SH DESCRIPTION
+.B watchteleboy
+plays and records live IPTV streams provided by the free
+(as in "free beer") online TV service from teleboy.ch.
+.PP
+When launched without any options, 
+.B watchteleboy
+goes into interactive mode and presents a list of available channels.
+.PP
+When launched for the first time, 
+.B watchteleboy
+will ask you to provide your login for the teleboy.ch service. Those
+settings will be saved to the configuration file $HOME/.watchteleboyrc.
+.br
+.I CAUTION:
+The password will be stored in plain text!
+.SH GENERAL OPTIONS
+.IP "\fB\-c, \-\-channel CHANNEL"
+Play (or record)  immediately the specified channel CHANNEL. Use the option
+.I --list
+to get a list of available channels.
+.IP "\fB\-h, \-\-help"
+Print a summary of available options and exit.
+.IP "\fB\-l, \-\-list"
+Print a list of available channels and exit. The set of channels is subject
+to change with future version of 
+.B watchteleboy
+(depending on service changes on teleboy.ch).
+.IP "\fB\-v, \-\-version"
+Print the version of this software and exit. 
+.SH OPTIONS FOR RECORDING
+Those options can only be used in recording mode, which is set with the
+.I --record
+option.
+In recording mode,
+.B watchteleboy
+writes the received stream to a local file. The name of the resulting 
+file is composed of the channel name and the current date and time, following
+this template:
+.PP
+\fBCHANNEL\fR-\fBYYYYMMDDhhmm\fR.flv
+.PP
+The format is flash video (.flv), containing a H.264 video and an AAC encoded
+audio stream. The video resolution usually is 768x432 pixels.
+.IP "\fB\-e, \-\-endtime TIME"
+Schedule the end time of the recording. If used without the
+.I --starttime
+option, recording starts immediately and stops at specified time.
+.br
+Accepts
+anything that is understood by the
+.B date
+command. Check 
+.BR date (1)
+for more details. 
+.IP "\fB\-d, \-\-duration SECONDS"
+Specify the duration of the recording. The recording starts immediately
+and ends after SECONDS seconds.
+.IP "\fB\-n, \-\-showname NAME"
+Specify a filename prefix that is used instead of the channel name.
+.IP "\fB\-p, \-\-path DIRECTORY"
+Specify target directory. This works also for interactive mode. The
+default is the current directory.
+.IP "\fB\-r, \-\-record"
+record a stream instead of watching it.
+.IP "\fB\-t, \-\-starttime TIME"
+Schedule the start time for a recording. Using this option doesn't start a
+recording directly, but writes an appropriate entry to the current user's
+crontab file. This entry is automatically removed as soon as the recording
+has started.
+.br
+Accepts
+anything that is understood by the
+.B date
+command. Check 
+.BR date (1)
+for more details. 
+.br
+.I NOTE:
+For using this option either one of the options
+.I --endtime
+or
+.I --duration
+and the option 
+.I --channel
+are mandatory.
+.SH MPLAYER SPECIFIC OPTIONS
+.IP "\fB\-m, \-\-mplayer\-opts OPTS"
+allows to pass options directly to 
+.BR mplayer (1).
+.SH CONFIGURATION FILE
+If it exists, 
+.B watchteleboy 
+will read parameters from its configuration file, which is located
+in $HOME/.watchteleboyrc. Those parameters are overriden by options specified on the
+command line.
+.PP
+.I VALID PARAMETERS
+.RS 
+USER
+.RS
+Username from the teleboy.ch login.
+.RE
+PASS
+.RS
+Password from the teleboy.ch login.
+.RE
+RECORDPATH
+.RS 
+Directory where recordings are saved (overriden by
+.I --starttime
+)
+.RE
+CHANNEL
+.RS
+Default channel to be used (overriden by
+.I --channel
+)
+.RE
+
+
+.SH RESTRICTIONS
+This program might only work in Switzerland, since the teleboy.ch service is only
+available to Swiss IP addresses.
+.SH "REPORTING BUGS"
+Report bugs and suggestions to reduzent@gmail.com
+.SH AUTHOR
+Roman Haefeli <reduzent@gmail.com>
+.SH SEE ALSO
+.BR mplayer (1), 
+.BR rtmpdump (1),
+.BR crontab (1),
+.BR date (1)
+
