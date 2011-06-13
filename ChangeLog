@@ -1,5 +1,15 @@
   2011-06-13 Roman Haefeli <reduzent@gmail.com>
 
+ * debian/changelog: fixed package name in changelog
+
+ * debian/changelog, debian/compat, debian/control, debian/copyright,
+ debian/docs, debian/rules, debian/source/format, debian/watchteleboy.dirs,
+ debian/watchteleboy.install: added debian packaging directory and files
+
+ * DOCS/man/watchteleboy.1: finalized man page
+
+ * ChangeLog: added a ChangeLog file
+
  * watchteleboy: renamed the variable CH to CHANNEL
 
  * DOCS/man/watchteleboy.1: added man page
