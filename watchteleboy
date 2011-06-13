@@ -25,10 +25,12 @@ CHANNELS="
 ard 111.stream
 zdf 101.stream
 arte 1611.stream
+arte_o 201.stream
 3sat 141.stream
 sf1 11.stream
 sf1_o 1591.stream
 sf2 81.stream
+sf2_o 1081.stream
 sfinfo 241.stream
 orf1 91.stream
 orf2 291.stream
