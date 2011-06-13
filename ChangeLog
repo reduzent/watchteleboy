@@ -1,0 +1,70 @@
+  2011-06-13 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: renamed the variable CH to CHANNEL
+
+ * DOCS/man/watchteleboy.1: added man page
+
+  2011-06-12 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: minor changes to --help output
+
+ * README: completed README
+
+ * LICENSE: added a LICENSE file
+
+  2011-06-11 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: improved credentials check
+
+ * watchteleboy: create config file with user credentials on first run
+
+ * watchteleboy: added function  require_r_opt; optimized function
+ chan_validity
+
+ * watchteleboy: added --endtime flag; cleaned up a little
+
+ * watchteleboy: added record support to the --channel option
+
+ * watchteleboy: added --duration option behaviour
+
+ * watchteleboy: added '--record' to the crontab entry
+
+ * watchteleboy: added --deleteme option
+
+ * watchteleboy: scheduling now in a functional state
+
+  2011-06-10 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: worked some on scheduling options
+
+ * watchteleboy: completed help
+
+ * watchteleboy: added a few command line arguments: -c | -h | -l | -v
+
+ * teleboy-ply.sh: removed external player script
+
+ * watchteleboy: refactored some more
+
+ * watchteleboy: refactored script; put rtmp command composing into a
+ function; shortened while loop
+
+ * watchteleboy: extract flashplayer URL from web page
+
+  2011-06-09 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: made interactive mode similar to old watchwilmaa script
+
+  2011-06-08 Roman Haefeli <reduzent@gmail.com>
+
+ * TELEBOY.sh, watchteleboy: renamed to watchteleboy; removed some (hopefully
+ unnecessary) cruft
+
+ * TELEBOY.sh: worked a bit on it
+
+ * TELEBOY.sh: added more stations
+
+ * TELEBOY.sh: include configfile if exists
+
+ * TELEBOY.sh, teleboy-ply.sh: added original script from alex
+
+ * README: added README
