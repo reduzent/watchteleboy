@@ -1,0 +1,19 @@
+Source: watchteleboy
+Priority: optional
+Maintainer: Roman Haefeli <reduzent@gmail.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.4
+Section: misc
+Homepage: http://github.com/reduzent/watchteleboy
+
+Package: watchteleboy
+Architecture: all
+Depends: mplayer,
+         wget,
+         rtmpdump,
+         ${misc:Depends}
+Description: Watch  and record TV streams from teleboy.ch
+ Simple program to watch and record teleboy.ch IPTV streams: 
+  * No additional ads
+  * No flash nor web browser required
+
