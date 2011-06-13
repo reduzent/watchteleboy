@@ -4,6 +4,11 @@ watchteleboy \- watch and record online TV streams from teleboy.ch
 .SH SYNOPSYS
 .B watchteleboy
 [
+.B --record
+]
+.br
+.B watchteleboy
+[
 .B --help
 |
 .B --list
@@ -11,36 +16,20 @@ watchteleboy \- watch and record online TV streams from teleboy.ch
 .B --version
 ]
 .br
-.B watchteleboy 
+.B watchteleboy
+[ options ]
+.B --record --channel
+.I CHANNEL
 [
-.B --path
-.I DIRECTORY
-] [
-.B --showname
-.I NAME
-]
-.B --starttime
-.I TIME 
 .B --endtime 
 .I TIME 
-.B --channel
-.I CHANNEL
-.br
-.B watchteleboy
-[
-.B --path
-.I DIRECTORY
-] [
-.B --showname
-.I NAME
-]
-.B --duration 
-.I SECONDS
 |
-.B --endtime
-.I TIME
-.B --channel
-.I CHANNEL
+.B --duration
+.I SECONDS
+[
+.B --starttime
+.I TIME 
+]]
 .SH DESCRIPTION
 .B watchteleboy
 plays and records live IPTV streams provided by the free
@@ -105,7 +94,7 @@ Specify a filename prefix that is used instead of the channel name.
 Specify target directory. This works also for interactive mode. The
 default is the current directory.
 .IP "\fB\-r, \-\-record"
-record a stream instead of watching it.
+Record a stream instead of watching it.
 .IP "\fB\-t, \-\-starttime TIME"
 Schedule the start time for a recording. Using this option doesn't start a
 recording directly, but writes an appropriate entry to the current user's
@@ -129,7 +118,7 @@ and the option
 are mandatory.
 .SH MPLAYER SPECIFIC OPTIONS
 .IP "\fB\-m, \-\-mplayer\-opts OPTS"
-allows to pass options directly to 
+Allows to pass options directly to 
 .BR mplayer (1).
 .SH CONFIGURATION FILE
 If it exists, 
@@ -138,7 +127,7 @@ will read parameters from its configuration file, which is located
 in $HOME/.watchteleboyrc. Those parameters are overriden by options specified on the
 command line.
 .PP
-.I VALID PARAMETERS
+.I PARAMETERS:
 .RS 
 USER
 .RS
@@ -152,16 +141,46 @@ RECORDPATH
 .RS 
 Directory where recordings are saved (overriden by
 .I --starttime
-)
+).
 .RE
 CHANNEL
 .RS
 Default channel to be used (overriden by
 .I --channel
-)
+).
 .RE
-
-
+MPLAYEROPTS
+.RS
+Options passed to mplayer (overriden by
+.I --mplayer-opts
+). This option will be ignored, when 
+.I --record
+is used.
+.RE
+.SH EXAMPLES
+.B Schedule a recording:
+.RS
+.PP
+watchteleboy --record --channel arte --starttime "20:15" --endtime "22:00"
+.PP
+.RE
+.B Record for an hour from now:
+.RS
+.PP
+watchteleboy --record --channel arte --duration 3600
+.PP
+.RE
+.B Record from now until tonight at 23:15:
+.RS
+.PP
+watchteleboy --record --channel arte --endtime "23:15"
+.PP
+.RE
+.B Watch ARTE in fullscreen mode, correct the aspect ratio  and use jack as audio back-end:
+.RS
+.PP
+watchteleboy --channel arte --mplayer-opts "-fs -aspect 4/3 -ao jack"
+.PP
 .SH RESTRICTIONS
 This program might only work in Switzerland, since the teleboy.ch service is only
 available to Swiss IP addresses.
