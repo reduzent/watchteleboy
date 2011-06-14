@@ -1,4 +1,14 @@
+  2011-06-14 Roman Haefeli <reduzent@gmail.com>
+
+ * debian/rules: debian/rules: switched to short-form dh
+
   2011-06-13 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: added new channels: sf2_o, arte_o (original audio)
+
+ * watchteleboy: corrected version: removed unreleased tag
+
+ * ChangeLog: updated ChangeLog
 
  * debian/changelog: fixed package name in changelog
 
