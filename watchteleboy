@@ -22,55 +22,6 @@ RECORDPATH=$(pwd)
 
 # Channel list
 CHANNELS="
-ard 11_4.stream
-zdf 10_4.stream
-arte 161_4.stream
-arte_o 201.stream
-3sat 141.stream
-sf1 1_4.stream
-sf1_o 1591.stream
-sf2 8_4.stream
-sf2_o 1081.stream
-sfinfo 24_4.stream
-orf1 9_4.stream
-orf2 29_4.stream
-zdfneo 12_4.stream
-atv 21_4.stream
-ntv 40_4.stream
-euronews 216_4.stream
-phoenix 53_4.stream
-sport1 33_4.stream
-eurosport 39_4.stream
-swr 54_4.stream
-mdr 51_4.stream
-ndr 52_4.stream
-wdr 30_4.stream
-rtl 5_4.stream
-rtl2 32_4.stream
-superrtl 35_4.stream
-vox 13_4.stream
-pro7 6_4.stream
-sat1 7_4.stream
-kabel1 31_4.stream
-dasvierte 172_4.stream
-dmax 15_4.stream
-3plus 170_4.stream
-telezueri 197_4.stream
-nickelodeon 22_4.stream
-deluxe 192_4.stream
-viva 17_4.stream
-joiz 501_4.stream
-cnn 41_4.stream
-bbc1 69_4.stream
-bbc2 189_4.stream
-bbcworld 101_4.stream
-cnbc 46_4.stream
-itv1 70_4.stream
-itv2 71_4.stream
-aljazeera 215_4.stream
-"
-
-CHANNELS="
 sf1 1 159
 sfzwei 8 108
 sfinfo 24 0
@@ -105,8 +56,46 @@ sport1 33 0
 eurosport 39 0
 deluxemusic 192 0
 viva 17 0
+cnn 41 0
+bbcone 69 0
+bbctwo 189 0
+bbcworldnews 43 0
+cnbceurope 46 0
+itv1 70 0
+itv2 71 0
+aljazeera 215 0
+tsr1 25 162
+tsr2 26 163
+tf1 36 0
+france2 37 0
+france3 214 0
+m6 38 0
+tv5 48 0
+gulli 212 0
+w9 219 0
+france 211 0
+euronews 158 0
+rsila1 27 164
+rsila2 28 0
+rai1 105 0
+rai2 106 0
+rai3 107 0
+canale5 202 0
+italia1 201 0
+raisport1 204 0
+rtpi 213 0
+tvei 47 0
+trt1 210 0
+rete4 203 0
+mtv 207 0
 nickelodeon 22 0
+euronews 217 0
+euronews 45 0
+la7 205 0
 joiz 501 0
+cielo 209 0
+rtl1025 206 0
+rainews24 208 0
 "
 
 # Check dependencies
@@ -348,11 +337,8 @@ function compose_rtmp_command {
     -p ${URLBASE}/player.php 
     -y $playpath
     -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 
+    -q
     -o $2 "
-
-
-  echo $RTMP
-
 }
 
 # test channel input validity
