@@ -293,8 +293,8 @@ function compose_rtmp_command {
   # ARGS:
   # 1: channel
   # 2: output file
-  cid=$(echo "$CHANNELS" | grep $1 | cut -d" " -f2)
-  cid2=$(echo "$CHANNELS" | grep $1 | cut -d" " -f3)
+  cid=$(echo "$CHANNELS" | grep "${1} " | cut -d" " -f2)
+  cid2=$(echo "$CHANNELS" | grep "${1} " | cut -d" " -f3)
   URLBASE="http://www.teleboy.ch/tv/player"
   POST="cmd=getLiveChannelParams&cid=${cid}&cid2=${cid2}"
   STREAMINFO=$(wget -U "$UAGENT" \
@@ -315,7 +315,7 @@ function compose_rtmp_command {
   c5=$(echo "$STREAMINFO"  | cut -d "|" -f8)
   c6=$(echo "$STREAMINFO"  | cut -d "|" -f9)
   gip=$(echo "$STREAMINFO"  | cut -d "|" -f10)
-  playpath=${cid}_4.stream
+  playpath=${cid}${c2}.stream
 
   # LOESCHI / show channel name
   echo "$STREAMINFO"  | cut -d "|" -f2
@@ -336,8 +336,8 @@ function compose_rtmp_command {
     -W ${URLBASE}/${SWFFILE} 
     -p ${URLBASE}/player.php 
     -y $playpath
-    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 
-    -q
+    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5
+    -q 
     -o $2 "
 }
 
