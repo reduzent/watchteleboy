@@ -8,21 +8,21 @@
 # Author:   Alexander Tuchacek
 # written:  2011-05-21
 # modified by: Roman Haefeli
-# modified on: 2011-06-08
-# program version  1.1~unreleased
+# modified on: 2011-08-02
+# program version  1.2
 ################################################
 
-VERSION="1.1"
+VERSION="1.2"
 
 # Set some default values
 TMPPATH=/tmp/watchteleboy
-UAGENT='Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110422 Ubuntu/10.04 (lucid) Firefox/3.6.17'
+UAGENT='Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20100101 Firefox/5.0'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
 
 # Channel list
 CHANNELS="
-ard 111.stream
+ard 11_4.stream 11 0
 zdf 101.stream
 arte 1611.stream
 arte_o 201.stream
@@ -264,8 +264,10 @@ function compose_rtmp_command {
   # ARGS:
   # 1: channel
   # 2: output file
+  cid=11
+  cid2=0
   URLBASE="http://www.teleboy.ch/tv/player"
-  POST="cmd=getLiveChannelParams&cid=14&cid2=0"
+  POST="cmd=getLiveChannelParams&cid=${cid}&cid2=${cid2}"
   STREAMINFO=$(wget -U "$UAGENT" \
     --quiet \
     --referer "${URLBASE}/player.php" \
@@ -276,29 +278,40 @@ function compose_rtmp_command {
     "${URLBASE}/includes/ajax.php")
 
   # get rtmp parameters
-  ch=$(echo "$STREAMINFO" | cut -d "|" -f1)
-  app=$(echo "$STREAMINFO"  | cut -d "|" -f2)
-  c1=$(echo "$STREAMINFO"  | cut -d "|" -f3)
-  c2=$(echo "$STREAMINFO"  | cut -d "|" -f4)
-  c3=$(echo "$STREAMINFO"  | cut -d "|" -f5)
-  c4=$(echo "$STREAMINFO"  | cut -d "|" -f6)
-  c5=$(echo "$STREAMINFO"  | cut -d "|" -f7)
-  c6=$(echo "$STREAMINFO"  | cut -d "|" -f8)
+  x11=$(echo "$STREAMINFO" | cut -d "|" -f11)
+  c1=$(echo "$STREAMINFO"  | cut -d "|" -f4)
+  c2=$(echo "$STREAMINFO"  | cut -d "|" -f5)
+  c3=$(echo "$STREAMINFO"  | cut -d "|" -f6)
+  c4=$(echo "$STREAMINFO"  | cut -d "|" -f7)
+  c5=$(echo "$STREAMINFO"  | cut -d "|" -f8)
+  c6=$(echo "$STREAMINFO"  | cut -d "|" -f9)
+  gip=$(echo "$STREAMINFO"  | cut -d "|" -f10)
   playpath=$(echo "$CHANNELS" | grep "^$1" | head -n1 | cut -d " " -f 2)
+
+  # get IP address of streaming server
+  URL="http://www.teleboy.ch/tv/player/includes/getserver.php?version=$gip&nocache=1314619521398"
+  wget -U "$UAGENT" \
+    --quiet \
+    -O $TMPPATH/step4.html \
+    $URL
+  IP=$(cat $TMPPATH/step4.html | cut -d "=" -f2)
 
   # rtmpdump command
   RTMP="rtmpdump 
-    -r rtmp://62.65.136.20/nellotv 
-    -a $app 
-    -f LNX 10,3,181,14 
+    -r rtmp://${IP}/${x11} 
+    -a ${x11}
+    -f LNX 10,3,183,7 
     -W ${URLBASE}/${SWFFILE} 
     -p ${URLBASE}/player.php 
     -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 
     -C S:$c5 
     -C S:$c6 
     -y $playpath 
-    -q 
     -o $2 "
+
+
+  echo $RTMP
+
 }
 
 # test channel input validity
