@@ -22,52 +22,91 @@ RECORDPATH=$(pwd)
 
 # Channel list
 CHANNELS="
-ard 11_4.stream 11 0
-zdf 101.stream
-arte 1611.stream
+ard 11_4.stream
+zdf 10_4.stream
+arte 161_4.stream
 arte_o 201.stream
 3sat 141.stream
-sf1 11.stream
+sf1 1_4.stream
 sf1_o 1591.stream
-sf2 81.stream
+sf2 8_4.stream
 sf2_o 1081.stream
-sfinfo 241.stream
-orf1 91.stream
-orf2 291.stream
-zdfneo 121.stream
-atv 211.stream
-ntv 401.stream
-euronews 2161.stream
-phoenix 531.stream
-sport1 331.stream
-eurosport 391.stream
-swr 541.stream
-mdr 511.stream
-ndr 521.stream
-wdr 301.stream
-rtl 51.stream
-rtl2 321.stream
-superrtl 351.stream
-vox 131.stream
-pro7 61.stream
-sat1 71.stream
-kabel1 311.stream
-dasvierte 1721.stream
-dmax 151.stream
-3plus 1701.stream
-telezueri 1971.stream
-nickelodeon 221.stream
-deluxe 1921.stream
-viva 171.stream
-joiz 5011.stream
-cnn 411.stream
-bbc1 691.stream
-bbc2 1891.stream
-bbcworld 431.stream
-cnbc 461.stream
-itv1 701.stream
-itv2 711.stream
-aljazeera 2151.stream
+sfinfo 24_4.stream
+orf1 9_4.stream
+orf2 29_4.stream
+zdfneo 12_4.stream
+atv 21_4.stream
+ntv 40_4.stream
+euronews 216_4.stream
+phoenix 53_4.stream
+sport1 33_4.stream
+eurosport 39_4.stream
+swr 54_4.stream
+mdr 51_4.stream
+ndr 52_4.stream
+wdr 30_4.stream
+rtl 5_4.stream
+rtl2 32_4.stream
+superrtl 35_4.stream
+vox 13_4.stream
+pro7 6_4.stream
+sat1 7_4.stream
+kabel1 31_4.stream
+dasvierte 172_4.stream
+dmax 15_4.stream
+3plus 170_4.stream
+telezueri 197_4.stream
+nickelodeon 22_4.stream
+deluxe 192_4.stream
+viva 17_4.stream
+joiz 501_4.stream
+cnn 41_4.stream
+bbc1 69_4.stream
+bbc2 189_4.stream
+bbcworld 101_4.stream
+cnbc 46_4.stream
+itv1 70_4.stream
+itv2 71_4.stream
+aljazeera 215_4.stream
+"
+
+CHANNELS="
+sf1 1 159
+sfzwei 8 108
+sfinfo 24 0
+3plus 170 0
+servustv 221 0
+ard 11 0
+zdf 10 0
+pro7 6 0
+sat1 7 0
+rtl 5 0
+vox 13 0
+kabel1 31 0
+orf1 9 0
+orf2 29 0
+arte 161 20
+3sat 14 0
+rtl2 32 0
+superrtl 35 0
+telezueri 197 0
+swrbw 54 0
+wdr 30 0
+mdr 51 0
+ndr 52 0
+atv 21 0
+dasvierte 172 0
+dmax 15 0
+euronews 216 0
+n-tv 40 0
+phoenix 53 0
+zdfneo 12 0
+sport1 33 0
+eurosport 39 0
+deluxemusic 192 0
+viva 17 0
+nickelodeon 22 0
+joiz 501 0
 "
 
 # Check dependencies
@@ -247,7 +286,8 @@ SWFFILE=$(wget \
   --quiet \
   "http://www.teleboy.ch/tv/player/player.php" | \
   grep "nelloplayer" | \
-  cut -d'"' -f2)
+  cut -d'"' -f2 | \
+  tail -n1)
 
 # Da Time Valeditee Checkah
 function check_time_validity {
@@ -264,8 +304,8 @@ function compose_rtmp_command {
   # ARGS:
   # 1: channel
   # 2: output file
-  cid=11
-  cid2=0
+  cid=$(echo "$CHANNELS" | grep $1 | cut -d" " -f2)
+  cid2=$(echo "$CHANNELS" | grep $1 | cut -d" " -f3)
   URLBASE="http://www.teleboy.ch/tv/player"
   POST="cmd=getLiveChannelParams&cid=${cid}&cid2=${cid2}"
   STREAMINFO=$(wget -U "$UAGENT" \
@@ -286,14 +326,17 @@ function compose_rtmp_command {
   c5=$(echo "$STREAMINFO"  | cut -d "|" -f8)
   c6=$(echo "$STREAMINFO"  | cut -d "|" -f9)
   gip=$(echo "$STREAMINFO"  | cut -d "|" -f10)
-  playpath=$(echo "$CHANNELS" | grep "^$1" | head -n1 | cut -d " " -f 2)
+  playpath=${cid}_4.stream
 
+  # LOESCHI / show channel name
+  echo "$STREAMINFO"  | cut -d "|" -f2
+  
   # get IP address of streaming server
-  URL="http://www.teleboy.ch/tv/player/includes/getserver.php?version=$gip&nocache=1314619521398"
+  GIPURL="${URLBASE}/includes/getserver.php?version=${gip}&nocache=1314619521398"
   wget -U "$UAGENT" \
     --quiet \
     -O $TMPPATH/step4.html \
-    $URL
+    $GIPURL
   IP=$(cat $TMPPATH/step4.html | cut -d "=" -f2)
 
   # rtmpdump command
@@ -303,10 +346,8 @@ function compose_rtmp_command {
     -f LNX 10,3,183,7 
     -W ${URLBASE}/${SWFFILE} 
     -p ${URLBASE}/player.php 
-    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 
-    -C S:$c5 
-    -C S:$c6 
-    -y $playpath 
+    -y $playpath
+    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 
     -o $2 "
 
 
