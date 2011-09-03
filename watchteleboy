@@ -577,12 +577,12 @@ do
   if $record
   then
     player_recorder $CHANNEL
-    echo "Now recording ${CHANNEL}..."
+    echo "Now recording:"
     wait_s_key
     kill $PID
     echo "Stopped recording."
   else
-    echo "Now playing ${CHANNEL}..."
+    echo "Now playing:"
     player_recorder $CHANNEL
   fi
 done
