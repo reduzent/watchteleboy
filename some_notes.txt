@@ -1,0 +1,19 @@
+Wie kriege ich die Daten mit Sendern und IDs?
+
+wget -O stationlist.bla --post-data "cmd=getStations&category=de" --load-cookies /tmp/cookiejar --keep-session-cookies "http://www.teleboy.ch/tv/player/includes/ajax.php?"
+
+Wie kriege ich die Senderliste:
+
+grep -e " <img.*src=\"/img/station/.*/logo" teleboy_sender.html | cut -d'"' -f6
+
+
+Wie kriege ich die ID Liste?
+
+
+grep "javascript:getLiveChannelData" teleboy_sender.html | cut -d "(" -f 4 | cut -d ")" -f1 | sed -e 's/,//g'
+
+
+Wie füge ich beide Listen zusammen und mache auch kurze/schreibbare Sendernamen?
+
+
+paste -d' ' <(cat names.txt | tr '[A-Z]' '[a-z]' | sed -e 's/ //g') ids.txt
