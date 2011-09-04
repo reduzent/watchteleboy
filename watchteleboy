@@ -20,86 +20,8 @@ UAGENT='Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20100101 Firefox/5.0'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
 
-# Channel list
-CHANNELS="
-sf1 1 159
-sfzwei 8 108
-sfinfo 24 0
-3plus 170 0
-servustv 221 0
-ard 11 0
-zdf 10 0
-pro7 6 0
-sat1 7 0
-rtl 5 0
-vox 13 0
-kabel1 31 0
-orf1 9 0
-orf2 29 0
-arte 161 20
-3sat 14 0
-rtl2 32 0
-superrtl 35 0
-telezueri 197 0
-swrbw 54 0
-wdr 30 0
-mdr 51 0
-ndr 52 0
-atv 21 0
-dasvierte 172 0
-dmax 15 0
-euronews 216 0
-n-tv 40 0
-phoenix 53 0
-zdfneo 12 0
-sport1 33 0
-eurosport 39 0
-deluxemusic 192 0
-viva 17 0
-cnn 41 0
-bbcone 69 0
-bbctwo 189 0
-bbcworldnews 43 0
-cnbceurope 46 0
-itv1 70 0
-itv2 71 0
-aljazeera 215 0
-tsr1 25 162
-tsr2 26 163
-tf1 36 0
-france2 37 0
-france3 214 0
-m6 38 0
-tv5 48 0
-gulli 212 0
-w9 219 0
-france 211 0
-euronews 158 0
-rsila1 27 164
-rsila2 28 0
-rai1 105 0
-rai2 106 0
-rai3 107 0
-canale5 202 0
-italia1 201 0
-raisport1 204 0
-rtpi 213 0
-tvei 47 0
-trt1 210 0
-rete4 203 0
-mtv 207 0
-nickelodeon 22 0
-euronews 217 0
-euronews 45 0
-la7 205 0
-joiz 501 0
-cielo 209 0
-rtl1025 206 0
-rainews24 208 0
-"
-
 # Check dependencies
-programlist="rtmpdump mplayer wget grep cut crontab date"
+programlist="rtmpdump mplayer wget grep cut crontab date recode"
 for program in $programlist
 do
     if ! which $program > /dev/null
@@ -245,6 +167,7 @@ then
 fi
 
 # get the session cookie
+echo -n "login..."
 POST="login=${USER}&password=${PASS}&x=13&y=17&followup=%2Ftv%2Fplayer%2Fplayer.php"
 URL="http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php"
 COOKIE=$(wget -U "$UAGENT" \
@@ -261,13 +184,37 @@ cat $TMPPATH/step1.html | grep "Falsche Eingaben" > /dev/null || \
 cat $TMPPATH/step1.html | grep "<h1>Login f&uuml;r Member</h1>" > /dev/null
 if [ $? -eq 0 ]
 then
-  echo "login failed!!!!" 1>&2
+  echo "failed!!!!" 1>&2
   echo "Please check your credentials in the config file:" 1>&2
   echo "$CONFIG" 1>&2
   exit 1
 else
-  echo "login ok..." 
+  echo "ok" 
 fi
+
+# get the station / channel list
+echo -n "receive channel list..."
+POST="cmd=getStations&category=all"
+URL="http://www.teleboy.ch/tv/player/includes/ajax.php"
+wget --user-agent "$UAGENT" \
+    --quiet \
+    --load-cookies <(echo "$COOKIE") \
+    --post-data $POST \
+    --output-document $TMPPATH/step2.html \
+    $URL
+recode ISO-8859-1..UTF-8 $TMPPATH/step2.html
+channelnames=$(grep -e " <img.*src=\"/img/station/.*/logo" $TMPPATH/step2.html | cut -d'"' -f8)
+channelids=$(grep "javascript:getLiveChannelData" $TMPPATH/step2.html | cut -d "(" -f 2 | cut -d ")" -f1 | sed -e 's/,//g')
+CHANNELS=$(paste -d' ' \
+  <(echo "$channelnames" | \
+    sed -e '
+      s/ //g
+      s/\.//g
+      s/+/plus/g
+      s/Ô/O/g
+    ' | head -n $(echo "$channelids" | wc -l)) \
+  <(echo "$channelids"))
+echo "done"
 
 # get flashplayer url
 SWFFILE=$(wget \
@@ -293,8 +240,8 @@ function compose_rtmp_command {
   # ARGS:
   # 1: channel
   # 2: output file
-  cid=$(echo "$CHANNELS" | grep "^${1} " | cut -d" " -f2)
-  cid2=$(echo "$CHANNELS" | grep "^${1} " | cut -d" " -f3)
+  cid=$(echo "$CHANNELS" | grep -i "^${1} " | cut -d" " -f2)
+  cid2=$(echo "$CHANNELS" | grep -i "^${1} " | cut -d" " -f3)
   URLBASE="http://www.teleboy.ch/tv/player"
   POST="cmd=getLiveChannelParams&cid=${cid}&cid2=${cid2}"
   STREAMINFO=$(wget -U "$UAGENT" \
@@ -349,7 +296,7 @@ function chan_validity {
   then
     echo "Please specify a channel"
     return 1
-  elif echo $CHANNELS | grep $1 > /dev/null
+  elif echo $CHANNELS | grep -i $1 > /dev/null
   then
     return 0
   else
@@ -369,7 +316,7 @@ function chan_selectah {
     read -p "Select TV Channel: " -e SEL
     if [ -n "$SEL" ]
     then
-      echo $CHANNELS | grep $SEL > /dev/null && \
+      echo $CHANNELS | grep -i $SEL > /dev/null && \
         CHANNEL="$SEL" && \
         break
       echo "Channel '$SEL' is not available..." 
