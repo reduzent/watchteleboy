@@ -19,6 +19,7 @@ TMPPATH=/tmp/watchteleboy
 UAGENT='Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20100101 Firefox/5.0'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
+CHANSELECTION=all
 
 # Check dependencies
 programlist="rtmpdump mplayer wget grep cut crontab date recode"
@@ -194,7 +195,7 @@ fi
 
 # get the station / channel list
 echo -n "receive channel list..."
-POST="cmd=getStations&category=all"
+POST="cmd=getStations&category=${CHANSELECTION}"
 URL="http://www.teleboy.ch/tv/player/includes/ajax.php"
 wget --user-agent "$UAGENT" \
     --quiet \
