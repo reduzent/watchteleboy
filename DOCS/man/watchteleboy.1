@@ -1,4 +1,4 @@
-.TH watchteleboy "1" "2011 June 13" "GNU2"
+.TH watchteleboy "1" "2011 Sept 5" "GNU2"
 .SH NAME
 watchteleboy \- watch and record online TV streams from teleboy.ch
 .SH SYNOPSYS
@@ -140,7 +140,7 @@ Password from the teleboy.ch login.
 RECORDPATH
 .RS 
 Directory where recordings are saved (overriden by
-.I --starttime
+.I --path
 ).
 .RE
 CHANNEL
@@ -148,6 +148,10 @@ CHANNEL
 Default channel to be used (overriden by
 .I --channel
 ).
+.RE
+CHANSELECTION
+.RS
+Make watchteleboy list only channels of the specified language. Available values are: all, de, en, fr, it
 .RE
 MPLAYEROPTS
 .RS
