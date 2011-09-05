@@ -1,5 +1,10 @@
 2011-09-05  Roman Haefeli <reduzent@gmail.com>
 
+  * watchteleboy: use '-' instead of '_' to separate showname and datetime (in
+  accordance to the man page)
+
+  * ChangeLog: updated ChangeLog
+
   * debian/changelog: updated debian/changelog for version 1.2
 
   * DOCS/man/watchteleboy.1: added CHANSELECTION var description
