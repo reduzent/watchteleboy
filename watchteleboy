@@ -106,13 +106,6 @@ then
   exit
 fi
 
-# option -l|--list
-if $list
-then
-  echo "$CHANNELS" | cut -d " " -f 1 
-  exit
-fi
-
 # option -h|--help
 if $help
 then
@@ -216,6 +209,13 @@ CHANNELS=$(paste -d' ' \
     ' | head -n $(echo "$channelids" | wc -l)) \
   <(echo "$channelids"))
 echo "done"
+
+# option -l|--list
+if $list
+then
+  echo "$CHANNELS" | cut -d " " -f 1 
+  exit
+fi
 
 # get flashplayer url
 SWFFILE=$(wget \
