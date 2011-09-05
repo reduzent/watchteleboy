@@ -1,3 +1,11 @@
+watchteleboy (1.2~lucid~ppa0) lucid; urgency=low
+
+  * adapted to infrastructure changes on teleboy.ch
+  * retrieve channel list and corresponding IDs automatically
+  * added envvar to list only a subset of available channels (by language)
+
+ -- Roman Haefeli <reduzierer@yahoo.de>  Mon, 05 Sep 2011 14:18:53 +0200
+
 watchteleboy (1.1~lucid~ppa0) lucid; urgency=low
 
   * Initial release
