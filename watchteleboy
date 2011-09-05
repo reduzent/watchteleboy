@@ -431,7 +431,7 @@ function compose_outfile {
   then
     if $showname
     then
-      OUTFILE=${RECORDPATH}/${SHOWNAME}_$(date +%Y%m%d%H%M).flv
+      OUTFILE=${RECORDPATH}/${SHOWNAME}-$(date +%Y%m%d%H%M).flv
     else
       OUTFILE=${RECORDPATH}/${1}_$(date +%Y%m%d%H%M).flv
     fi
