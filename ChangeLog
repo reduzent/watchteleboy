@@ -1,90 +1,147 @@
-  2011-06-14 Roman Haefeli <reduzent@gmail.com>
+2011-09-05  Roman Haefeli <reduzent@gmail.com>
 
- * debian/rules: debian/rules: switched to short-form dh
+  * debian/changelog: updated debian/changelog for version 1.2
 
-  2011-06-13 Roman Haefeli <reduzent@gmail.com>
+  * DOCS/man/watchteleboy.1: added CHANSELECTION var description
 
- * watchteleboy: added new channels: sf2_o, arte_o (original audio)
+  * watchteleboy: test TMPPATH and exit on creation error
 
- * watchteleboy: corrected version: removed unreleased tag
+  * watchteleboy: move the code for --list option to after the automatic
+  channel retrieval code
 
- * ChangeLog: updated ChangeLog
+  * README: mention 'recode' in dependencies
 
- * debian/changelog: fixed package name in changelog
+  * debian/control: add dependency: recode
 
- * debian/changelog, debian/compat, debian/control, debian/copyright,
- debian/docs, debian/rules, debian/source/format, debian/watchteleboy.dirs,
- debian/watchteleboy.install: added debian packaging directory and files
+  * watchteleboy: added CHANSELECTION var for channel selection based on
+  language code (available: all, de, en, fr, it)
 
- * DOCS/man/watchteleboy.1: finalized man page
+2011-09-04  Roman Haefeli <reduzent@gmail.com>
 
- * ChangeLog: added a ChangeLog file
+  * watchteleboy: get channel names and ids from teleboy and get rid of the
+  precompiled (manually edited) list
 
- * watchteleboy: renamed the variable CH to CHANNEL
+2011-09-03  Roman Haefeli <reduzent@gmail.com>
 
- * DOCS/man/watchteleboy.1: added man page
+  * some_notes.txt: added some notes to help me remember how certain things are
+  done
 
-  2011-06-12 Roman Haefeli <reduzent@gmail.com>
+  * watchteleboy: display only the parsed sender name also in interactive mode
 
- * watchteleboy: minor changes to --help output
+  * watchteleboy: fixed again regex for getting streamid in
+  compose_rtmp_command; Show only sendername parsed from data, not from channel
+  list
 
- * README: completed README
+2011-09-02  Roman Haefeli <reduzent@gmail.com>
 
- * LICENSE: added a LICENSE file
+  * watchteleboy: fixed ambivalent channel matching in compose_rtmp_command to
+  get stream ids, which lead to zdf not playing
 
-  2011-06-11 Roman Haefeli <reduzent@gmail.com>
+  * watchteleboy: added whole channel list (from 'all' button on the teleboy
+  web interface)
 
- * watchteleboy: improved credentials check
+  * watchteleboy: found a way to extract stream ids from webpage; added correct
+  ids for all german channels, make compose_rtmp_command use the real cid cid2,
+  so we get correct server IP for all channels
 
- * watchteleboy: create config file with user credentials on first run
+  * watchteleboy: Ok. now we got it basically working again, though we still
+  have to find a way to automatically find certain stream data. (Only ard is
+  currently working)
 
- * watchteleboy: added function  require_r_opt; optimized function
- chan_validity
+2011-06-22  pjw65 <pjw1965@gmail.com>
 
- * watchteleboy: added --endtime flag; cleaned up a little
+  * watchteleboy: some now channels: cnn, bbc1, bbc2, bbcworld, cnbc, itv1,
+  itv2, aljazeera
 
- * watchteleboy: added record support to the --channel option
+2011-06-14  Roman Haefeli <reduzent@gmail.com>
 
- * watchteleboy: added --duration option behaviour
+  * ChangeLog: updated changelog
 
- * watchteleboy: added '--record' to the crontab entry
+  * debian/rules: debian/rules: switched to short-form dh
 
- * watchteleboy: added --deleteme option
+2011-06-13  Roman Haefeli <reduzent@gmail.com>
 
- * watchteleboy: scheduling now in a functional state
+  * watchteleboy: added new channels: sf2_o, arte_o (original audio)
 
-  2011-06-10 Roman Haefeli <reduzent@gmail.com>
+  * watchteleboy: corrected version: removed unreleased tag
 
- * watchteleboy: worked some on scheduling options
+  * ChangeLog: updated ChangeLog
 
- * watchteleboy: completed help
+  * debian/changelog: fixed package name in changelog
 
- * watchteleboy: added a few command line arguments: -c | -h | -l | -v
+  * debian/changelog, debian/compat, debian/control, debian/copyright,
+  debian/docs, debian/rules, debian/source/format, debian/watchteleboy.dirs,
+  debian/watchteleboy.install: added debian packaging directory and files
 
- * teleboy-ply.sh: removed external player script
+  * DOCS/man/watchteleboy.1: finalized man page
 
- * watchteleboy: refactored some more
+  * ChangeLog: added a ChangeLog file
 
- * watchteleboy: refactored script; put rtmp command composing into a
- function; shortened while loop
+  * watchteleboy: renamed the variable CH to CHANNEL
 
- * watchteleboy: extract flashplayer URL from web page
+  * DOCS/man/watchteleboy.1: added man page
 
-  2011-06-09 Roman Haefeli <reduzent@gmail.com>
+2011-06-12  Roman Haefeli <reduzent@gmail.com>
 
- * watchteleboy: made interactive mode similar to old watchwilmaa script
+  * watchteleboy: minor changes to --help output
 
-  2011-06-08 Roman Haefeli <reduzent@gmail.com>
+  * README: completed README
 
- * TELEBOY.sh, watchteleboy: renamed to watchteleboy; removed some (hopefully
- unnecessary) cruft
+  * LICENSE: added a LICENSE file
 
- * TELEBOY.sh: worked a bit on it
+2011-06-11  Roman Haefeli <reduzent@gmail.com>
 
- * TELEBOY.sh: added more stations
+  * watchteleboy: improved credentials check
 
- * TELEBOY.sh: include configfile if exists
+  * watchteleboy: create config file with user credentials on first run
 
- * TELEBOY.sh, teleboy-ply.sh: added original script from alex
+  * watchteleboy: added function  require_r_opt; optimized function
+  chan_validity
 
- * README: added README
+  * watchteleboy: added --endtime flag; cleaned up a little
+
+  * watchteleboy: added record support to the --channel option
+
+  * watchteleboy: added --duration option behaviour
+
+  * watchteleboy: added '--record' to the crontab entry
+
+  * watchteleboy: added --deleteme option
+
+  * watchteleboy: scheduling now in a functional state
+
+2011-06-10  Roman Haefeli <reduzent@gmail.com>
+
+  * watchteleboy: worked some on scheduling options
+
+  * watchteleboy: completed help
+
+  * watchteleboy: added a few command line arguments: -c | -h | -l | -v
+
+  * teleboy-ply.sh: removed external player script
+
+  * watchteleboy: refactored some more
+
+  * watchteleboy: refactored script; put rtmp command composing into a
+  function; shortened while loop
+
+  * watchteleboy: extract flashplayer URL from web page
+
+2011-06-09  Roman Haefeli <reduzent@gmail.com>
+
+  * watchteleboy: made interactive mode similar to old watchwilmaa script
+
+2011-06-08  Roman Haefeli <reduzent@gmail.com>
+
+  * TELEBOY.sh, watchteleboy: renamed to watchteleboy; removed some (hopefully
+  unnecessary) cruft
+
+  * TELEBOY.sh: worked a bit on it
+
+  * TELEBOY.sh: added more stations
+
+  * TELEBOY.sh: include configfile if exists
+
+  * TELEBOY.sh, teleboy-ply.sh: added original script from alex
+
+  * README: added README
