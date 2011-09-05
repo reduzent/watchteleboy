@@ -157,7 +157,11 @@ fi
 # Create TMPDIR if required
 if  [ ! -d $TMPPATH ]
 then
-  mkdir -p $TMPPATH
+  if ! mkdir -p $TMPPATH
+  then
+    echo "Could not create directory: $TMPPATH"
+    exit 1
+  fi
 fi
 
 # get the session cookie
