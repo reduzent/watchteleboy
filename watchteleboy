@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -i
 ################################################
 # Bash script for watching/recording online TV 
 # streams from teleboy.ch without browser and 
@@ -139,6 +139,36 @@ MPLAYER SPECIFIC OPTIONS:
 EOF
   exit
 fi
+
+function table_format_list {
+  list="$1"
+  num=$(echo "$list" | wc -l)
+  longest=$(for i in $(echo $list); do echo $i | wc -c; done | sort -r -n | head -n 1)
+  let "colwidth = $longest + 1"
+  paddedlist=$(echo "$list" | sed -e :a -e "s/^.\{1,${colwidth}\}$/& /;ta")
+  let "cols = COLUMNS/colwidth-1"
+  let "rows = (num/cols)+(1&&(num/cols))"
+  let "remaind = num % cols"
+  function get_element {
+  # $1: index
+    if [ $1 -gt 0 ] && [ $1 -le $num ]
+    then
+      echo -n "$paddedlist" | head -n ${1} | tail -n1
+    else
+      echo -n ""
+    fi
+  }
+  for row in $(seq $rows)
+  do
+    rowcontent=""
+    for col in $(seq $cols)
+    do
+      let "index = ((row - 1) * cols) + col"
+      rowcontent="${rowcontent}$(get_element $index)"
+    done
+    echo "$rowcontent"
+  done
+}
 
 # Check record path validity
 if $record
@@ -326,8 +356,8 @@ function chan_selectah {
   while true
   do
     echo -e "\nAVAILABLE CHANNELS ($CHANSELECTION):"
-    echo "$CHANNELS" | cut -d " " -f 1 | tr "\n" " "
-    echo ""
+    chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
+    table_format_list "$chanlist"
     read -p "Select TV Channel: " -e SEL
     if [ -n "$SEL" ]
     then
