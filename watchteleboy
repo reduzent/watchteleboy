@@ -213,6 +213,16 @@ CHANNELS=$(paste -d' ' \
     ' | head -n $(echo "$channelids" | wc -l)) \
   <(echo "$channelids"))
 echo "done"
+CHANNELS="
+$(echo "$CHANNELS" | grep -iv euronews)
+arte_de 20 0
+sf1_o 159 0
+sfzwei_o 108 0
+EuroNews_de 216 0
+EuroNews_fr 158 0
+EuroNews_it 217 0
+EuroNews_en 45 0
+"
 
 # option -l|--list
 if $list
@@ -315,7 +325,7 @@ function chan_validity {
 function chan_selectah {
   while true
   do
-    echo -e "\nAVAILABLE CHANNELS:"
+    echo -e "\nAVAILABLE CHANNELS ($CHANSELECTION):"
     echo "$CHANNELS" | cut -d " " -f 1 | tr "\n" " "
     echo ""
     read -p "Select TV Channel: " -e SEL
