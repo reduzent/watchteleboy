@@ -17,3 +17,21 @@ Wie füge ich beide Listen zusammen und mache auch kurze/schreibbare Sendernamen
 
 
 paste -d' ' <(cat names.txt | tr '[A-Z]' '[a-z]' | sed -e 's/ //g') ids.txt
+
+
+
+Wie kriege ich die Länge des längsten Wortes einer Liste?
+
+for i in $(cat liste.txt); do echo $i | wc -c; done | sort -r -n | head -n 1
+
+Wieviele Spalten passen ins Terminal?
+
+echo $[($COLUMNS+2)/($longest+2)]
+
+Wieviele Zeilen werden beansprucht?
+
+echo $[(num/cols)+(1&&(num/cols))]
+
+Wie padde ich Strings (links)?
+
+cat liste2.txt | sed -e :a -e 's/^.\{1,15\}$/& /;ta'
