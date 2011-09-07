@@ -6,7 +6,7 @@
 # Maintainer: Ramón Cahenzli <rca@psy-q.ch> 
 pkgname=watchteleboy
 pkgver=1.2
-pkgrel=1
+pkgrel=2
 epoch=
 pkgdesc="Script to watch streams from teleboy.ch without browser/flash"
 arch=('any')
