@@ -32,8 +32,9 @@ package() {
   install -D -m 755 watchteleboy $pkgdir/usr/bin/watchteleboy
   install -d -m 755 $pkgdir/usr/share/man/man1/
   install -D -m 644 DOCS/man/watchteleboy.1 $pkgdir/usr/share/man/man1/
-  install -D -m 644 README $pkgdir/usr/share/doc/watchteleboy
-  install -D -m 644 LICENSE $pkgdir/usr/share/doc/watchteleboy
+  install -d -m 755 $pkgdir/usr/share/doc/watchteleboy
+  install -D -m 644 README $pkgdir/usr/share/doc/watchteleboy/
+  install -D -m 644 LICENSE $pkgdir/usr/share/doc/watchteleboy/
 }
 
 # vim:set ts=2 sw=2 et:
