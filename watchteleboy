@@ -488,12 +488,14 @@ function player_recorder {
   # 1: Channel
   compose_outfile $1
   compose_rtmp_command $1 $OUTFILE
+  touch ${TMPPATH}/streaming
   if $record
   then
     $RTMP &
     PID=$!
   else
     $RTMP | $MPLAYER 2> /dev/null
+    rm ${TMPPATH}/streaming
   fi
 }
 
@@ -537,6 +539,7 @@ then
   echo "Now recording $CHANNEL for $DURATION seconds."
   sleep $DURATION
   kill $PID
+  rm ${TMPPATH}/streaming
   echo "Stopped recording."
   exit 0
 fi
@@ -548,10 +551,11 @@ then
   then
     if $record
     then
-      player_recorder $CHANNEL
       echo "Now recording:"
+      player_recorder $CHANNEL
       wait_s_key
       kill $PID
+      rm ${TMPPATH}/streaming
       echo "Stopped recording."
       exit 0
     else
@@ -575,6 +579,7 @@ do
     echo "Now recording:"
     wait_s_key
     kill $PID
+    rm ${TMPPATH}/streaming
     echo "Stopped recording."
   else
     echo "Now playing:"
