@@ -386,7 +386,7 @@ function require_r_opt {
 }
 
 # option -t|--starttime
-crontempfile="/tmp/crontab.${USER}.watchteleboy"
+crontempfile="${TMPPATH}/crontab.tmp"
 if $starttime
 then
   require_r_opt "starttime"
