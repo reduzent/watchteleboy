@@ -15,7 +15,7 @@
 VERSION="1.2"
 
 # Set some default values
-TMPPATH=/tmp/watchteleboy
+TMPPATH=/tmp
 UAGENT='Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20100101 Firefox/5.0'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
@@ -61,6 +61,9 @@ else
   echo "PASS='$PASS'" >> $CONFIG
   echo "created config file $CONFIG"  
 fi
+
+# set working directory for keeping session data
+TMPPATH="${TMPPATH}/watchteleboy.${USER}"
 
 # Comandline argument parsing
 channel=false
