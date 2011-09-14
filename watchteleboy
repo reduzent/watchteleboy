@@ -210,6 +210,12 @@ COOKIE=$(wget -U "$UAGENT" \
   -O $TMPPATH/step1.html \
   $URL)
 
+# remove loggedin file on exit
+function cleanup {
+  rm -rf $TMPPATH
+  echo ""
+}
+
 # check if login was succesful
 cat $TMPPATH/step1.html | grep "Falsche Eingaben" > /dev/null || \
 cat $TMPPATH/step1.html | grep "<h1>Login f&uuml;r Member</h1>" > /dev/null
@@ -220,7 +226,9 @@ then
   echo "$CONFIG" 1>&2
   exit 1
 else
-  echo "ok" 
+  echo "ok"
+  touch $TMPPATH/loggedin
+  trap cleanup SIGINT
 fi
 
 # get the station / channel list
