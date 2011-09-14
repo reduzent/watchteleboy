@@ -8,11 +8,11 @@
 # Author:   Alexander Tuchacek
 # written:  2011-05-21
 # modified by: Roman Haefeli
-# modified on: 2011-08-02
-# program version  1.2
+# modified on: 2011-09-13
+# program version: (check below)
 ################################################
 
-VERSION="1.2"
+VERSION=1.3~unreleased
 
 # Set some default values
 TMPPATH=/tmp
