@@ -15,7 +15,7 @@
 VERSION=1.3~unreleased
 
 # Set some default values
-TMPPATH=/tmp
+TMPDIR=/tmp
 UAGENT='Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20100101 Firefox/5.0'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
@@ -49,7 +49,7 @@ else
     echo ""
     read -s -p "Confirm your password:       " PASS2
     echo "" 
-    if [ "$PASS" = "$PASS2" ]
+    if [ "$PASS" == "$PASS2" ]
     then
       break
     else
@@ -62,8 +62,34 @@ else
   echo "created config file $CONFIG"  
 fi
 
+# check availability of login
+# since teleboy.ch only allows you to stream one channel per session, 
+# we use a different login for each session (if available)
+userinc=1
+if [ -f $TMPDIR/watchteleboy.${USER}/loggedin ]
+then 
+  while true
+  do
+    ((userinc += 1))
+    uservar="USER${userinc}"
+    if [ -z "${!uservar}" ]
+    then
+      echo "No free login available. Exiting" 1>&2 
+      exit 1
+    fi
+    if ! [ -f $TMPDIR/watchteleboy.${!uservar}/loggedin ]
+    then
+      break # we found a login not yet in use
+    fi
+  done
+  # use login not yet in use
+  USER=${!uservar}
+  passvar="PASS${userinc}"
+  PASS=${!passvar}
+fi
+
 # set working directory for keeping session data
-TMPPATH="${TMPPATH}/watchteleboy.${USER}"
+TMPPATH="${TMPDIR}/watchteleboy.${USER}"
 
 # Comandline argument parsing
 channel=false
@@ -192,13 +218,13 @@ if  [ ! -d $TMPPATH ]
 then
   if ! mkdir -p $TMPPATH
   then
-    echo "Could not create directory: $TMPPATH"
+    echo "Could not create directory: $TMPPATH" 1>&2
     exit 1
   fi
 fi
 
 # get the session cookie
-echo -n "login..."
+echo -n "login (as '$USER')..."
 POST="login=${USER}&password=${PASS}&x=13&y=17&followup=%2Ftv%2Fplayer%2Fplayer.php"
 URL="http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php"
 COOKIE=$(wget -U "$UAGENT" \
