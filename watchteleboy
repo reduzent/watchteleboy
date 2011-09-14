@@ -65,6 +65,7 @@ fi
 # check availability of login
 # since teleboy.ch only allows you to stream one channel per session, 
 # we use a different login for each session (if available)
+# more users can be configured in CONFIG
 userinc=1
 if [ -f $TMPDIR/watchteleboy.${USER}/loggedin ]
 then 
@@ -285,6 +286,7 @@ CHANNELS="
 $(echo "$CHANNELS" | grep -iv euronews)
 SF1_o 159 0
 SFzwei_o 108 0
+Arte_fr 161 20
 EuroNews_de 216 0
 EuroNews_fr 158 0
 EuroNews_it 217 0
