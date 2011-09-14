@@ -74,7 +74,8 @@ then
     uservar="USER${userinc}"
     if [ -z "${!uservar}" ]
     then
-      echo "No free login available. Exiting" 1>&2 
+      echo "Available logins already in use. Exiting" 1>&2 
+      echo "You might want to configure more credentials in $CONFIG" 1>&2
       exit 1
     fi
     if ! [ -f $TMPDIR/watchteleboy.${!uservar}/loggedin ]
@@ -282,9 +283,8 @@ CHANNELS=$(paste -d' ' \
 echo "done"
 CHANNELS="
 $(echo "$CHANNELS" | grep -iv euronews)
-arte_de 20 0
-sf1_o 159 0
-sfzwei_o 108 0
+SF1_o 159 0
+SFzwei_o 108 0
 EuroNews_de 216 0
 EuroNews_fr 158 0
 EuroNews_it 217 0
