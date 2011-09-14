@@ -256,7 +256,7 @@ then
 else
   echo "ok"
   touch $TMPPATH/loggedin
-  trap cleanup SIGINT
+  trap cleanup INT TERM EXIT
 fi
 
 # get the station / channel list
