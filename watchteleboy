@@ -22,7 +22,7 @@ RECORDPATH=$(pwd)
 CHANSELECTION=all
 
 # Check dependencies
-programlist="rtmpdump mplayer wget grep cut crontab date recode"
+programlist="rtmpdump mplayer wget grep cut crontab date"
 for program in $programlist
 do
     if ! which $program > /dev/null
