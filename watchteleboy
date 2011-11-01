@@ -267,9 +267,9 @@ wget --user-agent "$UAGENT" \
     --quiet \
     --load-cookies <(echo "$COOKIE") \
     --post-data $POST \
-    --output-document $TMPPATH/step2.html \
+    --output-document $TMPPATH/step2.html.latin1 \
     $URL
-recode ISO-8859-1..UTF-8 $TMPPATH/step2.html
+iconv -f LATIN1 -t UTF-8 $TMPPATH/step2.html.latin1 > $TMPPATH/step2.html
 channelnames=$(grep -e " <img.*src=\"/img/station/.*/logo" $TMPPATH/step2.html | cut -d'"' -f8)
 channelids=$(grep "javascript:getLiveChannelData" $TMPPATH/step2.html | cut -d "(" -f 2 | cut -d ")" -f1 | sed -e 's/,//g')
 CHANNELS=$(paste -d' ' \
