@@ -1,3 +1,10 @@
+watchteleboy (1.4~natty~ppa0) natty; urgency=low
+
+  * replaced 'recode' by 'iconv' (from libc-bin) and removed
+    dependency on 'recode'
+
+ -- Roman Haefeli <reduzent@gmail.com>  Tue, 01 Nov 2011 16:34:22 +0100
+
 watchteleboy (1.3~lucid~ppa0) lucid; urgency=low
 
   * added some (hard-coded) channels, that are missing from the automatically
