@@ -1,4 +1,22 @@
+  2011-11-01 Roman Haefeli <reduzent@gmail.com>
+
+ * debian/changelog: new debian release 1.4
+
+ * watchteleboy: changed version to 1.4
+
+ * README: don't mention 'recode' as it is not used anymore
+
+ * arch/PKGBUILD: removed dependency on 'recode'
+
+ * debian/control: removed dependency on 'recode'
+
+ * watchteleboy: removed 'recode' dependency
+
+ * watchteleboy: replaced 'recode' command by 'iconv'
+
   2011-09-14 Roman Haefeli <reduzent@gmail.com>
+
+ * ChangeLog: updated ChangeLog
 
  * watchteleboy: extend cleanup trap also for EXIT and TERM signals
 
