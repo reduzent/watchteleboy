@@ -8,11 +8,11 @@
 # Author:   Alexander Tuchacek
 # written:  2011-05-21
 # modified by: Roman Haefeli
-# modified on: 2011-09-13
+# modified on: 2011-11-01
 # program version: (check below)
 ################################################
 
-VERSION=1.3
+VERSION=1.4
 
 # Set some default values
 TMPDIR=/tmp
