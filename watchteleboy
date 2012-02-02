@@ -231,23 +231,23 @@ URL="http://www.teleboy.ch/watchlist/"
 wget -U "$UAGENT" \
   --quiet \
   --referer http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php \
-  --save-cookies $TMPPATH/cookiejar0 \
+  --save-cookies $TMPPATH/cookie0 \
   --keep-session-cookies \
   -O $TMPPATH/step0.html \
   $URL
 
 POST="login=${USER}&password=${PASS}&x=3&y=4&keep_login=1&_target_path=http%3A%2F%2Fteleboy.ch%2F"
 URL="http://www.teleboy.ch/login_check"
-COOKIE=$(wget -U "$UAGENT" \
+wget -U "$UAGENT" \
   --quiet \
   --no-check-certificate \
   --referer http://www.teleboy.ch/ \
-  --load-cookies $TMPPATH/cookiejar0 \
-  --save-cookies /dev/stdout \
+  --load-cookies $TMPPATH/cookie0 \
+  --save-cookies $TMPPATH/cookie1 \
   --keep-session-cookies \
   --post-data $POST \
   -O $TMPPATH/step1.html \
-  $URL)
+  $URL
 
 # remove loggedin file on exit
 function cleanup {
@@ -276,7 +276,7 @@ POST="cmd=getStations&category=${CHANSELECTION}"
 URL="http://www.teleboy.ch/tv/player/includes/ajax.php"
 wget --user-agent "$UAGENT" \
     --quiet \
-    --load-cookies <(echo "$COOKIE") \
+    --load-cookies $TMPPATH/cookie1 \
     --post-data $POST \
     --output-document $TMPPATH/step2.html.latin1 \
     $URL
@@ -342,7 +342,7 @@ function compose_rtmp_command {
   STREAMINFO=$(wget -U "$UAGENT" \
     --quiet \
     --referer "${URLBASE}/player.php" \
-    --load-cookies <(echo "$COOKIE") \
+    --load-cookies $TMPPATH/cookie1 \
     --post-data $POST \
     --keep-session-cookies \
     --output-document /dev/stdout \
