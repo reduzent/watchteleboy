@@ -227,11 +227,22 @@ fi
 
 # get the session cookie
 echo -n "login (as '$USER')..."
-POST="login=${USER}&password=${PASS}&x=13&y=17&followup=%2Ftv%2Fplayer%2Fplayer.php"
-URL="http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php"
+URL="http://www.teleboy.ch/watchlist/"
+wget -U "$UAGENT" \
+  --quiet \
+  --referer http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php \
+  --save-cookies $TMPPATH/cookiejar0 \
+  --keep-session-cookies \
+  -O $TMPPATH/step0.html \
+  $URL
+
+POST="login=${USER}&password=${PASS}&x=3&y=4&keep_login=1&_target_path=http%3A%2F%2Fteleboy.ch%2F"
+URL="http://www.teleboy.ch/login_check"
 COOKIE=$(wget -U "$UAGENT" \
   --quiet \
   --no-check-certificate \
+  --referer http://www.teleboy.ch/ \
+  --load-cookies $TMPPATH/cookiejar0 \
   --save-cookies /dev/stdout \
   --keep-session-cookies \
   --post-data $POST \
@@ -240,7 +251,7 @@ COOKIE=$(wget -U "$UAGENT" \
 
 # remove loggedin file on exit
 function cleanup {
-  rm -rf $TMPPATH
+  #rm -rf $TMPPATH
   echo ""
 }
 
