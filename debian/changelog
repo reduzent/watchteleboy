@@ -2,6 +2,7 @@ watchteleboy (1.5~natty~ppa0) natty; urgency=low
 
   * fixed login mechanism (broke due to website updates)
     kudos to alex for reverse-engineering the new login mechanism
+  * improved detection for successful login
   * play from file instead of pipe
   * added BUFFER variable to set minimum file size before playing
 
