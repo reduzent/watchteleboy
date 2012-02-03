@@ -1,3 +1,12 @@
+watchteleboy (1.5~natty~ppa0) natty; urgency=low
+
+  * fixed login mechanism (broke due to website updates)
+    kudos to alex for reverse-engineering the new login mechanism
+  * play from file instead of pipe
+  * added BUFFER variable to set minimum file size before playing
+
+ -- Roman Haefeli <reduzent@gmail.com>  Fri, 03 Feb 2012 15:05:23 +0100
+
 watchteleboy (1.4~natty~ppa0) natty; urgency=low
 
   * replaced 'recode' by 'iconv' (from libc-bin) and removed
