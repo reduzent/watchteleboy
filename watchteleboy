@@ -23,7 +23,7 @@ CHANSELECTION=all
 BUFFER=500000
 
 # Check dependencies
-programlist="rtmpdump mplayer wget grep cut crontab date"
+programlist="rtmpdump mplayer wget grep cut crontab date iconv"
 for program in $programlist
 do
     if ! which $program > /dev/null
