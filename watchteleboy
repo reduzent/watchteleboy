@@ -230,7 +230,6 @@ echo -n "login (as '$USER')..."
 URL="http://www.teleboy.ch/watchlist/"
 wget -U "$UAGENT" \
   --quiet \
-  --referer http://www.teleboy.ch/layer/rectv/free_live_tv.inc.php \
   --save-cookies $TMPPATH/cookie0 \
   --keep-session-cookies \
   -O $TMPPATH/step0.html \
@@ -241,10 +240,10 @@ URL="http://www.teleboy.ch/login_check"
 wget -U "$UAGENT" \
   --quiet \
   --no-check-certificate \
-  --referer http://www.teleboy.ch/ \
   --load-cookies $TMPPATH/cookie0 \
   --save-cookies $TMPPATH/cookie1 \
   --keep-session-cookies \
+  --save-headers \
   --post-data $POST \
   -O $TMPPATH/step1.html \
   $URL
@@ -255,10 +254,10 @@ function cleanup {
   echo ""
 }
 
-# check if login was succesful
-cat $TMPPATH/step1.html | grep "Falsche Eingaben" > /dev/null || \
-cat $TMPPATH/step1.html | grep "<h1>Login f&uuml;r Member</h1>" > /dev/null
-if [ $? -eq 0 ]
+# check if login was successfull
+head -n 12 $TMPPATH/step1.html | \
+  grep "^Set-Cookie: cinergy_s" > /dev/null
+if [ $? -eq 1 ]
 then
   echo "failed!!!!" 1>&2
   echo "Please check your credentials in the config file:" 1>&2
