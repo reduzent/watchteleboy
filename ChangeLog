@@ -1,4 +1,24 @@
+  2012-02-03 Roman Haefeli <reduzent@gmail.com>
+
+ * debian/changelog: updated debian/changelog
+
+ * watchteleboy: added check for iconv
+
+ * watchteleboy: update version to 1.5
+
+ * watchteleboy: download to file and play from file; added BUFFER var
+
+ * watchteleboy: improve successful-login detection
+
+  2012-02-02 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: put cookies into file
+
+ * watchteleboy: fixed login (with Alex' help)
+
   2011-11-01 Roman Haefeli <reduzent@gmail.com>
+
+ * ChangeLog: updated ChangeLog
 
  * debian/changelog: new debian release 1.4
 
