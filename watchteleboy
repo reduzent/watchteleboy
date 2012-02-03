@@ -20,6 +20,7 @@ UAGENT='Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20100101 Firefox/5.0'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
 CHANSELECTION=all
+BUFFER=500000
 
 # Check dependencies
 programlist="rtmpdump mplayer wget grep cut crontab date"
@@ -250,7 +251,7 @@ wget -U "$UAGENT" \
 
 # remove loggedin file on exit
 function cleanup {
-  #rm -rf $TMPPATH
+  rm -rf $TMPPATH
   echo ""
 }
 
@@ -510,7 +511,7 @@ then
 fi
 
 # Compose mplayer command
-MPLAYER="mplayer $MPLAYEROPTS - "
+MPLAYER="mplayer $MPLAYEROPTS "
 
 # Compose rmtpdump output filename
 function compose_outfile {
@@ -539,7 +540,15 @@ function player_recorder {
     $RTMP &
     PID=$!
   else
-    $RTMP | $MPLAYER 2> /dev/null
+    $RTMP > $TMPPATH/stream.flv &
+    PID=$!
+    # Only start mplayer after having downloaded BUFFER bytes
+    while [  "$(stat -c %s $TMPPATH/stream.flv)" -lt "$BUFFER" ]
+    do
+      sleep 0.1
+    done
+    $MPLAYER $TMPPATH/stream.flv 2> /dev/null
+    kill $PID
   fi
 }
 
