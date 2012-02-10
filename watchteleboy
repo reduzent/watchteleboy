@@ -256,8 +256,7 @@ function cleanup {
 }
 
 # check if login was successfull
-head -n 12 $TMPPATH/step1.html | \
-  grep "^Set-Cookie: cinergy_s" > /dev/null
+grep "Logout" $TMPPATH/step1.html  > /dev/null
 if [ $? -eq 1 ]
 then
   echo "failed!!!!" 1>&2
