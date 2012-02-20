@@ -1,3 +1,10 @@
+watchteleboy (1.6~natty~ppa0) natty; urgency=low
+
+  * fixed login detection (broke because of HTTP header changes)
+  * added new switch '--skip-logincheck'
+
+ -- Roman Haefeli <reduzent@gmail.com>  Mon, 20 Feb 2012 14:53:13 +0100
+
 watchteleboy (1.5~natty~ppa0) natty; urgency=low
 
   * fixed login mechanism (broke due to website updates)
