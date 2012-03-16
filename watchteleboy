@@ -102,7 +102,6 @@ duration=false
 endtime=false
 help=false
 list=false
-[ "$MENU" = "yes" ] && menu=true || menu=false
 path=false
 record=false
 showname=false
@@ -117,9 +116,8 @@ do
     -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
     -h|--help) help=true;;
     -l|--list) list=true;;
-    -m|--menu) menu=true;;
     -n|--showname) showname=true; SHOWNAME="$2"; shift;;
-    -o|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
+    -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
     -p|--path) path=true; RECORDPATH="$2"; shift;;
     -r|--record) record=true;;
     -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
@@ -158,7 +156,6 @@ GENERAL OPTIONS:
   -c|--channel CHANNEL    specify a channel
   -h|--help               show this help and exit
   -l|--list               print a list of all channels and exit
-  -m|--menu               choose channels from dialog menu
   --skip-logincheck       do not test if login was successfull
   -v|--version            print the version of this program
 
@@ -173,41 +170,11 @@ OPTIONS FOR RECORDING (require -r|--record):
 
 MPLAYER SPECIFIC OPTIONS:
 
-  -o|--mplayer-opts OPTS  pass options to mplayer
+  -m|--mplayer-opts OPTS  pass options to mplayer
 
 EOF
   exit
 fi
-
-function table_format_list {
-  list="$1"
-  num=$(echo "$list" | wc -l)
-  longest=$(for i in $(echo $list); do echo $i | wc -c; done | sort -r -n | head -n 1)
-  let "colwidth = $longest + 1"
-  paddedlist=$(echo "$list" | sed -e :a -e "s/^.\{1,${colwidth}\}$/& /;ta")
-  let "cols = COLUMNS/colwidth-1"
-  let "rows = (num/cols)+(1&&(num/cols))"
-  let "remaind = num % cols"
-  function get_element {
-  # $1: index
-    if [ $1 -gt 0 ] && [ $1 -le $num ]
-    then
-      echo -n "$paddedlist" | head -n ${1} | tail -n1
-    else
-      echo -n ""
-    fi
-  }
-  for row in $(seq $rows)
-  do
-    rowcontent=""
-    for col in $(seq $cols)
-    do
-      let "index = ((row - 1) * cols) + col"
-      rowcontent="${rowcontent}$(get_element $index)"
-    done
-    echo "$rowcontent"
-  done
-}
 
 # Check record path validity
 if $record
@@ -418,46 +385,30 @@ function chan_selectah {
   while true
   do
     chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
-    if $menu
+    eval `resize`
+    wpsetdefault=""
+    [ "$CHANNEL" != "" ] \
+      && wpsetdefault="--default-item $CHANNEL" \
+      || wpsetdefault=""
+    unset whiptail_opts; i=0
+    for i in $(echo $chanlist); 
+    do 
+      whiptail_opts+=("$i")
+      whiptail_opts+=("Play channel $i")
+    done
+    CHANNEL=$(whiptail $wpsetdefault \
+      --title "watchteleboy $VERSION" \
+      --ok-button Play \
+      --cancel-button Quit \
+      --menu "Choose a channel:" \
+      $LINES $COLUMNS $(( $LINES - 8 )) \
+      "${whiptail_opts[@]}" 3>&2 2>&1 1>&3 )
+    if [[ $CHANNEL == "" ]]
     then
-      eval `resize`
-      wpsetdefault=""
-      if [ "$CHANNEL" != "" ]
-      then
-        wpsetdefault="--default-item $CHANNEL"
-      fi
-      unset whiptail_opts; i=0
-      for i in $(echo $chanlist); 
-      do 
-        whiptail_opts+=("$i")
-        whiptail_opts+=("Play channel $i")
-      done
-      CHANNEL=$(whiptail $wpsetdefault \
-          --title "watchteleboy $VERSION" \
-          --ok-button Play \
-          --cancel-button Quit \
-          --menu "Choose a channel:" \
-          $LINES $COLUMNS $(( $LINES - 8 )) \
-          "${whiptail_opts[@]}" 3>&2 2>&1 1>&3 )
-      if [[ $CHANNEL == "" ]]
-      then
-        exit 0;
-      fi
-      echo "changing channel to $CHANNEL"
-      break
+      exit 0;
     fi
-    echo -e "\nAVAILABLE CHANNELS ($CHANSELECTION):"
-    chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
-    table_format_list "$chanlist"
-    read -p "Select TV Channel: " -e SEL
-    if [ -n "$SEL" ]
-    then
-      echo $CHANNELS | grep -i $SEL > /dev/null && \
-        CHANNEL="$SEL" && \
-        break
-      echo "Channel '$SEL' is not available..." 
-      sleep 1
-    fi
+    echo "changing channel to $CHANNEL"
+    break
   done 
 }
 
