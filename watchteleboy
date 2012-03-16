@@ -346,6 +346,7 @@ function compose_rtmp_command {
   # ARGS:
   # 1: channel
   # 2: output file
+  [ -d $TMPPATH ] || exit 1
   cid=$(echo "$CHANNELS" | grep -i "^${1} " | cut -d" " -f2)
   cid2=$(echo "$CHANNELS" | grep -i "^${1} " | cut -d" " -f3)
   URLBASE="http://www.teleboy.ch/tv/player"
