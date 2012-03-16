@@ -23,7 +23,7 @@ CHANSELECTION=all
 BUFFER=500000
 
 # Check dependencies
-programlist="rtmpdump mplayer wget grep cut crontab date iconv"
+programlist="rtmpdump mplayer wget grep cut crontab date iconv whiptail"
 for program in $programlist
 do
     if ! which $program > /dev/null
@@ -33,16 +33,6 @@ do
         exit 1
     fi
 done
-
-if $menu
-then
-    if ! which whiptail > /dev/null
-    then
-        echo "ERROR:" 1>&2
-        echo "You want to use the dialog menu. Could not find whiptail. Is it installed?" 1>&2
-        exit 1
-    fi
-fi
 
 
 # Read config (overrides default values) or create it
