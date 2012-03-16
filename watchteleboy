@@ -34,6 +34,17 @@ do
     fi
 done
 
+if $menu
+then
+    if ! which whiptail > /dev/null
+    then
+        echo "ERROR:" 1>&2
+        echo "You want to use the dialog menu. Could not find whiptail. Is it installed?" 1>&2
+        exit 1
+    fi
+fi
+
+
 # Read config (overrides default values) or create it
 CONFIG=~/.watchteleboyrc
 if [ -f $CONFIG ]
@@ -101,6 +112,7 @@ duration=false
 endtime=false
 help=false
 list=false
+menu=false
 path=false
 record=false
 showname=false
@@ -115,6 +127,7 @@ do
     -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
     -h|--help) help=true;;
     -l|--list) list=true;;
+    -m|--menu) menu=true;;
     -n|--showname) showname=true; SHOWNAME="$2"; shift;;
     -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
     -p|--path) path=true; RECORDPATH="$2"; shift;;
@@ -155,6 +168,7 @@ GENERAL OPTIONS:
   -c|--channel CHANNEL    specify a channel
   -h|--help               show this help and exit
   -l|--list               print a list of all channels and exit
+  -m|--menu               choose channels from dialog menu
   --skip-logincheck       do not test if login was successfull
   -v|--version            print the version of this program
 
@@ -412,6 +426,31 @@ function chan_validity {
 function chan_selectah {
   while true
   do
+  chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
+  if $menu
+  then
+        eval `resize`
+        whiptail_opts=""
+        for i in $(echo $chanlist); 
+        do 
+            whiptail_opts="$whiptail_opts \"$i\" \"Play channel $i\"  " 
+        done
+        WHIPTAIL="whiptail --title \"watchteleboy $VERSION\" --menu \"Choose a channel\" $LINES $COLUMNS $(( $LINES - 8 ))  $(echo $whiptail_opts) "
+        echo $WHIPTAIL > $TMPPATH/menu.sh
+        CHANNEL=$(bash $TMPPATH/menu.sh 3>&2 2>&1 1>&3)
+        if [[ $CHANNEL == "" ]]
+        then
+            exit 0;
+        fi
+        echo "changing channel to $CHANNEL"
+        break
+  fi
+
+  
+
+
+
+
     echo -e "\nAVAILABLE CHANNELS ($CHANSELECTION):"
     chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
     table_format_list "$chanlist"
