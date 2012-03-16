@@ -420,14 +420,24 @@ function chan_selectah {
     if $menu
     then
       eval `resize`
-      whiptail_opts=""
+      wpsetdefault=""
+      if [ "$CHANNEL" != "" ]
+      then
+        wpsetdefault="--default-item $CHANNEL"
+      fi
+      unset whiptail_opts; i=0
       for i in $(echo $chanlist); 
       do 
-        whiptail_opts="$whiptail_opts \"$i\" \"Play channel $i\"  " 
+        whiptail_opts+=("$i")
+        whiptail_opts+=("Play channel $i")
       done
-      WHIPTAIL="whiptail --title \"watchteleboy $VERSION\" --menu \"Choose a channel:\" $LINES $COLUMNS $(( $LINES - 8 ))  $(echo $whiptail_opts) "
-      echo $WHIPTAIL > $TMPPATH/menu.sh
-      CHANNEL=$(bash $TMPPATH/menu.sh 3>&2 2>&1 1>&3)
+      CHANNEL=$(whiptail $wpsetdefault \
+          --title "watchteleboy $VERSION" \
+          --ok-button Play \
+          --cancel-button Quit \
+          --menu "Choose a channel:" \
+          $LINES $COLUMNS $(( $LINES - 8 )) \
+          "${whiptail_opts[@]}" 3>&2 2>&1 1>&3 )
       if [[ $CHANNEL == "" ]]
       then
         exit 0;
