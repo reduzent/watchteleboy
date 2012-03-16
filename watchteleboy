@@ -119,7 +119,7 @@ do
     -l|--list) list=true;;
     -m|--menu) menu=true;;
     -n|--showname) showname=true; SHOWNAME="$2"; shift;;
-    -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
+    -o|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
     -p|--path) path=true; RECORDPATH="$2"; shift;;
     -r|--record) record=true;;
     -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
