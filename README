@@ -13,8 +13,9 @@ FROM TELEBOY.CH IS ONLY AVAILABLE TO SWISS IP ADDRESSES.
 
 see: http://github.com/reduzent/watchteleboy
 
-Copyright: Roman Haefeli, 2011
+Copyright: Roman Haefeli, 2011 - 2012
            Alexander Tuchacek, 2011
+           Doma Smoljo, 2012
 
 License:   GPL-2 
 
@@ -38,6 +39,8 @@ This script is based on the following binary programs:
 
      o date
 
+     o whiptail
+
 
 Usage
 -----
@@ -49,8 +52,9 @@ options. When invoked without options it starts in interactive mode.
 Bugs
 ----
 
-There aren't any known or outstanding bugs. If you find some or if you have
-a feature request, post them to the author:
+  * Sometimes in live watching mode, streaming is suddenly terminated
+
+If you find some or if you have a feature request, post them to the author:
 Roman Haefeli <reduzent@gmail>
 
 
