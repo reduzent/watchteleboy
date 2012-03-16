@@ -401,7 +401,7 @@ function chan_selectah {
       --ok-button Play \
       --cancel-button Quit \
       --menu "Choose a channel:" \
-      $LINES $COLUMNS $(( $LINES - 8 )) \
+      $(( $LINES -2 )) $(( $COLUMNS -2 )) $(( $LINES - 10 )) \
       "${whiptail_opts[@]}" 3>&2 2>&1 1>&3 )
     if [[ $CHANNEL == "" ]]
     then
