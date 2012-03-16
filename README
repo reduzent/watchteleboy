@@ -52,7 +52,10 @@ options. When invoked without options it starts in interactive mode.
 Bugs
 ----
 
-  * Sometimes in live watching mode, streaming is suddenly terminated
+  * Sometimes in live watching mode, streaming is suddenly terminated.
+  
+  * When hitting 'Ctrl-C' at the 'wrong' moment, the script doesn't exit
+    cleanly or even is trapped in an end-less loop.
 
 If you find some or if you have a feature request, post them to the author:
 Roman Haefeli <reduzent@gmail>
