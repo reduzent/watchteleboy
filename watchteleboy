@@ -102,7 +102,7 @@ duration=false
 endtime=false
 help=false
 list=false
-menu=false
+[ "$MENU" = "yes" ] && menu=true || menu=false
 path=false
 record=false
 showname=false
