@@ -380,12 +380,23 @@ function chan_validity {
   fi
 }
 
+# interface appearance
+function set_ui_window_params {
+  # ARGS:
+  # 1: border size
+  eval `resize`
+  BOXWIDTH=$(( $LINES - 2 * $1 ))
+  BOXHEIGHT=$(( $COLUMNS - 2 * $1 ))
+  CONTENTHEIGHT=$(( $LINES - 2 * $1 - 8 ))
+  TITLE="watchteleboy $VERSION"
+  BUTTONLABEL=$( $record && echo "Record" || echo "Play" )
+}
+
 # channel selector
 function chan_selectah {
   while true
   do
     chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
-    eval `resize`
     wpsetdefault=""
     [ "$CHANNEL" != "" ] \
       && wpsetdefault="--default-item $CHANNEL" \
@@ -396,17 +407,15 @@ function chan_selectah {
       whiptail_opts+=("$i")
       whiptail_opts+=("Play channel $i")
     done
+    set_ui_window_params 2
     CHANNEL=$(whiptail $wpsetdefault \
-      --title "watchteleboy $VERSION" \
-      --ok-button Play \
+      --title "$TITLE" \
+      --ok-button "$BUTTONLABEL" \
       --cancel-button Quit \
       --menu "Choose a channel:" \
-      $(( $LINES -2 )) $(( $COLUMNS -2 )) $(( $LINES - 10 )) \
+      $BOXWIDTH $BOXHEIGHT $CONTENTHEIGHT \
       "${whiptail_opts[@]}" 3>&2 2>&1 1>&3 )
-    if [[ $CHANNEL == "" ]]
-    then
-      exit 0;
-    fi
+    [ "$?" != "0" ] && exit 0;
     echo "changing channel to $CHANNEL"
     break
   done 
