@@ -427,7 +427,7 @@ function starttime_dialog {
     set_ui_window_params 2
     STARTTIME=$(whiptail \
       --title "$TITLE" \
-      --inputbox "Enter start time:" \
+      --inputbox "\nStart recording at:" \
       $BOXWIDTH $BOXHEIGHT "$(date --rfc-3339=date) 20:15" \
       3>&2 2>&1 1>&3 )
     [ "$?" != "0" ] && exit 0;
@@ -436,14 +436,43 @@ function starttime_dialog {
       if [ $(date -d "$STARTTIME" +%s) -lt $(date +%s) ]
       then
         whiptail --title "$TITLE" --msgbox \
-          " The specified time: \n\n    ${STARTTIME}\n\nis already over." \
+          " The specified time:\n\n    ${STARTTIME}\n\nis already over." \
           $BOXWIDTH $BOXHEIGHT
       else
         break
       fi
     else
       whiptail --title "$TITLE" --msgbox \
-        " The specified time: \n\n    ${STARTTIME}\n\ncould not be parsed." \
+        " The specified time:\n\n    ${STARTTIME}\n\ncould not be parsed." \
+        $BOXWIDTH $BOXHEIGHT
+    fi
+  done
+}
+
+function endtime_dialog {
+  while true
+  do
+    set_ui_window_params 2
+    endtimeinit=$(( $(date -d "$STARTTIME" +%s) + 3600 ))
+    ENDTIME=$(whiptail \
+      --title "$TITLE" \
+      --inputbox "\nStop recording at:" \
+      $BOXWIDTH $BOXHEIGHT "$(date -d @${endtimeinit} '+%Y-%m-%d %H:%M')" \
+      3>&2 2>&1 1>&3 )
+    [ "$?" != "0" ] && exit 0;
+    if date -d "$ENDTIME" > /dev/null 2>&1
+    then
+      if [ $(date -d "$ENDTIME" +%s) -lt $(date -d "$STARTTIME" +%s) ]
+      then
+        whiptail --title "$TITLE" --msgbox \
+          " The specified time:\n\n    ${ENDTIME}\n\nis before start time ($STARTTIME)." \
+          $BOXWIDTH $BOXHEIGHT
+      else
+        break
+      fi
+    else
+      whiptail --title "$TITLE" --msgbox \
+        " The specified time:\n\n    ${ENDTIME}\n\ncould not be parsed." \
         $BOXWIDTH $BOXHEIGHT
     fi
   done
