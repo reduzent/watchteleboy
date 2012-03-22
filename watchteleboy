@@ -433,8 +433,23 @@ function require_r_opt {
   fi
 }
 
+# schedule a recording into crontab
+function write_to_crontab {
+  # when using this function make sure that
+  # the necessary vars are set
+  # mandatory: CHANNEL, STARTTIME, DURATION
+  crontempfile="${TMPPATH}/crontab.tmp"
+  crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
+  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t${0} --record " >> $crontempfile
+  echo -ne "--channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
+  echo -ne "--deleteme ${RANDOM}${RANDOM} " >> $crontempfile
+  $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
+  echo -ne "--path ${RECORDPATH}\n" >> $crontempfile
+  crontab < $crontempfile
+  rm $crontempfile
+}
+
 # option -t|--starttime
-crontempfile="${TMPPATH}/crontab.tmp"
 if $starttime
 then
   require_r_opt "starttime"
@@ -485,15 +500,8 @@ then
     then
       echo "Cancelled by user. Quit." 1>&2
       exit 1
-    fi
-    crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
-    echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t${0} --record " >> $crontempfile
-    echo -ne "--channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
-    echo -ne "--deleteme ${RANDOM}${RANDOM} " >> $crontempfile
-    $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
-    echo -ne "--path ${RECORDPATH}\n" >> $crontempfile
-    crontab < $crontempfile
-    rm $crontempfile
+    fi 
+    write_to_crontab
     echo "Done."
     exit 0
   else 
