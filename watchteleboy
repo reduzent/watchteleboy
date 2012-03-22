@@ -363,7 +363,7 @@ function compose_rtmp_command {
 }
 
 # test channel input validity
-function chan_validity {
+function channel_validity {
   # ARGS:
   # 1: channel
   if [ -z "$CHANNEL" ]
@@ -393,7 +393,7 @@ function set_ui_window_params {
 }
 
 # channel selector
-function chan_selectah {
+function gui_channel_selector {
   while true
   do
     chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
@@ -421,6 +421,7 @@ function chan_selectah {
   done 
 }
 
+# record option check
 function require_r_opt {
   # ARGS:
   # 1: option name
@@ -440,7 +441,7 @@ function write_to_crontab {
   # mandatory: CHANNEL, STARTTIME, DURATION
   crontempfile="${TMPPATH}/crontab.tmp"
   crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
-  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t${0} --record " >> $crontempfile
+  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename ${0}) --record " >> $crontempfile
   echo -ne "--channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
   echo -ne "--deleteme ${RANDOM}${RANDOM} " >> $crontempfile
   $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
@@ -482,7 +483,7 @@ then
     fi
     if $channel
     then
-      chan_validity $CHANNEL || exit 1
+      channel_validity $CHANNEL || exit 1
     else
       echo "You need to specify a channel with '--channel'" 1>&2
       exit 1
@@ -596,7 +597,7 @@ then
     echo "The specified duration '$DURATION' is not a number." 1>&2
     exit 1
   fi
-  chan_validity $CHANNEL || exit 1
+  channel_validity $CHANNEL || exit 1
   player_recorder $CHANNEL
   echo "Now recording $CHANNEL for $DURATION seconds."
   sleep $DURATION
@@ -608,7 +609,7 @@ fi
 # option -c|--channel
 if $channel
 then
-  if chan_validity $CHANNEL
+  if channel_validity $CHANNEL
   then
     if $record
     then
@@ -632,7 +633,7 @@ fi
 # Loop for interactive mode
 while true
 do
-  chan_selectah
+  gui_channel_selector
   if $record
   then
     player_recorder $CHANNEL
