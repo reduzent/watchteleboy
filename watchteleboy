@@ -773,7 +773,7 @@ do
         recordpath_dialog
         confirm_dialog && break
       done
-      DURATION=$(( $(date -d "$ENDTIME" +%s) - $(date -d "$TARTTIME" +%s) ))
+      DURATION=$(( $(date -d "$ENDTIME" +%s) - $(date -d "$STARTTIME" +%s) ))
       write_to_crontab
       set_ui_window_params 2
       whiptail --title "$TITLE" --msgbox \
