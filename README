@@ -14,8 +14,8 @@ FROM TELEBOY.CH IS ONLY AVAILABLE TO SWISS IP ADDRESSES.
 see: http://github.com/reduzent/watchteleboy
 
 Copyright: Roman Haefeli, 2011 - 2012
-           Alexander Tuchacek, 2011
            Doma Smoljo, 2012
+           Alexander Tuchacek, 2011
 
 License:   GPL-2 
 
@@ -54,9 +54,6 @@ Bugs
 
   * Sometimes in live watching mode, streaming is suddenly terminated.
   
-  * When hitting 'Ctrl-C' at the 'wrong' moment, the script doesn't exit
-    cleanly or even is trapped in an end-less loop.
-
 If you find some or if you have a feature request, post them to the author:
 Roman Haefeli <reduzent@gmail>
 
