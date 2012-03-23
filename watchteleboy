@@ -759,19 +759,40 @@ fi
 # Loop for interactive mode
 while true
 do
-  channel_dialog
   if $record
   then
-    player_recorder $CHANNEL
-    echo "Now recording:"
-    wait_s_key
-    kill $PID
-    echo "Stopped recording."
+    if ifschedule_dialog
+    then
+      while true
+      do
+        channel_dialog
+        starttime_dialog
+        endtime_dialog
+        showname_dialog
+        recordpath_dialog
+        confirm_dialog && break
+      done
+      DURATION=$(( $(date -d "$ENDTIME" +%s) - $(date -d "$TARTTIME" +%s) ))
+      write_to_crontab
+      set_ui_window_params 2
+      whiptail --title "$TITLE" --msgbox \
+        " Done.\n(added entry to crontab)" \
+        $BOXWIDTH $BOXHEIGHT
+      exit 0
+    else
+      channel_dialog
+      player_recorder $CHANNEL
+      echo "Now recording:"
+      wait_s_key
+      kill $PID
+      echo "Stopped recording."
+      exit 0
+    fi
   else
+    channel_dialog
     echo "Now playing:"
     player_recorder $CHANNEL
   fi
 done
 
 exit 0
-
