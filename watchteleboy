@@ -531,6 +531,22 @@ function recordpath_dialog {
   done
 }
 
+function confirm_dialog {
+  set_ui_window_params 2
+  answer=$(whiptail --title "$TITLE" --yesno \
+    "Scheduled for recording:
+
+Start time:    $(date -d "${STARTTIME}" "+%a, %F %H:%M")
+End time:      $(date -d "${ENDTIME}" "+%a, %F %H:%M")
+Channel:       ${CHANNEL}
+Show:          ${SHOWNAME}
+Directory:     ${RECORDPATH}
+
+Are those settings correct?" \
+          $BOXWIDTH $BOXHEIGHT 3>&2 2>&1 1>&3 )
+  return $answer
+}
+
 # record option check
 function require_r_opt {
   # ARGS:
