@@ -478,19 +478,17 @@ function endtime_dialog {
   done
 }
 
-function task_dialog {
+function ifschedule_dialog {
   set_ui_window_params 2
   answer=$(whiptail \
     --title "$TITLE" \
     --menu "What do you want to do?" \
     $BOXWIDTH $BOXHEIGHT $CONTENTHEIGHT \
-    "1)" "Record now" "2)" "Schedule a recording" \
+    "1)" "Start recording immediately" "2)" "Schedule a recording" \
     3>&2 2>&1 1>&3 )
   [ "$?" != "0" ] && exit 0;
+  [ "$answer" = "2)" ] && return 0 || return 1
 }
-
-task_dialog
-exit 0
 
 # record option check
 function require_r_opt {
