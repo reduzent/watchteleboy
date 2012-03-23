@@ -4,15 +4,16 @@
 # streams from teleboy.ch without browser and 
 # =no f*** flash=.
 #
-# License:  GNU GPL v2
-# Author:   Alexander Tuchacek
-# written:  2011-05-21
-# modified by: Roman Haefeli
-# modified on: 2011-11-01
+# License:  GnuGPL v2
+# Authors:   
+#   2011-2012   Roman Haefeli
+#   2012        Doma Smoljo
+#   2011        Alexander Tuchacek  
+# last modified: 2012-03-23 by Roman Haefeli
 # program version: (check below)
 ################################################
 
-VERSION=1.6
+VERSION=1.7
 
 # Set some default values
 TMPDIR=/tmp
@@ -136,7 +137,10 @@ done
 if $version
 then
   echo "watchteleboy $VERSION"
-  echo "written by Alexander Tuchacek & Roman Haefeli"
+  echo "Authors:   
+  2011-2012   Roman Haefeli
+  2012        Doma Smoljo
+  2011        Alexander Tuchacek"
   echo "Licensed under the GNU Public License 2.0 (GPL-2)"
   exit
 fi
