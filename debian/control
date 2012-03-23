@@ -1,7 +1,7 @@
 Source: watchteleboy
 Priority: optional
 Maintainer: Roman Haefeli <reduzent@gmail.com>
-Build-Depends: debhelper (>= 7)
+Build-Depends: debhelper (>= 7.0.50~)
 Standards-Version: 3.8.4
 Section: misc
 Homepage: http://github.com/reduzent/watchteleboy
