@@ -561,15 +561,16 @@ function require_r_opt {
 }
 
 # schedule a recording into crontab
+crontempfile="${TMPPATH}/crontab.tmp"
 function write_to_crontab {
   # when using this function make sure that
   # the necessary vars are set
   # mandatory: CHANNEL, STARTTIME, DURATION
-  crontempfile="${TMPPATH}/crontab.tmp"
+  DELETEME=${RANDOM}${RANDOM}
   crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
   echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename ${0}) --record " >> $crontempfile
   echo -ne "--channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
-  echo -ne "--deleteme ${RANDOM}${RANDOM} " >> $crontempfile
+  echo -ne "--deleteme ${DELETEME} " >> $crontempfile
   $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
   echo -ne "--path ${RECORDPATH}\n" >> $crontempfile
   crontab < $crontempfile
@@ -776,7 +777,8 @@ do
       write_to_crontab
       set_ui_window_params 2
       whiptail --title "$TITLE" --msgbox \
-        " Done.\n(added entry to crontab)" \
+        " Successfully added crontab entry:\n\n
+$(crontab -l | grep $DELETEME)" \
         $BOXWIDTH $BOXHEIGHT
       exit 0
     else
