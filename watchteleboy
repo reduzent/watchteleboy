@@ -505,6 +505,32 @@ function showname_dialog {
   done
 }
 
+function recordpath_dialog {
+  while true
+  do
+    set_ui_window_params 2
+    RECORDPATH=$(whiptail \
+      --title "$TITLE" \
+      --inputbox "\nSpecify a directory to save the recording:" \
+      $BOXWIDTH $BOXHEIGHT "$RECORDPATH" \
+      3>&2 2>&1 1>&3 )
+    [ "$?" != "0" ] && exit 0;
+    if [ ! -d "$RECORDPATH" ] 
+    then
+      whiptail --title "$TITLE" --msgbox \
+        " The specified directory:\n\n    ${RECORDPATH}\n\ndoes not exist." \
+        $BOXWIDTH $BOXHEIGHT
+    elif [ ! -w "$RECORDPATH" ]
+    then
+      whiptail --title "$TITLE" --msgbox \
+        " You don't have permission to write to:\n\n    ${RECORDPATH}\n\n" \
+        $BOXWIDTH $BOXHEIGHT
+    else
+      break
+    fi
+  done
+}
+
 # record option check
 function require_r_opt {
   # ARGS:
