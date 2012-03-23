@@ -490,6 +490,21 @@ function ifschedule_dialog {
   [ "$answer" = "2)" ] && return 0 || return 1
 }
 
+function showname_dialog {
+  while true
+  do
+    set_ui_window_params 2
+    shownameinit=$($showname && echo $SHOWNAME || echo $CHANNEL)
+    SHOWNAME=$(whiptail \
+      --title "$TITLE" \
+      --inputbox "\nEnter the name of the show:" \
+      $BOXWIDTH $BOXHEIGHT "$shownameinit" \
+      3>&2 2>&1 1>&3 )
+    [ "$?" != "0" ] && exit 0;
+    [ "$SHOWNAME" = "" ] || break
+  done
+}
+
 # record option check
 function require_r_opt {
   # ARGS:
