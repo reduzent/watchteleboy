@@ -11,6 +11,7 @@ Architecture: all
 Depends: mplayer,
          wget,
          rtmpdump,
+         whiptail,
          ${misc:Depends}
 Description: Watch  and record TV streams from teleboy.ch
  Simple program to watch and record teleboy.ch IPTV streams: 
