@@ -1,4 +1,4 @@
-.TH watchteleboy "1" "2011 Sept 5" "GNU2"
+.TH watchteleboy "1" "2012 Mar 23" "GNU2"
 .SH NAME
 watchteleboy \- watch and record online TV streams from teleboy.ch
 .SH SYNOPSYS
@@ -54,10 +54,15 @@ to get a list of available channels.
 .IP "\fB\-h, \-\-help"
 Print a summary of available options and exit.
 .IP "\fB\-l, \-\-list"
-Print a list of available channels and exit. The set of channels is subject
-to change with future version of 
-.B watchteleboy
-(depending on service changes on teleboy.ch).
+Print a list of available channels and exit. The list of available channels is 
+directly retrieved from teleboy.ch. Beware that the content of the list is 
+influenced by the 
+.I CHANSELECTION 
+variable. 
+.IP "\fB\-\-skip\-logincheck"
+Don't check, if login was successfull and continue anyway. This might be useful
+when login actually was successful but is wronly reported as failed. This might
+happen when teleboy.ch change their service.
 .IP "\fB\-v, \-\-version"
 Print the version of this software and exit. 
 .SH OPTIONS FOR RECORDING
@@ -161,7 +166,22 @@ Options passed to mplayer (overriden by
 .I --record
 is used.
 .RE
+BUFFER
+.RS
+Sets the buffer size in bytes. In watching mode, 
+.B watchteleboy 
+will wait to play the stream until 
+.I BUFFER
+bytes have been downloaded. If you often experience sudden abortions, it is advised
+to increase that value. The default is 500000.
+.RE
 .SH EXAMPLES
+.B Schedule a recording using interactive dialogs:
+.RS
+.PP
+watchteleboy --record
+.PP
+.RE
 .B Schedule a recording:
 .RS
 .PP
