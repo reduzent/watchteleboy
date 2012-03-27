@@ -700,7 +700,7 @@ function player_recorder {
 
 # Da Keestroke Waitah
 function  wait_s_key {
-  echo "Press the 's' key to stop the recording." 
+  $quiet || echo "Press the 's' key to stop the recording." 
   keypress=""
   while [ "$keypress" != "s" ]
   do
@@ -735,10 +735,10 @@ then
   fi
   channel_validity $CHANNEL || exit 1
   player_recorder $CHANNEL
-  echo "Now recording $CHANNEL for $DURATION seconds."
+  $quiet || echo "Now recording $CHANNEL for $DURATION seconds."
   sleep $DURATION
   kill $PID
-  echo "Stopped recording."
+  $quiet || echo "Stopped recording."
   exit 0
 fi
 
@@ -749,19 +749,19 @@ then
   then
     if $record
     then
-      echo "Now recording:"
+      $quiet || echo "Now recording:"
       player_recorder $CHANNEL
       wait_s_key
       kill $PID
-      echo "Stopped recording."
+      $quiet || echo "Stopped recording."
       exit 0
     else
-      echo "Now playing:"
+      $quiet || echo "Now playing:"
       player_recorder $CHANNEL
     fi
     exit 0
   else
-    echo "Channel '$CHANNEL' is not available..." 1>&2
+    $quiet || echo "Channel '$CHANNEL' is not available..." 1>&2
     exit 1
   fi
 fi
@@ -793,15 +793,15 @@ $(crontab -l | grep $DELETEME)" \
     else
       channel_dialog
       player_recorder $CHANNEL
-      echo "Now recording:"
+      $quiet || echo "Now recording:"
       wait_s_key
       kill $PID
-      echo "Stopped recording."
+      $quiet || echo "Stopped recording."
       exit 0
     fi
   else
     channel_dialog
-    echo "Now playing:"
+    $quiet || echo "Now playing:"
     player_recorder $CHANNEL
   fi
 done
