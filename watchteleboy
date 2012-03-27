@@ -203,7 +203,7 @@ if  [ ! -d $TMPPATH ]
 then
   if ! mkdir -p $TMPPATH
   then
-    $quiet || echo "Could not create directory: $TMPPATH" 1>&2
+    echo "Could not create directory: $TMPPATH" 1>&2
     exit 1
   fi
 fi
@@ -234,7 +234,7 @@ wget -U "$UAGENT" \
 # remove loggedin file on exit
 function cleanup {
   rm -rf $TMPPATH
-  echo ""
+  $quiet || echo ""
 }
 
 # check if login was successfull
@@ -347,8 +347,8 @@ function compose_rtmp_command {
   gip=$(echo "$STREAMINFO"  | cut -d "|" -f10)
   playpath=${cid}${c2}.stream
 
-  # LOESCHI / show channel name
-  echo "$STREAMINFO"  | cut -d "|" -f2
+  # show channel name
+  $quiet || echo "$STREAMINFO"  | cut -d "|" -f2
   
   # get IP address of streaming server
   GIPURL="${URLBASE}/includes/getserver.php?version=${gip}&nocache=1314619521398"
@@ -625,21 +625,24 @@ then
       exit 1
     fi
     # Now we have validated all required parameters
-    echo "Scheduled for recording:"
-    echo -e "Start time:\t$(date -d "$STARTTIME" "+%a, %F %H:%M")"
-    $endtime && echo -e "End time:\t$(date -d "$ENDTIME" "+%a, %F %H:%M")"
-    $duration && echo -e "Duration:\t${DURATION} sec"
-    echo -e "Channel:\t$CHANNEL"
-    echo -e "Directory:\t$RECORDPATH"
-    $showname && echo -e "Show:\t\t$SHOWNAME"
-    read -p "Are those settings correct? (Y/n) "
-    if [ "$REPLY" == "n" ]
+    if ! $quiet
     then
-      echo "Cancelled by user. Quit." 1>&2
-      exit 1
+      echo "Scheduled for recording:"
+      echo -e "Start time:\t$(date -d "$STARTTIME" "+%a, %F %H:%M")"
+      $endtime && echo -e "End time:\t$(date -d "$ENDTIME" "+%a, %F %H:%M")"
+      $duration && echo -e "Duration:\t${DURATION} sec"
+      echo -e "Channel:\t$CHANNEL"
+      echo -e "Directory:\t$RECORDPATH"
+      $showname && echo -e "Show:\t\t$SHOWNAME"
+      read -p "Are those settings correct? (Y/n) "
+      if [ "$REPLY" == "n" ]
+      then
+        echo "Cancelled by user. Quit." 1>&2
+        exit 1
+      fi
     fi 
     write_to_crontab
-    echo "Done."
+    $quiet || echo "Done."
     exit 0
   else 
     echo "You must specify either --duration or --endtime" 1>&2
@@ -761,7 +764,7 @@ then
     fi
     exit 0
   else
-    $quiet || echo "Channel '$CHANNEL' is not available..." 1>&2
+    echo "Channel '$CHANNEL' is not available..." 1>&2
     exit 1
   fi
 fi
