@@ -78,6 +78,7 @@ then
     uservar="USER${userinc}"
     if [ -z "${!uservar}" ]
     then
+      $quiet || exit 1
       echo "Available logins already in use. Exiting" 1>&2 
       echo "You might want to configure more credentials in $CONFIG" 1>&2
       exit 1
@@ -104,6 +105,7 @@ endtime=false
 help=false
 list=false
 path=false
+quiet=false
 record=false
 showname=false
 skiplogincheck=false
@@ -120,6 +122,7 @@ do
     -n|--showname) showname=true; SHOWNAME="$2"; shift;;
     -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
     -p|--path) path=true; RECORDPATH="$2"; shift;;
+    -q|--quiet) quiet=true;;
     -r|--record) record=true;;
     -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
     -v|--version) version=true;;
@@ -160,6 +163,7 @@ GENERAL OPTIONS:
   -c|--channel CHANNEL    specify a channel
   -h|--help               show this help and exit
   -l|--list               print a list of all channels and exit
+  -q|--quiet              do not ask nor print anything
   --skip-logincheck       do not test if login was successfull
   -v|--version            print the version of this program
 
@@ -199,13 +203,13 @@ if  [ ! -d $TMPPATH ]
 then
   if ! mkdir -p $TMPPATH
   then
-    echo "Could not create directory: $TMPPATH" 1>&2
+    $quiet || echo "Could not create directory: $TMPPATH" 1>&2
     exit 1
   fi
 fi
 
 # get the session cookie
-echo -n "login (as '$USER')..."
+$quiet || echo -n "login (as '$USER')..."
 URL="http://www.teleboy.ch/watchlist/"
 wget -U "$UAGENT" \
   --quiet \
@@ -236,24 +240,25 @@ function cleanup {
 # check if login was successfull
 if $skiplogincheck
   then
-  echo "ok (forced)"
+  $quiet || echo "ok (forced)"
 else 
   grep "Logout" $TMPPATH/step1.html  > /dev/null
   if [ $? -eq 1 ]
   then
+    $quiet && exit 1
     echo "failed!!!!" 1>&2
     echo "Please check your credentials in the config file:" 1>&2
     echo "$CONFIG" 1>&2
     exit 1
   else
-    echo "ok"
+    $quiet || echo "ok"
     touch $TMPPATH/loggedin
     trap cleanup INT TERM EXIT
   fi
 fi
 
 # get the station / channel list
-echo -n "receive channel list..."
+$quiet || echo -n "receive channel list..."
 POST="cmd=getStations&category=${CHANSELECTION}"
 URL="http://www.teleboy.ch/tv/player/includes/ajax.php"
 wget --user-agent "$UAGENT" \
@@ -274,7 +279,7 @@ CHANNELS=$(paste -d' ' \
       s/Ô/O/g
     ' | head -n $(echo "$channelids" | wc -l)) \
   <(echo "$channelids"))
-echo "done"
+$quiet || echo "done"
 CHANNELS="
 $(echo "$CHANNELS" | grep -iv euronews)
 SF1_o 159 0
