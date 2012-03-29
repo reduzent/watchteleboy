@@ -368,7 +368,7 @@ function compose_rtmp_command {
     -y $playpath
     -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5
     -q 
-    -o $2 "
+    -o \"$2\" "
 }
 
 # test channel input validity
@@ -580,7 +580,7 @@ function write_to_crontab {
   echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename ${0}) --record " >> $crontempfile
   echo -ne "--channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
   echo -ne "--deleteme ${DELETEME} " >> $crontempfile
-  $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
+  $showname && echo -ne "--showname \"${SHOWNAME}\" " >> $crontempfile
   echo -ne "--path ${RECORDPATH}\n" >> $crontempfile
   crontab < $crontempfile
   rm $crontempfile
