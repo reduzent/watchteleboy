@@ -9,7 +9,7 @@
 #   2011-2012   Roman Haefeli
 #   2012        Doma Smoljo
 #   2011        Alexander Tuchacek  
-# last modified: 2012-03-23 by Roman Haefeli
+# last modified: 2012-03-29 by Roman Haefeli
 # program version: (check below)
 ################################################
 
@@ -318,7 +318,7 @@ function check_time_validity {
   fi
 }
 
-function compose_rtmp_command {
+function dump_rtmp_stream {
   # ARGS:
   # 1: channel
   # 2: output file
@@ -359,16 +359,16 @@ function compose_rtmp_command {
   IP=$(cat $TMPPATH/step4.html | cut -d "=" -f2)
 
   # rtmpdump command
-  RTMP="rtmpdump 
-    -r rtmp://${IP}/${x11} 
-    -a ${x11}
-    -f LNX 10,3,183,7 
-    -W ${URLBASE}/${SWFFILE} 
-    -p ${URLBASE}/player.php 
-    -y $playpath
-    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5
-    -q 
-    -o \"$2\" "
+  rtmpdump \
+    --rtmp rtmp://${IP}/${x11} \
+    --app ${x11} \
+    --flashVer LNX 10,3,183,7 \
+    --swfVfy ${URLBASE}/${SWFFILE} \
+    --pageUrl ${URLBASE}/player.php \
+    --playpath $playpath \
+    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 \
+    --quiet \
+    --flv "$2"
 }
 
 # test channel input validity
@@ -578,7 +578,7 @@ function write_to_crontab {
   DELETEME=${RANDOM}${RANDOM}
   crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
   echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename ${0}) --record " >> $crontempfile
-  echo -ne "--channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
+  echo -ne "--quiet --channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
   echo -ne "--deleteme ${DELETEME} " >> $crontempfile
   $showname && echo -ne "--showname \"${SHOWNAME}\" " >> $crontempfile
   echo -ne "--path ${RECORDPATH}\n" >> $crontempfile
@@ -670,12 +670,12 @@ function compose_outfile {
   then
     if $showname
     then
-      OUTFILE=${RECORDPATH}/${SHOWNAME}-$(date +%Y%m%d%H%M).flv
+      OUTFILE="${RECORDPATH}/${SHOWNAME}-$(date +%Y%m%d%H%M).flv"
     else
-      OUTFILE=${RECORDPATH}/${1}-$(date +%Y%m%d%H%M).flv
+      OUTFILE="${RECORDPATH}/${1}-$(date +%Y%m%d%H%M).flv"
     fi
   else
-    OUTFILE="-"
+    OUTFILE="$TMPPATH/stream.flv"
   fi
 } 
 
@@ -683,13 +683,12 @@ function player_recorder {
   # ARGS:
   # 1: Channel
   compose_outfile $1
-  compose_rtmp_command $1 $OUTFILE
   if $record
   then
-    $RTMP &
+    dump_rtmp_stream $1 "$OUTFILE" &
     PID=$!
   else
-    $RTMP > $TMPPATH/stream.flv &
+    dump_rtmp_stream $1 "$OUTFILE" &
     PID=$!
     # Only start mplayer after having downloaded BUFFER bytes
     while [  "$(stat -c %s $TMPPATH/stream.flv)" -lt "$BUFFER" ]
