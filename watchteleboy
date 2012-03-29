@@ -716,7 +716,8 @@ function player_recorder {
     dump_rtmp_stream $1 "$OUTFILE" &
     PID=$!
     # Only start mplayer after having downloaded BUFFER bytes
-    while [  "$(stat -c %s $TMPPATH/stream.flv)" -lt "$BUFFER" ]
+    touch "$OUTFILE"
+    while [  "$(stat -c %s "$OUTFILE")" -lt "$BUFFER" ]
     do
       sleep 0.1
     done
