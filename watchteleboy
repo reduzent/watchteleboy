@@ -99,6 +99,7 @@ TMPPATH="${TMPDIR}/watchteleboy.${USER}"
 
 # Comandline argument parsing
 channel=false
+deletecron=false
 deleteme=false
 duration=false
 endtime=false
@@ -127,6 +128,7 @@ do
     -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
     -v|--version) version=true;;
     --deleteme) deleteme=true; DELETEME="$2"; shift;;
+    --delete-cron) deletecron=true; DELCHAN="$2"; DELTIME="$3"; shift; shift;;
     --skip-logincheck) skiplogincheck=true;;
     -*) echo "$(basename $0): error - unrecognized option '$1'" 1>&2
         echo "use '$(basename $0) --help' to get a list of available options" 1>&2
@@ -182,6 +184,29 @@ MPLAYER SPECIFIC OPTIONS:
 
 EOF
   exit
+fi
+
+# delete cron entry (used by tvbrowser record plugin)
+if $deletecron
+then
+  if ! date -d "$DELTIME" > /dev/null 2>&1
+  then
+    echo "Could not parse specified time: $DELTIME" 1>&2
+    exit 1
+  fi
+  crontempfile="/tmp/crontab.tmp"
+  searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*watchteleboy.*channel[[:space:]]${DELCHAN}.*"
+  if ! crontab -l | grep "$searchstring" > /dev/null
+  then
+    echo "Could not find specified job in crontab." 1>&2
+    exit 1
+  else
+    crontab -l | grep -v "$searchstring" > $crontempfile 
+    crontab < $crontempfile
+    rm $crontempfile
+    $quiet || echo "Successfully deleted crontab entry."
+    exit 0
+  fi
 fi
 
 # Check record path validity
