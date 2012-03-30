@@ -4,12 +4,13 @@ Upstream-Contact: Roman Haefeli <reduzent@gmail.com>
 Source: https://github.com/reduzent/watchwilmaa
 
 Files: watchteleboy
-Copyright: 2011, Roman Haefeli <reduzent@gmail.com>
-	   2011, Alexander Tuchacek
+Copyright: 2011-2012 Roman Haefeli <reduzent@gmail.com>
+           2012      Doma Smoljo <doma@bitnik.org
+           2011      Alexander Tuchaček <tuchacek@krcf.org>
 License: GPL-2
 
 Files: *
-Copyright: 2011, Roman Haefeli <reduzent@gmail.com>
+Copyright: 2011-2012 Roman Haefeli <reduzent@gmail.com>
 License: GPL-2+
 
 License: GPL-2+
