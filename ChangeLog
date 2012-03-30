@@ -1,4 +1,71 @@
+  2012-03-30 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: bumped to versio 1.8
+
+ * debian/changelog: bumped to new release 1.8 (TV-Browser support)
+
+ * arch/create-arch-package.sh: update checksum in PKGBUILD file
+
+ * arch/create-arch-package.sh: include tvbrowser stuff in package building
+ script (arch)
+
+ * arch/PKGBUILD: added tvbrowser stuff to package (arch)
+
+ * arch/PKGBUILD: added whiptail to dependencies (arch)
+
+ * README, watchteleboy: Tuchaček: fixed spelling (with hacek on c)
+
+ * debian/copyright: updated copyright (mention Doma as copyright holder)
+
+ * tvbrowser/README.txt: add instructions for configuring watchteleboy as a
+ TV-Browser back-end
+
+ * debian/control: add tvbrowser to Suggests: field
+
+ * debian/rules: removed obsolete override
+
+ * debian/dirs, debian/install, debian/watchteleboy.dirs,
+ debian/watchteleboy.install: renamed files: watchteleboy prefix is redundant
+
+ * debian/watchteleboy.install: install tvbrowser specific stuff
+
+ * debian/watchteleboy.dirs: added directory for tvbrowser stuff
+
+ * DOCS/man/watchteleboy.1: added -q|--quiet to man page
+
+ * DOCS/man/watchteleboy.1: added --delete-cron to man page
+
+ * watchteleboy: update output of --help
+
+ * tvbrowser/watchteleboy-recorder.tcf: added device for 'Record Control'
+ plugin for tvbrowser application
+
+ * watchteleboy: fixed bug with stream file size checking
+
+  2012-03-29 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: new flag --delete-cron: delete jobs from crontab
+
+ * watchteleboy: fixed quoting of showname; don't export command as a variable
+
+ * watchteleboy: fixed broken quoting when creating filenames
+
+  2012-03-27 Roman Haefeli <reduzent@gmail.com>
+
+ * watchteleboy: do not mute error messages; do not confirm with --quiet
+
+ * watchteleboy: made some more messages 'quietable'
+
+ * watchteleboy: started implementing --quiet option: do not ask, do not
+ complain
+
   2012-03-23 Roman Haefeli <reduzent@gmail.com>
+
+ * debian/control: bumped standards-version to 3.9.1
+
+ * debian/control: fixed build depends: force debhelper version to >=7.0.50~
+
+ * ChangeLog: updated ChangeLog
 
  * DOCS/man/watchteleboy.1: updated man page
 
