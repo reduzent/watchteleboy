@@ -1,13 +1,5 @@
 #!/usr/bin/make -f
 
-DESTDIR="debian/tmp"
-
 %:
 	dh $@
-
-override_dh_install:
-	install -D -m 755 watchteleboy ${DESTDIR}/usr/bin/watchteleboy
-	install -d -m 755 ${DESTDIR}/usr/share/man/man1/
-	install -D -m 644 DOCS/man/watchteleboy.1 ${DESTDIR}/usr/share/man/man1/
-	dh_install
 
