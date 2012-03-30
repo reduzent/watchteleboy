@@ -8,6 +8,7 @@ tar czf $ARCHIVENAME -C ../ \
   DOCS \
   LICENSE \
   README \
+  tvbrowser \
   ${PROGNAME}
 
 # update version in PKGBUILD
