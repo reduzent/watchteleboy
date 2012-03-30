@@ -158,29 +158,30 @@ then
 watchteleboy
 ------------
 
-  <no options>            go into interactive mode
+  <no options>                go into interactive mode
 
 GENERAL OPTIONS:
 
-  -c|--channel CHANNEL    specify a channel
-  -h|--help               show this help and exit
-  -l|--list               print a list of all channels and exit
-  -q|--quiet              do not ask nor print anything
-  --skip-logincheck       do not test if login was successfull
-  -v|--version            print the version of this program
+  -c|--channel CHANNEL        specify a channel
+  --delete-cron CHANNEL TIME  delete a previously scheduled job
+  -h|--help                   show this help and exit
+  -l|--list                   print a list of all channels and exit
+  -q|--quiet                  suppress any output and do not ask
+  --skip-logincheck           do not test if login was successfull
+  -v|--version                print the version of this program
 
 OPTIONS FOR RECORDING (require -r|--record):
 
-  -e|--endtime TIME       schedule the end time of the recording
-  -d|--duration SECONDS	  specify the duration of the recording
-  -n|--showname SHOWNAME  specify file name prefix
-  -p|--path DIR		  specify target directory
-  -r|--record             record a stream instead of watching it
-  -t|--starttime TIME	  schedule the start time for a recording
+  -e|--endtime TIME           schedule the end time of the recording
+  -d|--duration SECONDS	      specify the duration of the recording
+  -n|--showname SHOWNAME      specify file name prefix
+  -p|--path DIR		      specify target directory
+  -r|--record                 record a stream instead of watching it
+  -t|--starttime TIME	      schedule the start time for a recording
 
 MPLAYER SPECIFIC OPTIONS:
 
-  -m|--mplayer-opts OPTS  pass options to mplayer
+  -m|--mplayer-opts OPTS      pass options to mplayer
 
 EOF
   exit
@@ -242,7 +243,6 @@ wget -U "$UAGENT" \
   --keep-session-cookies \
   -O $TMPPATH/step0.html \
   $URL
-
 POST="login=${USER}&password=${PASS}&x=3&y=4&keep_login=1&_target_path=http%3A%2F%2Fteleboy.ch%2F"
 URL="http://www.teleboy.ch/login_check"
 wget -U "$UAGENT" \
