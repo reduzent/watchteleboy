@@ -48,9 +48,16 @@ settings will be saved to the configuration file $HOME/.watchteleboyrc.
 The password will be stored in plain text!
 .SH GENERAL OPTIONS
 .IP "\fB\-c, \-\-channel CHANNEL"
-Play (or record)  immediately the specified channel CHANNEL. Use the option
+Specify the channel to be played or recorded. Without any other options
+.B watchteleboy
+will immediately start (or record) the specified channel.
+.br
+Use the option
 .I --list
 to get a list of available channels.
+.IP "\fB\-\-delete-cron CHANNEL TIME"
+Delete a previously scheduled job from crontab. To match exactly a 
+specific job you need to specify the CHANNEL and its start time TIME.
 .IP "\fB\-h, \-\-help"
 Print a summary of available options and exit.
 .IP "\fB\-l, \-\-list"
