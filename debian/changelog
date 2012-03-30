@@ -1,3 +1,12 @@
+watchteleboy (1.8~natty~ppa0) natty; urgency=low
+
+  * adapted to be used as a recording back-end for TV-Browser
+  * added device description for the 'Recording control' plugin for TV-Browser
+  * added --quiet switch to faciliate the use in non-interactive scripts
+  * added --delete-cron switch to remove previously scheduled cron jobs
+
+ -- Roman Haefeli <reduzent@gmail.com>  Fri, 30 Mar 2012 15:17:35 +0200
+
 watchteleboy (1.7~natty~ppa0) natty; urgency=low
 
   * switched to interactive mode to whiptail based dialogs (thanks to Doma)
