@@ -393,7 +393,8 @@ function dump_rtmp_stream {
     --playpath $playpath \
     -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 \
     --quiet \
-    --flv "$2"
+    --flv "$2" &
+  PID=$!
 }
 
 # test channel input validity
@@ -710,11 +711,9 @@ function player_recorder {
   compose_outfile $1
   if $record
   then
-    dump_rtmp_stream $1 "$OUTFILE" &
-    PID=$!
+    dump_rtmp_stream $1 "$OUTFILE"
   else
-    dump_rtmp_stream $1 "$OUTFILE" &
-    PID=$!
+    dump_rtmp_stream $1 "$OUTFILE" 
     # Only start mplayer after having downloaded BUFFER bytes
     touch "$OUTFILE"
     while [  "$(stat -c %s "$OUTFILE")" -lt "$BUFFER" ]
