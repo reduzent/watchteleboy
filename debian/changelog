@@ -1,3 +1,9 @@
+watchteleboy (1.9~natty~ppa0) natty; urgency=low
+
+  * fixed serious bug with never ending stream
+
+ -- Roman Haefeli <reduzent@gmail.com>  Sun, 01 Apr 2012 14:52:01 +0200
+
 watchteleboy (1.8~natty~ppa0) natty; urgency=low
 
   * adapted to be used as a recording back-end for TV-Browser
