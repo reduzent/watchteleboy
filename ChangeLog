@@ -1,4 +1,15 @@
+  2012-04-01 Roman Haefeli <reduzent@gmail.com>
+
+ * debian/changelog: updated debian/changelog for 1.9 release
+
+ * watchteleboy: bumped version to 1.9
+
+ * watchteleboy: fixed serious bug with not killing rtmpdump after specified
+ time
+
   2012-03-30 Roman Haefeli <reduzent@gmail.com>
+
+ * ChangeLog: updated ChangeLog
 
  * watchteleboy: bumped to versio 1.8
 
