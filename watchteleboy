@@ -267,8 +267,7 @@ if $skiplogincheck
   then
   $quiet || echo "ok (forced)"
 else 
-  grep "Logout" $TMPPATH/step1.html  > /dev/null
-  if [ $? -eq 1 ]
+  if ! grep "Logout" $TMPPATH/step1.html  > /dev/null
   then
     $quiet && exit 1
     echo "failed!!!!" 1>&2
