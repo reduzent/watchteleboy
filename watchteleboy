@@ -245,6 +245,7 @@ wget -U "$UAGENT" \
   $URL
 POST="login=${USER}&password=${PASS}&x=14&y=7&keep_login=1"
 URL="http://www.teleboy.ch/layer/login_check"
+wget -U "$UAGENT" \
   --quiet \
   --no-check-certificate \
   --load-cookies $TMPPATH/cookie0 \
