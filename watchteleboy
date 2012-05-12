@@ -241,7 +241,7 @@ wget -U "$UAGENT" \
   --quiet \
   --save-cookies $TMPPATH/cookie0 \
   --keep-session-cookies \
-  -O $TMPPATH/step0.html \
+  -O /dev/null \
   $URL
 POST="login=${USER}&password=${PASS}&x=14&y=7&keep_login=1"
 URL="http://www.teleboy.ch/layer/login_check"
@@ -253,7 +253,7 @@ wget -U "$UAGENT" \
   --keep-session-cookies \
   --save-headers \
   --post-data $POST \
-  -O $TMPPATH/step1.html \
+  -O /dev/null \
   $URL
 
 # remove loggedin file on exit
