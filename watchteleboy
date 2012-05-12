@@ -712,9 +712,10 @@ function player_recorder {
   then
     dump_rtmp_stream $1 "$OUTFILE"
   else
+    # Make sure there is an empty OUTFILE 
+    > "$OUTFILE"
     dump_rtmp_stream $1 "$OUTFILE" 
     # Only start mplayer after having downloaded BUFFER bytes
-    touch "$OUTFILE"
     while [  "$(stat -c %s "$OUTFILE")" -lt "$BUFFER" ]
     do
       sleep 0.1
