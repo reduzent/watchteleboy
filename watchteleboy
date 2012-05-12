@@ -392,7 +392,7 @@ function dump_rtmp_stream {
     --playpath $playpath \
     -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 \
     --quiet \
-    --flv "$2" &
+    --flv "$2" 2> /dev/null &
   PID=$!
 }
 
