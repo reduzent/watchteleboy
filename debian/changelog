@@ -2,6 +2,8 @@ watchteleboy (1.10~precise~ppa0) precise; urgency=low
 
   * fixed authentication (service slightly modified auth)
   * fixed bug with every second stream not playing in same session
+  * more reliable login detection based on auth cookie
+  * cosmetic modifications
 
  -- Roman Haefeli <reduzent@gmail.com>  Sat, 12 May 2012 15:20:32 +0200
 
