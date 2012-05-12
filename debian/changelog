@@ -1,3 +1,10 @@
+watchteleboy (1.10~precise~ppa0) precise; urgency=low
+
+  * fixed authentication (service slightly modified auth)
+  * fixed bug with every second stream not playing in same session
+
+ -- Roman Haefeli <reduzent@gmail.com>  Sat, 12 May 2012 15:20:32 +0200
+
 watchteleboy (1.9~natty~ppa0) natty; urgency=low
 
   * fixed serious bug with never ending stream
