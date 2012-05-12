@@ -289,11 +289,11 @@ wget --user-agent "$UAGENT" \
     --quiet \
     --load-cookies $TMPPATH/cookie1 \
     --post-data $POST \
-    --output-document $TMPPATH/step2.html.latin1 \
+    --output-document $TMPPATH/stations.html.latin1 \
     $URL
-iconv -f LATIN1 -t UTF-8 $TMPPATH/step2.html.latin1 > $TMPPATH/step2.html
-channelnames=$(grep -e " <img.*src=\"/img/station/.*/logo" $TMPPATH/step2.html | cut -d'"' -f8)
-channelids=$(grep "javascript:getLiveChannelData" $TMPPATH/step2.html | cut -d "(" -f 2 | cut -d ")" -f1 | sed -e 's/,//g')
+iconv -f LATIN1 -t UTF-8 $TMPPATH/stations.html.latin1 > $TMPPATH/stations.html
+channelnames=$(grep -e " <img.*src=\"/img/station/.*/logo" $TMPPATH/stations.html | cut -d'"' -f8)
+channelids=$(grep "javascript:getLiveChannelData" $TMPPATH/stations.html | cut -d "(" -f 2 | cut -d ")" -f1 | sed -e 's/,//g')
 CHANNELS=$(paste -d' ' \
   <(echo "$channelnames" | \
     sed -e '
