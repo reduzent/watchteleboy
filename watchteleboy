@@ -9,11 +9,11 @@
 #   2011-2012   Roman Haefeli
 #   2012        Doma Smoljo
 #   2011        Alexander Tuchaček 
-# last modified: 2012-04-01 by Roman Haefeli
+# last modified: 2012-05-12 by Roman Haefeli
 # program version: (check below)
 ################################################
 
-VERSION=1.9
+VERSION=1.10
 
 # Set some default values
 TMPDIR=/tmp
