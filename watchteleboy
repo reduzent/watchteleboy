@@ -267,7 +267,7 @@ if $skiplogincheck
   then
   $quiet || echo "ok (forced)"
 else 
-  if ! grep "Logout" $TMPPATH/step1.html  > /dev/null
+  if ! grep "^www\.teleboy\.ch.*cinergy_auth" $TMPPATH/cookie1 > /dev/null
   then
     $quiet && exit 1
     echo "failed!!!!" 1>&2
