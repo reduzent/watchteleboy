@@ -24,7 +24,7 @@ CHANSELECTION=all
 BUFFER=500000
 
 # Check dependencies
-programlist="rtmpdump mplayer wget grep cut crontab date iconv whiptail"
+programlist="rtmpdump mplayer wget grep cut crontab date iconv $(uname | grep Linux > /dev/null && echo whiptail)"
 for program in $programlist
 do
     if ! which $program > /dev/null
