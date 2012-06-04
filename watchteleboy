@@ -716,7 +716,7 @@ function player_recorder {
     > "$OUTFILE"
     dump_rtmp_stream $1 "$OUTFILE" 
     # Only start mplayer after having downloaded BUFFER bytes
-    while [  "$(stat -c %s "$OUTFILE")" -lt "$BUFFER" ]
+    while [  "$(( $(du -sk "$OUTFILE" | cut -f1) * 1024 ))" -lt "$BUFFER" ]
     do
       sleep 0.1
     done
