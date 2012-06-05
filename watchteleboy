@@ -294,6 +294,17 @@ wget --user-agent "$UAGENT" \
     --output-document $TMPPATH/stations.html.latin1 \
     $URL
 iconv -f LATIN1 -t UTF-8 $TMPPATH/stations.html.latin1 > $TMPPATH/stations.html
+# Check if current user has answered all questions on teleboy.ch
+if ! grep "getLiveChannelData" $TMPPATH/stations.html > /dev/null 
+then
+  echo "failed"
+  echo ""
+  echo "The user '$USER' is not fully configured for watching streams."
+  echo "Please log in to http://www.teleboy.ch and click the 'Live TV' tab."
+  echo "Please fill out the form. If you're able to watch streams in the"
+  echo "browser, check again with watchteleboy."
+  exit 1
+fi
 channelnames=$(grep -e " <img.*src=\"/img/station/.*/logo" $TMPPATH/stations.html | cut -d'"' -f8)
 channelids=$(grep "javascript:getLiveChannelData" $TMPPATH/stations.html | cut -d "(" -f 2 | cut -d ")" -f1 | sed -e 's/,//g')
 CHANNELS=$(paste -d' ' \
