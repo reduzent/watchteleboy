@@ -466,10 +466,11 @@ function channel_dialog {
         "${whiptail_opts[@]}" 3>&2 2>&1 1>&3 )
       [ "$?" != "0" ] && exit 0;
     else
+      clear
+      echo "= AVAILABLE CHANNELS ="
       PS3="Choose a channel: "
       select CHANNEL in $chanlist
       do 
-        [ "$CHANNEL" = "QUIT" ]  && exit 0
         [ "$CHANNEL" != "" ] && break
       done
     fi  
@@ -480,27 +481,43 @@ function channel_dialog {
 function starttime_dialog {
   while true
   do
-    set_ui_window_params 2
-    STARTTIME=$(whiptail \
-      --title "$TITLE" \
-      --inputbox "\nStart recording at:" \
-      $BOXWIDTH $BOXHEIGHT "$(date --rfc-3339=date) 20:15" \
-      3>&2 2>&1 1>&3 )
-    [ "$?" != "0" ] && exit 0;
+    if $whiptail
+    then
+      set_ui_window_params 2
+      STARTTIME=$(whiptail \
+        --title "$TITLE" \
+        --inputbox "\nStart recording at:" \
+        $BOXWIDTH $BOXHEIGHT "$(date --rfc-3339=date) 20:15" \
+        3>&2 2>&1 1>&3 )
+      [ "$?" != "0" ] && exit 0;
+    else
+      echo -n "Start recording at: "
+      read STARTTIME
+    fi
     if date -d "$STARTTIME" > /dev/null 2>&1
     then
       if [ $(date -d "$STARTTIME" +%s) -lt $(date +%s) ]
       then
-        whiptail --title "$TITLE" --msgbox \
-          " The specified time:\n\n    ${STARTTIME}\n\nis already over." \
-          $BOXWIDTH $BOXHEIGHT
+        if $whiptail 
+        then
+          whiptail --title "$TITLE" --msgbox \
+            " The specified time:\n\n    ${STARTTIME}\n\nis already over." \
+            $BOXWIDTH $BOXHEIGHT
+        else
+          echo -e "The specified time:\n    ${STARTTIME}\nis already over."  
+        fi  
       else
         break
       fi
     else
-      whiptail --title "$TITLE" --msgbox \
-        " The specified time:\n\n    ${STARTTIME}\n\ncould not be parsed." \
-        $BOXWIDTH $BOXHEIGHT
+      if $whiptail
+      then
+        whiptail --title "$TITLE" --msgbox \
+          " The specified time:\n\n    ${STARTTIME}\n\ncould not be parsed." \
+          $BOXWIDTH $BOXHEIGHT
+      else
+        echo -e "The specified time:\n    ${STARTTIME}\ncould not be parsed."
+      fi
     fi
   done
 }
@@ -535,15 +552,27 @@ function endtime_dialog {
 }
 
 function ifschedule_dialog {
-  set_ui_window_params 2
-  answer=$(whiptail \
-    --title "$TITLE" \
-    --menu "What do you want to do?" \
-    $BOXWIDTH $BOXHEIGHT $CONTENTHEIGHT \
-    "1)" "Start recording immediately" "2)" "Schedule a recording" \
-    3>&2 2>&1 1>&3 )
-  [ "$?" != "0" ] && exit 0;
-  [ "$answer" = "2)" ] && return 0 || return 1
+  if $whiptail
+  then
+    set_ui_window_params 2
+    answer=$(whiptail \
+      --title "$TITLE" \
+      --menu "What do you want to do?" \
+      $BOXWIDTH $BOXHEIGHT $CONTENTHEIGHT \
+      "1)" "Start recording immediately" "2)" "Schedule a recording" \
+      3>&2 2>&1 1>&3 )
+    [ "$?" != "0" ] && exit 0;
+    [ "$answer" = "2)" ] && return 0 || return 1
+  else
+    clear
+    echo "What do you want to do?"
+    PS3="Choose action: "
+    select answer in "Start recording immediately" "Schedule a recording"
+    do
+      [ "$answer" != "" ] && break 
+    done 
+    [ "$answer" = "Schedule a recording" ] && return 0 || return 1
+  fi
 }
 
 function showname_dialog {
