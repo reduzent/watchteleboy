@@ -36,7 +36,7 @@ do
 done
 
 # Check availability of whiptail (interactive dialog boxes)
-whiptail=$(which whiptaill > /dev/null && echo true || echo false)
+whiptail=$(which whiptail > /dev/null && echo true || echo false)
 
 # Read config (overrides default values) or create it
 CONFIG=~/.watchteleboyrc
@@ -433,25 +433,35 @@ function channel_dialog {
   while true
   do
     chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
-    wpsetdefault=""
-    [ "$CHANNEL" != "" ] \
-      && wpsetdefault="--default-item $CHANNEL" \
-      || wpsetdefault=""
-    unset whiptail_opts; i=0
-    for i in $(echo $chanlist); 
-    do 
-      whiptail_opts+=("$i")
-      whiptail_opts+=("Play channel $i")
-    done
-    set_ui_window_params 2
-    CHANNEL=$(whiptail $wpsetdefault \
-      --title "$TITLE" \
-      --ok-button "$BUTTONLABEL" \
-      --cancel-button Quit \
-      --menu "Choose a channel:" \
-      $BOXWIDTH $BOXHEIGHT $CONTENTHEIGHT \
-      "${whiptail_opts[@]}" 3>&2 2>&1 1>&3 )
-    [ "$?" != "0" ] && exit 0;
+    if $whiptail
+    then
+      wpsetdefault=""
+      [ "$CHANNEL" != "" ] \
+        && wpsetdefault="--default-item $CHANNEL" \
+        || wpsetdefault=""
+      unset whiptail_opts; i=0
+      for i in $(echo $chanlist); 
+      do 
+        whiptail_opts+=("$i")
+        whiptail_opts+=("Play channel $i")
+      done
+      set_ui_window_params 2
+      CHANNEL=$(whiptail $wpsetdefault \
+        --title "$TITLE" \
+        --ok-button "$BUTTONLABEL" \
+        --cancel-button Quit \
+        --menu "Choose a channel:" \
+        $BOXWIDTH $BOXHEIGHT $CONTENTHEIGHT \
+        "${whiptail_opts[@]}" 3>&2 2>&1 1>&3 )
+      [ "$?" != "0" ] && exit 0;
+    else
+      PS3="Choose a channel: "
+      select CHANNEL in $chanlist
+      do 
+        [ "$CHANNEL" = "QUIT" ]  && exit 0
+        [ "$CHANNEL" != "" ] && break
+      done
+    fi  
     break
   done 
 }
