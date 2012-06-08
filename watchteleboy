@@ -616,23 +616,42 @@ function showname_dialog {
 function recordpath_dialog {
   while true
   do
-    set_ui_window_params 2
-    RECORDPATH=$(whiptail \
-      --title "$TITLE" \
-      --inputbox "\nSpecify a directory to save the recording:" \
-      $BOXWIDTH $BOXHEIGHT "$RECORDPATH" \
-      3>&2 2>&1 1>&3 )
-    [ "$?" != "0" ] && exit 0;
+    if $whiptail
+    then
+      set_ui_window_params 2
+      RECORDPATH=$(whiptail \
+	--title "$TITLE" \
+	--inputbox "\nSpecify a directory to save the recording:" \
+	$BOXWIDTH $BOXHEIGHT "$RECORDPATH" \
+	3>&2 2>&1 1>&3 )
+      [ "$?" != "0" ] && exit 0;
+    else
+      echo "Specify a directory to save the recording"
+      echo "(default: $RECORDPATH)"
+      echo -n ":"
+      read RECORDPATHINPUT
+      [ "$RECORDPATHINPUT" != "" ] && RECORDPATH=$RECORDPATHINPUT
+    fi
     if [ ! -d "$RECORDPATH" ] 
     then
-      whiptail --title "$TITLE" --msgbox \
-        " The specified directory:\n\n    ${RECORDPATH}\n\ndoes not exist." \
-        $BOXWIDTH $BOXHEIGHT
+      if $whiptail
+      then
+	whiptail --title "$TITLE" --msgbox \
+	  " The specified directory:\n\n    ${RECORDPATH}\n\ndoes not exist." \
+	  $BOXWIDTH $BOXHEIGHT
+      else
+        echo -e "The specified directory:\n    ${RECORDPATH}\ndoes not exist."
+      fi
     elif [ ! -w "$RECORDPATH" ]
     then
-      whiptail --title "$TITLE" --msgbox \
-        " You don't have permission to write to:\n\n    ${RECORDPATH}\n\n" \
-        $BOXWIDTH $BOXHEIGHT
+      if $whiptail
+      then
+	whiptail --title "$TITLE" --msgbox \
+	  " You don't have permission to write to:\n\n    ${RECORDPATH}\n\n" \
+	  $BOXWIDTH $BOXHEIGHT
+      else
+        echo -e "You don't have permission to write to:\n    ${RECORDPATH}\n"
+      fi
     else
       break
     fi
@@ -640,9 +659,7 @@ function recordpath_dialog {
 }
 
 function confirm_dialog {
-  set_ui_window_params 2
-  answer=$(whiptail --title "$TITLE" --yesno \
-    "Scheduled for recording:
+  summary="Scheduled for recording:
 
 Start time:    $(date -d "${STARTTIME}" "+%a, %F %H:%M")
 End time:      $(date -d "${ENDTIME}" "+%a, %F %H:%M")
@@ -650,9 +667,19 @@ Channel:       ${CHANNEL}
 Show:          ${SHOWNAME}
 Directory:     ${RECORDPATH}
 
-Are those settings correct?" \
-          $BOXWIDTH $BOXHEIGHT 3>&2 2>&1 1>&3 )
-  return $answer
+Are those settings correct?"
+  if $whiptail
+  then
+    set_ui_window_params 2
+    answer=$(whiptail --title "$TITLE" --yesno \
+      "$summary" $BOXWIDTH $BOXHEIGHT 3>&2 2>&1 1>&3 )
+ else
+   echo -n "$summary (Y/n): "
+   read answerinput
+   answer=$([ "$answerinput" == "y" ] || [ "$answerinput" == "" ] && echo 0 || echo 1)
+ fi
+ echo "ANSWER IS $answer"
+ return $answer
 }
 
 # record option check
