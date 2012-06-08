@@ -443,7 +443,7 @@ function set_ui_window_params {
 function channel_dialog {
   while true
   do
-    chanlist=$(echo "$CHANNELS" | cut -d " " -f 1)
+    chanlist="$(echo "$CHANNELS" | cut -d " " -f 1) $( uname | grep "Darwin" > /dev/null && echo QUIT)"
     if $whiptail
     then
       wpsetdefault=""
@@ -471,6 +471,7 @@ function channel_dialog {
       PS3="Choose a channel: "
       select CHANNEL in $chanlist
       do 
+        [ "$CHANNEL" == "QUIT" ] && exit 0
         [ "$CHANNEL" != "" ] && break
       done
     fi  
