@@ -385,7 +385,7 @@ function dump_rtmp_stream {
   playpath=${cid}${c2}.stream
 
   # show channel name
-  $quiet || echo "$STREAMINFO"  | cut -d "|" -f2
+  $quiet || echo "$STREAMINFO"  | cut -d "|" -f2 | iconv -f LATIN1 -t UTF-8
   
   # get IP address of streaming server
   GIPURL="${URLBASE}/includes/getserver.php?version=${gip}&nocache=1314619521398"
