@@ -467,8 +467,14 @@ function channel_dialog {
       [ "$?" != "0" ] && exit 0;
     else
       clear
-      echo "= AVAILABLE CHANNELS ="
-      PS3="Choose a channel: "
+      eval $(resize)
+      repeat=$(( $COLUMNS - 21 ))
+      echo -n "= AVAILABLE CHANNELS "
+      for ch in $(seq $repeat); do echo -n "="; done
+      echo -ne "\n"
+      echo "" 
+      PS3="
+Choose a channel: "
       select CHANNEL in $chanlist
       do 
         [ "$CHANNEL" == "QUIT" ] && exit 0
@@ -878,14 +884,14 @@ then
   then
     if $record
     then
-      $quiet || echo "Now recording:"
+      $quiet || echo -n "Now recording: "
       player_recorder $CHANNEL
       wait_s_key
       kill $PID
       $quiet || echo "Stopped recording."
       exit 0
     else
-      $quiet || echo "Now playing:"
+      $quiet || echo -n "Now playing: "
       player_recorder $CHANNEL
     fi
     exit 0
@@ -922,7 +928,7 @@ $(crontab -l | grep $DELETEME)" \
     else
       channel_dialog
       player_recorder $CHANNEL
-      $quiet || echo "Now recording:"
+      $quiet || echo -n "Now recording: "
       wait_s_key
       kill $PID
       $quiet || echo "Stopped recording."
@@ -930,7 +936,7 @@ $(crontab -l | grep $DELETEME)" \
     fi
   else
     channel_dialog
-    $quiet || echo "Now playing:"
+    $quiet || echo -n "Now playing: "
     player_recorder $CHANNEL
   fi
 done
