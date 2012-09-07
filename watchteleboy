@@ -919,10 +919,16 @@ do
       DURATION=$(( $(date -d "$ENDTIME" +%s) - $(date -d "$STARTTIME" +%s) ))
       write_to_crontab
       set_ui_window_params 2
-      whiptail --title "$TITLE" --msgbox \
-        " Successfully added crontab entry:\n\n
+      if $whiptail
+      then
+        whiptail --title "$TITLE" --msgbox \
+          " Successfully added crontab entry:\n\n
 $(crontab -l | grep $DELETEME)" \
-        $BOXWIDTH $BOXHEIGHT
+          $BOXWIDTH $BOXHEIGHT
+        else
+          echo "Successfully added crontab entry:"
+          crontab -l | grep $DELETEME
+        fi
       exit 0
     else
       channel_dialog
