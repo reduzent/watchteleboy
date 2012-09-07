@@ -67,38 +67,6 @@ else
   echo "created config file $CONFIG"  
 fi
 
-# check availability of login
-# since teleboy.ch only allows you to stream one channel per session, 
-# we use a different login for each session (if available)
-# more users can be configured in CONFIG
-userinc=1
-if [ -f $TMPDIR/watchteleboy.${USER}/loggedin ]
-then 
-  while true
-  do
-    ((userinc += 1))
-    uservar="USER${userinc}"
-    if [ -z "${!uservar}" ]
-    then
-      $quiet || exit 1
-      echo "Available logins already in use. Exiting" 1>&2 
-      echo "You might want to configure more credentials in $CONFIG" 1>&2
-      exit 1
-    fi
-    if ! [ -f $TMPDIR/watchteleboy.${!uservar}/loggedin ]
-    then
-      break # we found a login not yet in use
-    fi
-  done
-  # use login not yet in use
-  USER=${!uservar}
-  passvar="PASS${userinc}"
-  PASS=${!passvar}
-fi
-
-# set working directory for keeping session data
-TMPPATH="${TMPDIR}/watchteleboy.${USER}"
-
 # Comandline argument parsing
 channel=false
 deletecron=false
@@ -189,24 +157,6 @@ EOF
   exit
 fi
 
-# Create TMPDIR if required
-if  [ ! -d $TMPPATH ]
-then
-  if ! mkdir -p $TMPPATH
-  then
-    echo "Could not create directory: $TMPPATH" 1>&2
-    exit 1
-  fi
-fi
-touch $TMPPATH/loggedin
-
-# remove TMPPATH dir on exit
-function cleanup {
-  rm -rf $TMPPATH
-  $quiet || echo ""
-}
-trap cleanup INT TERM EXIT
-
 # delete cron entry (used by tvbrowser record plugin)
 if $deletecron
 then
@@ -244,6 +194,56 @@ then
   fi
 fi
 
+# check availability of login
+# since teleboy.ch only allows you to stream one channel per session, 
+# we use a different login for each session (if available)
+# more users can be configured in CONFIG
+userinc=1
+if [ -f $TMPDIR/watchteleboy.${USER}/loggedin ]
+then 
+  while true
+  do
+    ((userinc += 1))
+    uservar="USER${userinc}"
+    if [ -z "${!uservar}" ]
+    then
+      $quiet || exit 1
+      echo "Available logins already in use. Exiting" 1>&2 
+      echo "You might want to configure more credentials in $CONFIG" 1>&2
+      exit 1
+    fi
+    if ! [ -f $TMPDIR/watchteleboy.${!uservar}/loggedin ]
+    then
+      break # we found a login not yet in use
+    fi
+  done
+  # use login not yet in use
+  USER=${!uservar}
+  passvar="PASS${userinc}"
+  PASS=${!passvar}
+fi
+
+# set working directory for keeping session data
+TMPPATH="${TMPDIR}/watchteleboy.${USER}"
+
+# Create TMPDIR 
+if  [ ! -d $TMPPATH ]
+then
+  if ! mkdir -p $TMPPATH
+  then
+    echo "Could not create directory: $TMPPATH" 1>&2
+    exit 1
+  fi
+fi
+touch $TMPPATH/loggedin
+
+# remove TMPPATH dir on exit
+function cleanup {
+  rm -rf $TMPPATH
+  $quiet || echo ""
+}
+trap cleanup INT TERM EXIT
+
 # get the session cookie
 $quiet || echo -n "login (as '$USER')..."
 URL="http://www.teleboy.ch/watchlist/"
@@ -265,7 +265,6 @@ wget -U "$UAGENT" \
   --post-data $POST \
   -O /dev/null \
   $URL
-
 
 # check if login was successfull
 if $skiplogincheck
