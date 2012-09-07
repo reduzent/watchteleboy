@@ -1,3 +1,11 @@
+watchteleboy (1.11~precise~ppa0) precise; urgency=low
+
+  * made all interactive dialogs whiptail-optional (means OS X support)
+  * optimized code structure
+  * fixed login race condition on simultaneous start of many instances
+
+ -- Roman Haefeli <reduzent@gmail.com>  Sat, 08 Sep 2012 00:00:47 +0200
+
 watchteleboy (1.10~precise~ppa0) precise; urgency=low
 
   * fixed authentication (service slightly modified auth)
