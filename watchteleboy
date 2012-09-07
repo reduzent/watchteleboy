@@ -189,6 +189,24 @@ EOF
   exit
 fi
 
+# Create TMPDIR if required
+if  [ ! -d $TMPPATH ]
+then
+  if ! mkdir -p $TMPPATH
+  then
+    echo "Could not create directory: $TMPPATH" 1>&2
+    exit 1
+  fi
+fi
+touch $TMPPATH/loggedin
+
+# remove TMPPATH dir on exit
+function cleanup {
+  rm -rf $TMPPATH
+  $quiet || echo ""
+}
+trap cleanup INT TERM EXIT
+
 # delete cron entry (used by tvbrowser record plugin)
 if $deletecron
 then
@@ -226,16 +244,6 @@ then
   fi
 fi
 
-# Create TMPDIR if required
-if  [ ! -d $TMPPATH ]
-then
-  if ! mkdir -p $TMPPATH
-  then
-    echo "Could not create directory: $TMPPATH" 1>&2
-    exit 1
-  fi
-fi
-
 # get the session cookie
 $quiet || echo -n "login (as '$USER')..."
 URL="http://www.teleboy.ch/watchlist/"
@@ -258,11 +266,6 @@ wget -U "$UAGENT" \
   -O /dev/null \
   $URL
 
-# remove loggedin file on exit
-function cleanup {
-  rm -rf $TMPPATH
-  $quiet || echo ""
-}
 
 # check if login was successfull
 if $skiplogincheck
@@ -278,8 +281,6 @@ else
     exit 1
   else
     $quiet || echo "ok"
-    touch $TMPPATH/loggedin
-    trap cleanup INT TERM EXIT
   fi
 fi
 
