@@ -35,7 +35,7 @@ do
     fi
 done
 
-# Check availability of whiptail (interactive dialog boxes)
+# whiptail dialog boxes are optional (fallback to tradition shell dialogs)
 whiptail=$(which whiptail > /dev/null && echo true || echo false)
 
 # Read config (overrides default values) or create it
