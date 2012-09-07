@@ -685,7 +685,6 @@ Are those settings correct?"
    read answerinput
    answer=$([ "$answerinput" == "y" ] || [ "$answerinput" == "" ] && echo 0 || echo 1)
  fi
- echo "ANSWER IS $answer"
  return $answer
 }
 
