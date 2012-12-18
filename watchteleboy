@@ -36,7 +36,7 @@ do
 done
 
 # whiptail dialog boxes are optional (fallback to tradition shell dialogs)
-whiptail=$(which whiptaill > /dev/null && echo true || echo false)
+whiptail=$(which whiptail > /dev/null && echo true || echo false)
 
 # Read config (overrides default values) or create it
 CONFIG=~/.watchteleboyrc
@@ -406,7 +406,7 @@ function channel_validity {
   then
     echo "Please specify a channel"
     return 1
-  elif echo $CHANNELS | grep -i $1 > /dev/null
+  elif print_channel_list | grep -i $1 > /dev/null
   then
     return 0
   else
