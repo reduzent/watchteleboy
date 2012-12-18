@@ -311,7 +311,10 @@ fi
 # option -l|--list
 if $list
 then
-  echo "$CHANNELS" | cut -d " " -f 1 
+  for channel in "${CHANNELS[@]}"
+  do
+    echo $channel | cut -d'/' -f1
+  done
   exit
 fi
 
