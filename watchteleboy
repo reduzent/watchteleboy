@@ -309,12 +309,15 @@ else
 fi
 
 # option -l|--list
-if $list
-then
+function print_channel_list {
   for channel in "${CHANNELS[@]}"
   do
     echo $channel | cut -d'/' -f1
   done
+}
+if $list
+then
+  print_channel_list
   exit
 fi
 
@@ -337,6 +340,7 @@ function check_time_validity {
     exit 1
   fi
 }
+
 
 function dump_rtmp_stream {
   # ARGS:
@@ -426,7 +430,7 @@ function set_ui_window_params {
 function channel_dialog {
   while true
   do
-    chanlist="$(echo "$CHANNELS" | cut -d " " -f 1) $( uname | grep "Darwin" > /dev/null && echo QUIT)"
+    chanlist="$(for channel in ${CHANNELS[@]}; do echo -n "$channel" | cut -d'/' -f1; done) $( uname | grep "Darwin" > /dev/null && echo QUIT)"
     if $whiptail
     then
       wpsetdefault=""
