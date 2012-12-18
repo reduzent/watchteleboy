@@ -320,12 +320,12 @@ fi
 
 # get flashplayer url
 SWFFILE=$(wget \
-  -O - \
-  --quiet \
-  "http://www.teleboy.ch/tv/player/player.php" | \
-  grep "nelloplayer" | \
-  cut -d'"' -f2 | \
-  tail -n1)
+    --output-document - \
+    --quiet \
+    "http://www.teleboy.ch/tv/player/player.php" | \
+    grep embedSWF  | \
+    cut -d'"' -f2
+  )
 
 # Da Time Valeditee Checkah
 function check_time_validity {
