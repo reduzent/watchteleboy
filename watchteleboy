@@ -355,6 +355,36 @@ function set_sid_by_channel {
   )
 }
 
+# Extract sid->cid mapping json array
+URL="http://www.teleboy.ch/tv/player"
+sid2cidmap="$(
+  wget \
+    --output-document - \
+    --quiet "$URL" | \
+    grep "var station2channels" | \
+    sed -e "s/\s\{1,\}var station2channels = {//" | \
+    sed -e "s/};//" | \
+    sed -e "s/},/}\n/g"
+  )"
+
+function set_cids_by_sid {
+  # ARGS:
+  # 1: sid
+  channelidstring="$(
+    echo "$sid2cidmap" | \
+      grep ^\"${1}\" | \
+      sed -e 's/"//g' | \
+      cut -d "{" -f2 | \
+      cut -d "}" -f1 | \
+      sed -e "s/,/\n/g" | \
+      sort | \
+      cut -d":" -f2
+    )"
+  cid=$(echo "$channelidstring" | head -n1)
+  cid2=$(echo "$channelidstring" | tail -n+2)
+  [ "$cid2" = "" ] && cid2=0
+}
+
 function dump_rtmp_stream {
   # ARGS:
   # 1: channel
