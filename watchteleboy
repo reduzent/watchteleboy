@@ -343,6 +343,17 @@ function check_time_validity {
   fi
 }
 
+# Some functions to retrieve RTMP parameters for specified channel
+function set_sid_by_channel {
+  # ARGS:
+  # 1: CHANNEL
+  sid=$(
+    for channel in ${CHANNELS[@]}
+    do
+      echo $channel | grep ^$1/ | cut -d'/' -f2
+    done
+  )
+}
 
 function dump_rtmp_stream {
   # ARGS:
