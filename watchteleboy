@@ -36,7 +36,7 @@ do
 done
 
 # whiptail dialog boxes are optional (fallback to tradition shell dialogs)
-whiptail=$(which whiptail > /dev/null && echo true || echo false)
+whiptail=$(which whiptaill > /dev/null && echo true || echo false)
 
 # Read config (overrides default values) or create it
 CONFIG=~/.watchteleboyrc
@@ -297,7 +297,9 @@ stationlistraw="$(
     --user-agent "$UAGENT" \
     --quiet $URL | \
     grep "<tr class=\"playable blackListing\">"  | \
-    cut -d"/" -f4,5)"
+    cut -d"/" -f4,5 | \
+    sed -e "s/%FC/ü/g"
+  )"
 CHANNELS=($stationlistraw)
 # Check if we received something
 if [ ${#CHANNELS[@]} -gt 0 ]
@@ -430,7 +432,7 @@ function set_ui_window_params {
 function channel_dialog {
   while true
   do
-    chanlist="$(for channel in ${CHANNELS[@]}; do echo -n "$channel" | cut -d'/' -f1; done) $( uname | grep "Darwin" > /dev/null && echo QUIT)"
+    chanlist="$(print_channel_list) $( uname | grep "Darwin" > /dev/null && echo QUIT)"
     if $whiptail
     then
       wpsetdefault=""
