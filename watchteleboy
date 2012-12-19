@@ -378,22 +378,24 @@ function set_cids_by_sid {
 
 function set_rtmpparams_by_cids {
   URL="http://www.teleboy.ch/tv/player/ajax/liveChannelParams?cid=${1}&cid2=${2}"
-  rtmpparams="$(wget \
+  rtmpparamstring="$(wget \
     --quiet \
     --output-document - \
     --load-cookies ${TMPPATH}/cookie1 \
     $URL | \
     cut -d '"' -f6
   )"
+  OIFS=$IFS
+  IFS="|"
+  rtmpparams=($rtmpparamstring)
+  IFS=$OIFS
 }
 
 function set_rtmpip_by_rtmpparams {
-  getparam="$(echo "$rtmpparams" | \
-    cut -d'|' -f 10)"
   rtmpip="$(wget \
     --output-document - \
     --quiet \
-    "http://www.teleboy.ch/proxy/player/getserver.php?version=${getparam}" | \
+    "http://www.teleboy.ch/proxy/player/getserver.php?version=${1}" | \
     cut -d"=" -f2
   )"
 }
@@ -406,19 +408,19 @@ function dump_rtmp_stream {
   set_sid_by_channel "$1"
   set_cids_by_sid "$sid"
   set_rtmpparams_by_cids "$cid" "$cid2"
-  set_rtmpip_by_rtmpparams "$rtmpparams"
+  set_rtmpip_by_rtmpparams "${rtmpparams[9]}"
 
   # get rtmp parameters
-  x11=$(echo "$rtmpparams" | cut -d "|" -f11)
-  c1=$(echo "$rtmpparams"  | cut -d "|" -f4)
-  c2=$(echo "$rtmpparams"  | cut -d "|" -f5)
-  c3=$(echo "$rtmpparams"  | cut -d "|" -f6)
-  c4=$(echo "$rtmpparams"  | cut -d "|" -f7)
-  c5=$(echo "$rtmpparams"  | cut -d "|" -f8)
+  x11="${rtmpparams[10]}"
+  c1="${rtmpparams[3]}"
+  c2="${rtmpparams[4]}"
+  c3="${rtmpparams[5]}"
+  c4="${rtmpparams[6]}"
+  c5="${rtmpparams[7]}"
   playpath=${cid}${c2}.stream
 
   # show channel name
-  $quiet || echo "$rtmpparams"  | cut -d "|" -f2 | iconv -f LATIN1 -t UTF-8
+  $quiet || echo "${rtmpparams[1]}" | iconv -f LATIN1 -t UTF-8
 
   # rtmpdump command
   rtmpdump \
