@@ -20,7 +20,6 @@ TMPDIR=/tmp
 UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12.0'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
-CHANSELECTION=all
 BUFFER=500000
 
 # Check dependencies
