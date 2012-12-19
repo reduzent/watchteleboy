@@ -2,21 +2,6 @@
 watchteleboy
 ============
 
-#####################################
-# I M P O R T A N T   N O T I C E ! #
-#####################################
-
-As of 2012-12-16, the teleboy.ch service provider changed the structure
-of its service. Thus watchteleboy does not work anymore. The problem
-is being worked on. An updated version can be found on:
-  http://github.com/reduzent/watchteleboy
-as soon as a fix is found.
-
-#####################################
-# E N D   O F   N O T I C E         #
-#####################################
-
-
 is a script to watch and record live TV streams from 
 http://www.teleboy.ch without browser nor flash.
 
