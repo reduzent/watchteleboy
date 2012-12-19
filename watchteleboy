@@ -341,10 +341,10 @@ function set_sid_by_channel {
   sid=$(
     for channel in ${CHANNELS[@]}
     do
-      echo $channel | grep ^$1/ | cut -d'/' -f2
+      echo $channel | grep -i ^$1/ | cut -d'/' -f2
     done
   )
-  if [[ $sid = *[!0-9]* ]]
+  if [[ $sid = *[!0-9]* || "$sid" = "" ]] 
   then
     $quiet || echo -e "\nCould not get a valid sid." 1>&2
     exit 1
@@ -384,7 +384,7 @@ function set_cids_by_sid {
   cid=$(echo "$channelidstring" | head -n1)
   cid2=$(echo "$channelidstring" | tail -n+2)
   [ "$cid2" = "" ] && cid2=0
-  if [[ $cid = *[!0-9]* ]]
+  if [[ $cid = *[!0-9]* || "$cid" = "" ]]
   then
     $quiet || echo -e "\nCould not get a valid cid." 1>&2
     exit 1
@@ -441,7 +441,6 @@ function dump_rtmp_stream {
   $quiet || echo "${rtmpparams[1]}" | iconv -f LATIN1 -t UTF-8
 
   # rtmpdump command
-  echo -e "\n\n#param: ${#rtmpparams[@]}\n"
   rtmpdump \
     --rtmp "rtmp://${rtmpip}/${x11}" \
     --playpath "$playpath" \
