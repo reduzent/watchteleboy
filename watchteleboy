@@ -385,6 +385,34 @@ function set_cids_by_sid {
   [ "$cid2" = "" ] && cid2=0
 }
 
+function set_rtmpparams_by_cids {
+  URL="http://www.teleboy.ch/tv/player/ajax/liveChannelParams?cid=${1}&cid2=${2}"
+  rtmpparams="$(wget \
+    --quiet \
+    --output-document - \
+    --load-cookies ${TMPPATH}/cookie1 \
+    $URL | \
+    cut -d '"' -f6
+  )"
+}
+
+function set_rtmpip_by_rtmpparams {
+  getparam="$(echo "$rtmpparams" | \
+    cut -d'|' -f 10)"
+  rtmpip="$(wget \
+    --output-document - \
+    --quiet \
+    "http://www.teleboy.ch/proxy/player/getserver.php?version=${getparam}" | \
+    cut -d"=" -f2
+  )"
+}
+set_sid_by_channel SRF1
+set_cids_by_sid $sid
+set_rtmpparams_by_cids $cid $cid2
+set_rtmpip_by_rtmpparams "$rtmpparams"
+echo "$rtmpip"
+exit 0
+
 function dump_rtmp_stream {
   # ARGS:
   # 1: channel
