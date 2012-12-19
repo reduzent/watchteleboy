@@ -434,7 +434,7 @@ function dump_rtmp_stream {
   c3="${rtmpparams[5]}"
   c4="${rtmpparams[6]}"
   c5="${rtmpparams[7]}"
-  playpath=${cid}${c2}.stream
+  playpath=${c1}${c2}.stream
 
   # show channel name
   $quiet || echo "${rtmpparams[1]}" | iconv -f LATIN1 -t UTF-8
