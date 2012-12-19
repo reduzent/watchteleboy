@@ -344,6 +344,11 @@ function set_sid_by_channel {
       echo $channel | grep ^$1/ | cut -d'/' -f2
     done
   )
+  if [[ $sid = *[!0-9]* ]]
+  then
+    $quiet || echo -e "\nCould not get a valid sid." 1>&2
+    exit 1
+  fi
 }
 
 # Extract sid->cid mapping json array
@@ -357,6 +362,11 @@ sid2cidmap="$(
     sed -e "s/};//" | \
     sed -e "s/},/}\n/g"
   )"
+if [ "$sid2cidmap" = "" ]
+then
+  $quiet || echo -e "Could not get a sid->cid map." 1>&2
+  exit 1
+fi
 
 function set_cids_by_sid {
   # ARGS:
@@ -377,6 +387,9 @@ function set_cids_by_sid {
 }
 
 function set_rtmpparams_by_cids {
+  # ARGS:
+  # 1: cid
+  # 2: cid2
   URL="http://www.teleboy.ch/tv/player/ajax/liveChannelParams?cid=${1}&cid2=${2}"
   rtmpparamstring="$(wget \
     --quiet \
