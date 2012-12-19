@@ -384,6 +384,11 @@ function set_cids_by_sid {
   cid=$(echo "$channelidstring" | head -n1)
   cid2=$(echo "$channelidstring" | tail -n+2)
   [ "$cid2" = "" ] && cid2=0
+  if [[ $cid = *[!0-9]* ]]
+  then
+    $quiet || echo -e "\nCould not get a valid cid." 1>&2
+    exit 1
+  fi
 }
 
 function set_rtmpparams_by_cids {
