@@ -323,15 +323,6 @@ then
   exit
 fi
 
-# get flashplayer url
-SWFFILE="http://www.teleboy.ch$(wget \
-    --output-document - \
-    --quiet \
-    "http://www.teleboy.ch/tv/player/player.php" | \
-    grep embedSWF  | \
-    cut -d'"' -f2
-  )"
-
 # Da Time Valeditee Checkah
 function check_time_validity {
   # ARGS:
@@ -407,13 +398,6 @@ function set_rtmpip_by_rtmpparams {
   )"
 }
 
-#set_sid_by_channel SRF1
-#set_cids_by_sid $sid
-#set_rtmpparams_by_cids $cid $cid2
-#set_rtmpip_by_rtmpparams "$rtmpparams"
-#echo "$rtmpip"
-#exit 0
-
 function dump_rtmp_stream {
   # ARGS:
   # 1: channel
@@ -435,19 +419,15 @@ function dump_rtmp_stream {
 
   # show channel name
   $quiet || echo "$rtmpparams"  | cut -d "|" -f2 | iconv -f LATIN1 -t UTF-8
-  echo " rtmpdump --rtmp rtmp://${rtmpip}/${x11} --app ${x11} --flashVer \"LNX 11,2,202,258\" --swfVfy \"${SWFFILE}\" --pageUrl \"http://www.teleboy.ch/tv/player/player.php\" --playpath $playpath -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 --flv \"$2\""
+
   # rtmpdump command
   rtmpdump \
-    --rtmp rtmp://${rtmpip}/${x11} \
-    --app ${x11} \
-    --flashVer "LNX 11,2,202,258" \
-    --swfVfy "${SWFFILE}" \
-    --pageUrl "http://www.teleboy.ch/tv/player/player.php" \
-    --playpath $playpath \
+    --rtmp "rtmp://${rtmpip}/${x11}" \
+    --playpath "$playpath" \
+    --quiet \
     -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 \
-    --flv "$2" 
-  #2> /dev/null &
-  #PID=$!
+    --flv "$2" 2> /dev/null &
+  PID=$!
 }
 
 # test channel input validity
