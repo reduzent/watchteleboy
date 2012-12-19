@@ -324,13 +324,13 @@ then
 fi
 
 # get flashplayer url
-SWFFILE=$(wget \
+SWFFILE="http://www.teleboy.ch$(wget \
     --output-document - \
     --quiet \
     "http://www.teleboy.ch/tv/player/player.php" | \
     grep embedSWF  | \
     cut -d'"' -f2
-  )
+  )"
 
 # Da Time Valeditee Checkah
 function check_time_validity {
@@ -406,65 +406,48 @@ function set_rtmpip_by_rtmpparams {
     cut -d"=" -f2
   )"
 }
-set_sid_by_channel SRF1
-set_cids_by_sid $sid
-set_rtmpparams_by_cids $cid $cid2
-set_rtmpip_by_rtmpparams "$rtmpparams"
-echo "$rtmpip"
-exit 0
+
+#set_sid_by_channel SRF1
+#set_cids_by_sid $sid
+#set_rtmpparams_by_cids $cid $cid2
+#set_rtmpip_by_rtmpparams "$rtmpparams"
+#echo "$rtmpip"
+#exit 0
 
 function dump_rtmp_stream {
   # ARGS:
   # 1: channel
   # 2: output file
   [ -d $TMPPATH ] || exit 1
-  cid=$(echo "$CHANNELS" | grep -i "^${1} " | cut -d" " -f2)
-  cid2=$(echo "$CHANNELS" | grep -i "^${1} " | cut -d" " -f3)
-  URLBASE="http://www.teleboy.ch/tv/player"
-  POST="cmd=getLiveChannelParams&cid=${cid}&cid2=${cid2}"
-  STREAMINFO=$(wget -U "$UAGENT" \
-    --quiet \
-    --referer "${URLBASE}/player.php" \
-    --load-cookies $TMPPATH/cookie1 \
-    --post-data $POST \
-    --keep-session-cookies \
-    --output-document /dev/stdout \
-    "${URLBASE}/includes/ajax.php")
+  set_sid_by_channel "$1"
+  set_cids_by_sid "$sid"
+  set_rtmpparams_by_cids "$cid" "$cid2"
+  set_rtmpip_by_rtmpparams "$rtmpparams"
 
   # get rtmp parameters
-  x11=$(echo "$STREAMINFO" | cut -d "|" -f11)
-  c1=$(echo "$STREAMINFO"  | cut -d "|" -f4)
-  c2=$(echo "$STREAMINFO"  | cut -d "|" -f5)
-  c3=$(echo "$STREAMINFO"  | cut -d "|" -f6)
-  c4=$(echo "$STREAMINFO"  | cut -d "|" -f7)
-  c5=$(echo "$STREAMINFO"  | cut -d "|" -f8)
-  c6=$(echo "$STREAMINFO"  | cut -d "|" -f9)
-  gip=$(echo "$STREAMINFO"  | cut -d "|" -f10)
+  x11=$(echo "$rtmpparams" | cut -d "|" -f11)
+  c1=$(echo "$rtmpparams"  | cut -d "|" -f4)
+  c2=$(echo "$rtmpparams"  | cut -d "|" -f5)
+  c3=$(echo "$rtmpparams"  | cut -d "|" -f6)
+  c4=$(echo "$rtmpparams"  | cut -d "|" -f7)
+  c5=$(echo "$rtmpparams"  | cut -d "|" -f8)
   playpath=${cid}${c2}.stream
 
   # show channel name
-  $quiet || echo "$STREAMINFO"  | cut -d "|" -f2 | iconv -f LATIN1 -t UTF-8
-  
-  # get IP address of streaming server
-  GIPURL="${URLBASE}/includes/getserver.php?version=${gip}&nocache=1314619521398"
-  wget -U "$UAGENT" \
-    --quiet \
-    -O $TMPPATH/step4.html \
-    $GIPURL
-  IP=$(cat $TMPPATH/step4.html | cut -d "=" -f2)
-
+  $quiet || echo "$rtmpparams"  | cut -d "|" -f2 | iconv -f LATIN1 -t UTF-8
+  echo " rtmpdump --rtmp rtmp://${rtmpip}/${x11} --app ${x11} --flashVer \"LNX 11,2,202,258\" --swfVfy \"${SWFFILE}\" --pageUrl \"http://www.teleboy.ch/tv/player/player.php\" --playpath $playpath -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 --flv \"$2\""
   # rtmpdump command
   rtmpdump \
-    --rtmp rtmp://${IP}/${x11} \
+    --rtmp rtmp://${rtmpip}/${x11} \
     --app ${x11} \
-    --flashVer LNX 10,3,183,7 \
-    --swfVfy ${URLBASE}/${SWFFILE} \
-    --pageUrl ${URLBASE}/player.php \
+    --flashVer "LNX 11,2,202,258" \
+    --swfVfy "${SWFFILE}" \
+    --pageUrl "http://www.teleboy.ch/tv/player/player.php" \
     --playpath $playpath \
     -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 \
-    --quiet \
-    --flv "$2" 2> /dev/null &
-  PID=$!
+    --flv "$2" 
+  #2> /dev/null &
+  #PID=$!
 }
 
 # test channel input validity
