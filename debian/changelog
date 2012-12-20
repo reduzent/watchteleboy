@@ -1,3 +1,14 @@
+watchteleboy (1.12~precise~ppa0) precise; urgency=low
+
+  * adapted to re-structured web service (2012-12-16, older versions
+    do not work anymore)
+  * no CHANSELECTION support anymore
+  * support for original audio tracks (for channels that support
+    this)
+  * slightly refactored code
+
+ -- Roman Haefeli <reduzent@gmail.com>  Thu, 20 Dec 2012 21:03:16 +0100
+
 watchteleboy (1.11~precise~ppa0) precise; urgency=low
 
   * made all interactive dialogs whiptail-optional (means OS X support)
