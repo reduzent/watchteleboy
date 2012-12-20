@@ -21,6 +21,7 @@ UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
 BUFFER=500000
+ORIGAUDIO=0
 
 # Check dependencies
 programlist="rtmpdump mplayer wget grep cut crontab date iconv"
@@ -107,6 +108,14 @@ do
   shift
 done
 
+# ORIGAUDIO (convert 0|1 to false|true)
+if [ $ORIGAUDIO = 1 ] || [ $ORIGAUDIO = true ]
+then
+  ORIGAUDIO=true
+else
+  ORIGAUDIO=false
+fi
+ 
 # option -v|--version
 if $version
 then
@@ -425,19 +434,30 @@ function dump_rtmp_stream {
   set_sid_by_channel "$1"
   set_cids_by_sid "$sid"
   set_rtmpparams_by_cids "$cid" "$cid2"
-  set_rtmpip_by_rtmpparams "${rtmpparams[9]}"
+  # switch to original audio channel (if configured)
+  # When rtmpparams for given channel has 21 elements instead
+  # of 11, this means there is an alternativ (original audio)
+  # stream available.
+  if $ORIGAUDIO && [ ${#rtmpparams[@]} -eq 21 ]
+  then
+    paramshift=10
+  else 
+    paramshift=0
+  fi
+  set_rtmpip_by_rtmpparams "${rtmpparams[$((9+${paramshift}))]}"
 
   # get rtmp parameters
-  x11="${rtmpparams[10]}"
-  c1="${rtmpparams[3]}"
-  c2="${rtmpparams[4]}"
-  c3="${rtmpparams[5]}"
-  c4="${rtmpparams[6]}"
-  c5="${rtmpparams[7]}"
-  playpath=${c1}${c2}.stream
+  x11="${rtmpparams[$((10+${paramshift}))]}"
+  c1="${rtmpparams[$((3+${paramshift}))]}"
+  c2="${rtmpparams[$((4+${paramshift}))]}"
+  c3="${rtmpparams[$((5+${paramshift}))]}"
+  c4="${rtmpparams[$((6+${paramshift}))]}"
+  c5="${rtmpparams[$((7+${paramshift}))]}"
+  channame=${rtmpparams[$((1+${paramshift}))]}
+  playpath=${c1}${c2}.stream  
 
   # show channel name
-  $quiet || echo "${rtmpparams[1]}" | iconv -f LATIN1 -t UTF-8
+  $quiet || echo "${channame}" | iconv -f LATIN1 -t UTF-8
 
   # rtmpdump command
   rtmpdump \
