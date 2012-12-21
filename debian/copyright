@@ -1,7 +1,7 @@
 Format: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?rev=166
 Upstream-Name: watchteleboy
 Upstream-Contact: Roman Haefeli <reduzent@gmail.com>
-Source: https://github.com/reduzent/watchwilmaa
+Source: https://github.com/reduzent/watchteleboy
 
 Files: watchteleboy
 Copyright: 2011-2012 Roman Haefeli <reduzent@gmail.com>
