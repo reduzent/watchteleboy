@@ -457,19 +457,18 @@ function dump_rtmp_stream {
   #c3="${rtmpparams[$((5+${paramshift}))]}"
   #c4="${rtmpparams[$((6+${paramshift}))]}"
   #c5="${rtmpparams[$((7+${paramshift}))]}"
-  channame=${rtmpparams[$((1+${paramshift}))]}
-  playpath=${rtmpparams[0]}
-  url=${rtmpparams[1]}
+  #channame=${rtmpparams[$((1+${paramshift}))]}
+  playpath="${rtmpparams[0]}"
+  url="$(echo "${rtmpparams[1]}" | sed -e 's|\\||g')"
 
   # show channel name
-  $quiet || echo -e "${channame}" | iconv -f latin1
+  #$quiet || echo -e "${channame}" | iconv -f latin1
 
   # rtmpdump command
   rtmpdump \
     --rtmp "$url" \
     --playpath "$playpath" \
-    --quiet \
-    --flv "$2" 2> /dev/null &
+    --flv "$2" &
   PID=$!
 }
 
