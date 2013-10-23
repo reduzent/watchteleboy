@@ -417,14 +417,14 @@ function set_rtmpparams_by_cids {
   IFS=$OIFS
 }
 
-function set_rtmpip_by_rtmpparams {
-  rtmpip="$(wget \
-    --output-document - \
-    --quiet \
-    "http://www.teleboy.ch/proxy/player/getserver.php?version=${1}" | \
-    cut -d"=" -f2
-  )"
-}
+#function set_rtmpip_by_rtmpparams {
+#  rtmpip="$(wget \
+#    --output-document - \
+#    --quiet \
+#    "http://www.teleboy.ch/proxy/player/getserver.php?version=${1}" | \
+#    cut -d"=" -f2
+#  )"
+#}
 
 function dump_rtmp_stream {
   # ARGS:
@@ -434,37 +434,41 @@ function dump_rtmp_stream {
   set_sid_by_channel "$1"
   set_cids_by_sid "$sid"
   set_rtmpparams_by_cids "$cid" "$cid2"
-  # switch to original audio channel (if configured)
-  # When rtmpparams for given channel has 21 elements instead
-  # of 11, this means there is an alternativ (original audio)
-  # stream available.
-  if $ORIGAUDIO && [ ${#rtmpparams[@]} -eq 21 ]
-  then
-    paramshift=10
-  else 
-    paramshift=0
-  fi
-  set_rtmpip_by_rtmpparams "${rtmpparams[$((9+${paramshift}))]}"
-
-  # get rtmp parameters
-  x11="${rtmpparams[$((10+${paramshift}))]}"
-  c1="${rtmpparams[$((3+${paramshift}))]}"
-  c2="${rtmpparams[$((4+${paramshift}))]}"
-  c3="${rtmpparams[$((5+${paramshift}))]}"
-  c4="${rtmpparams[$((6+${paramshift}))]}"
-  c5="${rtmpparams[$((7+${paramshift}))]}"
+  # Things with params work different now. Don't know of ORIGAUDIO
+  # still works.
+  ## switch to original audio channel (if configured)
+  ## When rtmpparams for given channel has 21 elements instead
+  ## of 11, this means there is an alternativ (original audio)
+  ## stream available.
+  #if $ORIGAUDIO && [ ${#rtmpparams[@]} -eq 21 ]
+  #then
+  #  paramshift=10
+  #else 
+  #  paramshift=0
+  #fi
+  
+  # The following is not needed anymore
+  #set_rtmpip_by_rtmpparams "${rtmpparams[$((9+${paramshift}))]}"
+  #
+  ## get rtmp parameters
+  #x11="${rtmpparams[$((10+${paramshift}))]}"
+  #c1="${rtmpparams[$((3+${paramshift}))]}"
+  #c2="${rtmpparams[$((4+${paramshift}))]}"
+  #c3="${rtmpparams[$((5+${paramshift}))]}"
+  #c4="${rtmpparams[$((6+${paramshift}))]}"
+  #c5="${rtmpparams[$((7+${paramshift}))]}"
   channame=${rtmpparams[$((1+${paramshift}))]}
-  playpath=${c1}${c2}.stream  
+  playpath=${rtmpparams[0]}
+  url=${rtmpparams[1]}
 
   # show channel name
   $quiet || echo -e "${channame}" | iconv -f latin1
 
   # rtmpdump command
   rtmpdump \
-    --rtmp "rtmp://${rtmpip}/${x11}" \
+    --rtmp "$url" \
     --playpath "$playpath" \
     --quiet \
-    -C S:$c1 -C S:$c2 -C S:$c3 -C S:$c4 -C S:$c5 \
     --flv "$2" 2> /dev/null &
   PID=$!
 }
