@@ -391,7 +391,6 @@ function set_cids_by_sid {
     )"
   cid=$(echo "$channelidstring" | head -n1)
   cid2=$(echo "$channelidstring" | tail -n+2)
-  [ "$cid2" = "" ] && cid2=0
   if [[ $cid = *[!0-9]* || "$cid" = "" ]]
   then
     $quiet || echo -e "\nCould not get a valid cid." 1>&2
@@ -402,8 +401,7 @@ function set_cids_by_sid {
 function set_rtmpparams_by_cids {
   # ARGS:
   # 1: cid
-  # 2: cid2
-  URL="http://www.teleboy.ch/tv/player/ajax/liveChannelParams?cid=${1}&cid2=${2}"
+  URL="http://www.teleboy.ch/tv/player/ajax/liveChannelParams?cid=${1}&profile=high"
   rtmpparamjson="$(wget \
     --quiet \
     --output-document - \
