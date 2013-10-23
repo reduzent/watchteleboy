@@ -417,15 +417,6 @@ function set_rtmpparams_by_cids {
   rtmpparams[2]=$(echo "$rtmpparamjson" | cut -d'"' -f8)
 }
 
-#function set_rtmpip_by_rtmpparams {
-#  rtmpip="$(wget \
-#    --output-document - \
-#    --quiet \
-#    "http://www.teleboy.ch/proxy/player/getserver.php?version=${1}" | \
-#    cut -d"=" -f2
-#  )"
-#}
-
 function dump_rtmp_stream {
   # ARGS:
   # 1: channel
@@ -447,16 +438,6 @@ function dump_rtmp_stream {
   #  paramshift=0
   #fi
   
-  # The following is not needed anymore
-  #set_rtmpip_by_rtmpparams "${rtmpparams[$((9+${paramshift}))]}"
-  #
-  ## get rtmp parameters
-  #x11="${rtmpparams[$((10+${paramshift}))]}"
-  #c1="${rtmpparams[$((3+${paramshift}))]}"
-  #c2="${rtmpparams[$((4+${paramshift}))]}"
-  #c3="${rtmpparams[$((5+${paramshift}))]}"
-  #c4="${rtmpparams[$((6+${paramshift}))]}"
-  #c5="${rtmpparams[$((7+${paramshift}))]}"
   channame="${rtmpparams[2]}"
   playpath="${rtmpparams[0]}"
   url="${rtmpparams[1]}"
