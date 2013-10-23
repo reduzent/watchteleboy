@@ -404,17 +404,17 @@ function set_rtmpparams_by_cids {
   # 1: cid
   # 2: cid2
   URL="http://www.teleboy.ch/tv/player/ajax/liveChannelParams?cid=${1}&cid2=${2}"
-  rtmpparamstring="$(wget \
+  rtmpparamjson="$(wget \
     --quiet \
     --output-document - \
     --load-cookies ${TMPPATH}/cookie1 \
-    $URL | \
-    cut -d '"' -f12
-  )"
+    $URL )"
+  rtmpparamstring=$(echo "$rtmpparamjson" | cut -d'"' -f12 | sed -e 's|\\||g')
   OIFS=$IFS
   IFS="|"
   rtmpparams=($rtmpparamstring)
   IFS=$OIFS
+  rtmpparams[2]=$(echo "$rtmpparamjson" | cut -d'"' -f8)
 }
 
 #function set_rtmpip_by_rtmpparams {
@@ -457,18 +457,19 @@ function dump_rtmp_stream {
   #c3="${rtmpparams[$((5+${paramshift}))]}"
   #c4="${rtmpparams[$((6+${paramshift}))]}"
   #c5="${rtmpparams[$((7+${paramshift}))]}"
-  #channame=${rtmpparams[$((1+${paramshift}))]}
+  channame="${rtmpparams[2]}"
   playpath="${rtmpparams[0]}"
-  url="$(echo "${rtmpparams[1]}" | sed -e 's|\\||g')"
+  url="${rtmpparams[1]}"
 
   # show channel name
-  #$quiet || echo -e "${channame}" | iconv -f latin1
+  $quiet || echo -e "${channame}" | iconv -f latin1
 
   # rtmpdump command
   rtmpdump \
     --rtmp "$url" \
     --playpath "$playpath" \
-    --flv "$2" &
+    --quiet \
+    --flv "$2" 2> /dev/null &
   PID=$!
 }
 
