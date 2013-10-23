@@ -409,7 +409,7 @@ function set_rtmpparams_by_cids {
     --output-document - \
     --load-cookies ${TMPPATH}/cookie1 \
     $URL | \
-    cut -d '"' -f6
+    cut -d '"' -f12
   )"
   OIFS=$IFS
   IFS="|"
