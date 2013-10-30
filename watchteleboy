@@ -391,6 +391,12 @@ function set_cids_by_sid {
     )"
   cid=$(echo "$channelidstring" | head -n1)
   cid2=$(echo "$channelidstring" | tail -n+2)
+  # cid2 points to stream with origaudio.
+  # Do ORIGAUDIO selection:
+  if $ORIGAUDIO && [ "$cid2" != "" ]
+  then
+    cid=$cid2
+  fi
   if [[ $cid = *[!0-9]* || "$cid" = "" ]]
   then
     $quiet || echo -e "\nCould not get a valid cid." 1>&2
