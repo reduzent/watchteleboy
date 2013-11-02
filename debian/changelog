@@ -1,3 +1,10 @@
+watchteleboy (1.13~precise~ppa0) precise; urgency=low
+
+  * adapted to re-structured web service (2013-10-23, older versions
+    do not work anymore)
+
+ -- Roman Haefeli <reduzent@gmail.com>  Fri, 01 Nov 2013 22:26:57 -0700
+
 watchteleboy (1.12~precise~ppa0) precise; urgency=low
 
   * adapted to re-structured web service (2012-12-16, older versions
