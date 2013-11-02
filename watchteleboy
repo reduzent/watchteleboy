@@ -6,14 +6,14 @@
 #
 # License:  GnuGPL v2
 # Authors:   
-#   2011-2012   Roman Haefeli
+#   2011-2013   Roman Haefeli
 #   2012        Doma Smoljo
 #   2011        Alexander Tuchaček 
 # last modified: 2012-12-20 by Roman Haefeli
 # program version: (check below)
 ################################################
 
-VERSION=1.12
+VERSION=1.13
 
 # Set some default values
 TMPDIR=/tmp
@@ -121,7 +121,7 @@ if $version
 then
   echo "watchteleboy $VERSION"
   echo "Authors:   
-  2011-2012   Roman Haefeli
+  2011-2013   Roman Haefeli
   2012        Doma Smoljo
   2011        Alexander Tuchaček"
   echo "Licensed under the GNU Public License 2.0 (GPL-2)"
