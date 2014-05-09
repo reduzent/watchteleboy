@@ -304,7 +304,7 @@ stationlistraw="$(
   wget --output-document - \
     --user-agent "$UAGENT" \
     --quiet $URL | \
-    grep "<tr class=\"playable blackListing\">"  | \
+    grep "<tr class=\"playable\">"  | \
     cut -d"/" -f4,5 | \
     sed -e "s/%FC/ü/g"
   )"
