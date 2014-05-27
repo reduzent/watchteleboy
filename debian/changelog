@@ -1,3 +1,10 @@
+watchteleboy (1.14~precise~ppa0) precise; urgency=low
+
+  * fix to parse new json string format (2014-05-27, older versions
+    do not work anymore)
+
+ -- Roman Haefeli <reduzent@gmail.com>  Tue, 27 May 2014 23:00:17 +0200
+
 watchteleboy (1.13~precise~ppa0) precise; urgency=low
 
   * adapted to re-structured web service (2013-10-23, older versions
