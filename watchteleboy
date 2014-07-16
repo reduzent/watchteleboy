@@ -365,8 +365,8 @@ sid2cidmap="$(
   wget \
     --output-document - \
     --quiet "$URL" | \
-    grep "var station2channels" | \
-    sed -e "s/\s\{1,\}var station2channels = {//" | \
+    grep "station2channels " | \
+    sed -e "s/\s\{1,\}TELEBOY.helpers.station2channels = {//" | \
     sed -e "s/};//" | \
     sed -e "s/},/}\n/g"
   )"
