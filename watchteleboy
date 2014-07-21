@@ -407,7 +407,9 @@ function set_cids_by_sid {
 function set_rtmpparams_by_cids {
   # ARGS:
   # 1: cid
-  URL="http://www.teleboy.ch/tv/player/ajax/liveChannelParams?cid=${1}&profile=high"
+  # set profile by parsing channel name. Profile correlates with video resolutin
+  echo "$CHANNEL" | grep -i 'HD$' > /dev/null && profile="P6" || profile="high"
+  URL="http://www.teleboy.ch/tv/player/ajax/liveChannelParams?cid=${1}&profile=${profile}"
   rtmpparamjson="$(wget \
     --quiet \
     --output-document - \
