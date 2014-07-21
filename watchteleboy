@@ -943,9 +943,6 @@ then
       player_recorder $CHANNEL
     fi
     exit 0
-  else
-    echo "Channel '$CHANNEL' is not available..." 1>&2
-    exit 1
   fi
 fi
 
