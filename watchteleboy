@@ -421,6 +421,13 @@ function set_rtmpparams_by_cids {
   IFS="|"
   rtmpparams=($rtmpparamstring)
   IFS=$OIFS
+  # check success
+  success=$(echo "$rtmpparamjson" | cut -d':' -f2 | cut -d',' -f1)
+  if [ "$success" != "true" ]
+  then 
+    echo -e "\nCouldn't get rtmp parameters" 1>&2
+    return 1
+  fi
   rtmpparams[2]=$(echo "$rtmpparamjson" | cut -d'"' -f8)
 }
 
@@ -431,7 +438,7 @@ function dump_rtmp_stream {
   [ -d $TMPPATH ] || exit 1
   set_sid_by_channel "$1"
   set_cids_by_sid "$sid"
-  set_rtmpparams_by_cids "$cid" "$cid2"
+  set_rtmpparams_by_cids "$cid" "$cid2" || return 1
   # Things with params work different now. Don't know of ORIGAUDIO
   # still works.
   ## switch to original audio channel (if configured)
@@ -869,11 +876,11 @@ function player_recorder {
   compose_outfile $1
   if $record
   then
-    dump_rtmp_stream $1 "$OUTFILE"
+    dump_rtmp_stream $1 "$OUTFILE" || return 1
   else
     # Make sure there is an empty OUTFILE 
     > "$OUTFILE"
-    dump_rtmp_stream $1 "$OUTFILE" 
+    dump_rtmp_stream $1 "$OUTFILE" || return 1
     # Only start mplayer after having downloaded BUFFER bytes
     # We need a higher buffer for HD streams to start correctly
     [ $profile == "P6"  ] && BUFFER=$HDBUFFER || BUFFER=$SDBUFFER
@@ -922,7 +929,7 @@ then
     exit 1
   fi
   channel_validity $CHANNEL || exit 1
-  player_recorder $CHANNEL
+  player_recorder $CHANNEL || exit 1
   $quiet || echo "Now recording $CHANNEL for $DURATION seconds."
   sleep $DURATION
   kill $PID
@@ -938,14 +945,14 @@ then
     if $record
     then
       $quiet || echo -n "Now recording: "
-      player_recorder $CHANNEL
+      player_recorder $CHANNEL || exit 1
       wait_s_key
       kill $PID
       $quiet || echo "Stopped recording."
       exit 0
     else
       $quiet || echo -n "Now playing: "
-      player_recorder $CHANNEL
+      player_recorder $CHANNEL || exit 1
     fi
     exit 0
   fi
@@ -983,7 +990,7 @@ $(crontab -l | grep $DELETEME)" \
       exit 0
     else
       channel_dialog
-      player_recorder $CHANNEL
+      player_recorder $CHANNEL || exit 1
       $quiet || echo -n "Now recording: "
       wait_s_key
       kill $PID
@@ -993,7 +1000,7 @@ $(crontab -l | grep $DELETEME)" \
   else
     channel_dialog
     $quiet || echo -n "Now playing: "
-    player_recorder $CHANNEL
+    player_recorder $CHANNEL || sleep 2
   fi
 done
 
