@@ -20,7 +20,8 @@ TMPDIR=/tmp
 UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12.0'
 MPLAYEROPTS="-really-quiet"
 RECORDPATH=$(pwd)
-BUFFER=500000
+SDBUFFER=500000
+HDBUFFER=1500000
 ORIGAUDIO=0
 
 # Check dependencies
@@ -874,7 +875,9 @@ function player_recorder {
     > "$OUTFILE"
     dump_rtmp_stream $1 "$OUTFILE" 
     # Only start mplayer after having downloaded BUFFER bytes
-    while [  "$(( $(du -sk "$OUTFILE" | cut -f1) * 1024 ))" -lt "$BUFFER" ]
+    # We need a higher buffer for HD streams to start correctly
+    [ $profile == "P6"  ] && BUFFER=$HDBUFFER || BUFFER=$SDBUFFER
+    while [  "$(du -b "$OUTFILE" | cut -f1)" -lt "$BUFFER" ]
     do
       sleep 0.1
     done
