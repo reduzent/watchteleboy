@@ -887,7 +887,13 @@ function player_recorder {
     while [  "$(du -b "$OUTFILE" | cut -f1)" -lt "$BUFFER" ]
     do
       sleep 0.5
-      kill -0 $PID 2> /dev/null || return 1
+      if ! kill -0 $PID 2> /dev/null
+      then
+        code=$(wait $PID; echo $?)
+        echo "rtmpdump returned an error code: $code" 1>&2
+        sleep 2
+        return 1
+      fi
     done
     $MPLAYER $TMPPATH/stream.flv 2> /dev/null
     kill $PID
