@@ -886,7 +886,8 @@ function player_recorder {
     [ $profile == "P6"  ] && BUFFER=$HDBUFFER || BUFFER=$SDBUFFER
     while [  "$(du -b "$OUTFILE" | cut -f1)" -lt "$BUFFER" ]
     do
-      sleep 0.1
+      sleep 0.5
+      kill -0 $PID 2> /dev/null || return 1
     done
     $MPLAYER $TMPPATH/stream.flv 2> /dev/null
     kill $PID
