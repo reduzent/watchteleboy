@@ -1,3 +1,12 @@
+watchteleboy (1.15~ppa0) trusty; urgency=low
+
+  * support for HD streams (TeleboyPlus users only)
+  * more robust error checking
+  * parse new sid->cid map format (older versions of this script
+    do not work anymore)
+
+ -- Roman Haefeli <reduzent@gmail.com>  Thu, 24 Jul 2014 21:37:04 +0200
+
 watchteleboy (1.14~precise~ppa0) precise; urgency=low
 
   * fix to parse new json string format (2014-05-27, older versions
