@@ -1,4 +1,4 @@
-watchteleboy (1.15~ppa0) trusty; urgency=low
+watchteleboy (1.15~trusty~ppa0) trusty; urgency=low
 
   * support for HD streams (TeleboyPlus users only)
   * more robust error checking
