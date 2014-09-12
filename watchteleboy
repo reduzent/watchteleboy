@@ -276,6 +276,21 @@ wget -U "$UAGENT" \
   $URL
 
 # check if login was successfull
+URL="http://www.teleboy.ch"
+if ! wget \
+    --quiet \
+    --output-document - \
+    --load-cookies ${TMPPATH}/cookie1 \
+    $URL | \
+    grep "Teleboy Plus" > /dev/null
+then
+  $quiet || echo "failed (no Teleboy Plus)"
+  echo "In order to comply with the terms of service of Teleboy" 1>&2
+  echo "this script requires a Teleboy Plus account." 1>&2
+  echo "" 1>&2
+  echo "Please visit: http://www.teleboy.ch/shop/list" 1>&2
+  exit 1
+fi
 if $skiplogincheck
   then
   $quiet || echo "ok (forced)"
@@ -283,7 +298,7 @@ else
   if ! grep "^www\.teleboy\.ch.*cinergy_auth" $TMPPATH/cookie1 > /dev/null
   then
     $quiet && exit 1
-    echo "failed!!!!" 1>&2
+    echo "failed!" 
     echo "Please check your credentials in the config file:" 1>&2
     echo "$CONFIG" 1>&2
     exit 1
