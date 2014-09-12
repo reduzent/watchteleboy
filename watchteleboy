@@ -13,7 +13,7 @@
 # program version: (check below)
 ################################################
 
-VERSION=1.15
+VERSION=1.16
 
 # Set some default values
 TMPDIR=/tmp

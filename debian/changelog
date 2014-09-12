@@ -1,3 +1,10 @@
+watchteleboy (1.16~trusty~ppa0) trusty; urgency=low
+
+  * Only allow Teleboy Plus users (in compliance with the
+    terms of service by Teleboy AG)
+
+ -- Roman Haefeli <reduzent@gmail.com>  Fri, 12 Sep 2014 20:46:54 +0200
+
 watchteleboy (1.15~trusty~ppa0) trusty; urgency=low
 
   * support for HD streams (TeleboyPlus users only)
