@@ -122,7 +122,7 @@ if $version
 then
   echo "watchteleboy $VERSION"
   echo "Authors:   
-  2011-2013   Roman Haefeli
+  2011-2014   Roman Haefeli
   2012        Doma Smoljo
   2011        Alexander Tuchaček"
   echo "Licensed under the GNU Public License 2.0 (GPL-2)"
