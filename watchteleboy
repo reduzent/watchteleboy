@@ -1,15 +1,15 @@
 #!/bin/bash -i
 ################################################
-# Bash script for watching/recording online TV 
-# streams from teleboy.ch without browser and 
+# Bash script for watching/recording online TV
+# streams from teleboy.ch without browser and
 # =no adobe flashplayer=.
 #
 # License:  GnuGPL v2
-# Authors:   
+# Authors:
 #   2011-2014   Roman Haefeli
 #   2012        Doma Smoljo
-#   2011        Alexander Tuchaček 
-# 
+#   2011        Alexander Tuchaček
+#
 # program version: (check below)
 ################################################
 
@@ -54,18 +54,18 @@ else
     read -s -p "Please enter your password:  " PASS
     echo ""
     read -s -p "Confirm your password:       " PASS2
-    echo "" 
+    echo ""
     if [ "$PASS" == "$PASS2" ]
     then
       break
     else
       echo "The password entries don't match."
     fi
-  done  
+  done
   echo "CAUTION: writing plain text password to the config file!"
   echo "USER='$USER'" >> $CONFIG
   echo "PASS='$PASS'" >> $CONFIG
-  echo "created config file $CONFIG"  
+  echo "created config file $CONFIG"
 fi
 
 # Comandline argument parsing
@@ -116,12 +116,12 @@ then
 else
   ORIGAUDIO=false
 fi
- 
+
 # option -v|--version
 if $version
 then
   echo "watchteleboy $VERSION"
-  echo "Authors:   
+  echo "Authors:
   2011-2014   Roman Haefeli
   2012        Doma Smoljo
   2011        Alexander Tuchaček"
@@ -181,7 +181,7 @@ then
     echo "Could not find specified job in crontab." 1>&2
     exit 1
   else
-    crontab -l | grep -v "$searchstring" > $crontempfile 
+    crontab -l | grep -v "$searchstring" > $crontempfile
     crontab < $crontempfile
     rm $crontempfile
     $quiet || echo "Successfully deleted crontab entry."
@@ -204,12 +204,12 @@ then
 fi
 
 # check availability of login
-# since teleboy.ch only allows you to stream one channel per session, 
+# since teleboy.ch only allows you to stream one channel per session,
 # we use a different login for each session (if available)
 # more users can be configured in CONFIG
 userinc=1
 if [ -f $TMPDIR/watchteleboy.${USER}/loggedin ]
-then 
+then
   while true
   do
     ((userinc += 1))
@@ -217,7 +217,7 @@ then
     if [ -z "${!uservar}" ]
     then
       $quiet || exit 1
-      echo "Available logins already in use. Exiting" 1>&2 
+      echo "Available logins already in use. Exiting" 1>&2
       echo "You might want to configure more credentials in $CONFIG" 1>&2
       exit 1
     fi
@@ -235,7 +235,7 @@ fi
 # set working directory for keeping session data
 TMPPATH="${TMPDIR}/watchteleboy.${USER}"
 
-# Create TMPDIR 
+# Create TMPDIR
 if  [ ! -d $TMPPATH ]
 then
   if ! mkdir -p $TMPPATH
@@ -294,11 +294,11 @@ fi
 if $skiplogincheck
   then
   $quiet || echo "ok (forced)"
-else 
+else
   if ! grep "^www\.teleboy\.ch.*cinergy_auth" $TMPPATH/cookie1 > /dev/null
   then
     $quiet && exit 1
-    echo "failed!" 
+    echo "failed!"
     echo "Please check your credentials in the config file:" 1>&2
     echo "$CONFIG" 1>&2
     exit 1
@@ -321,7 +321,7 @@ stationlistraw="$(
     --load-cookies ${TMPPATH}/cookie1 \
     --user-agent "$UAGENT" \
     --quiet $URL | \
-    grep "<tr class=\"playable\">"  | \
+    grep "<tr class=\"playable\">" | \
     cut -d"/" -f4,5 | \
     sed -e "s/%FC/ü/g"
   )"
@@ -332,7 +332,7 @@ then
   $quiet || echo "ok (${#CHANNELS[@]} channels)"
 else
   $quiet || echo "failed"
-   exit 1
+  exit 1
 fi
 
 # option -l|--list
@@ -369,7 +369,7 @@ function set_sid_by_channel {
       echo $channel | grep -i ^$1/ | cut -d'/' -f2
     done
   )
-  if [[ $sid = *[!0-9]* || "$sid" = "" ]] 
+  if [[ $sid = *[!0-9]* || "$sid" = "" ]]
   then
     $quiet || echo -e "\nCould not get a valid sid." 1>&2
     exit 1
@@ -440,7 +440,7 @@ function set_rtmpparams_by_cids {
   # check success
   success=$(echo "$rtmpparamjson" | cut -d':' -f2 | cut -d',' -f1)
   if [ "$success" != "true" ]
-  then 
+  then
     echo -e "\nCouldn't get rtmp parameters" 1>&2
     return 1
   fi
@@ -459,15 +459,15 @@ function dump_rtmp_stream {
   # still works.
   ## switch to original audio channel (if configured)
   ## When rtmpparams for given channel has 21 elements instead
-  ## of 11, this means there is an alternativ (original audio)
+  ## of 11, this means there is an alternative (original audio)
   ## stream available.
   #if $ORIGAUDIO && [ ${#rtmpparams[@]} -eq 21 ]
   #then
   #  paramshift=10
-  #else 
+  #else
   #  paramshift=0
   #fi
-  
+
   channame="${rtmpparams[2]}"
   playpath="${rtmpparams[0]}"
   url="${rtmpparams[1]}"
@@ -526,8 +526,8 @@ function channel_dialog {
         && wpsetdefault="--default-item $CHANNEL" \
         || wpsetdefault=""
       unset whiptail_opts; i=0
-      for i in $(echo $chanlist); 
-      do 
+      for i in $(echo $chanlist);
+      do
         whiptail_opts+=("$i")
         whiptail_opts+=("Play channel $i")
       done
@@ -547,17 +547,17 @@ function channel_dialog {
       echo -n "= AVAILABLE CHANNELS "
       for ch in $(seq $repeat); do echo -n "="; done
       echo -ne "\n"
-      echo "" 
+      echo ""
       PS3="
 Choose a channel: "
       select CHANNEL in $chanlist
-      do 
+      do
         [ "$CHANNEL" == "QUIT" ] && exit 0
         [ "$CHANNEL" != "" ] && break
       done
-    fi  
+    fi
     break
-  done 
+  done
 }
 
 function starttime_dialog {
@@ -580,14 +580,14 @@ function starttime_dialog {
     then
       if [ $(date -d "$STARTTIME" +%s) -lt $(date +%s) ]
       then
-        if $whiptail 
+        if $whiptail
         then
           whiptail --title "$TITLE" --msgbox \
             " The specified time:\n\n    ${STARTTIME}\n\nis already over." \
             $BOXWIDTH $BOXHEIGHT
         else
-          echo -e "The specified time:\n    ${STARTTIME}\nis already over."  
-        fi  
+          echo -e "The specified time:\n    ${STARTTIME}\nis already over."
+        fi
       else
         break
       fi
@@ -667,8 +667,8 @@ function ifschedule_dialog {
     PS3="Choose action: "
     select answer in "Start recording immediately" "Schedule a recording"
     do
-      [ "$answer" != "" ] && break 
-    done 
+      [ "$answer" != "" ] && break
+    done
     [ "$answer" = "Schedule a recording" ] && return 0 || return 1
   fi
 }
@@ -714,7 +714,7 @@ function recordpath_dialog {
       read RECORDPATHINPUT
       [ "$RECORDPATHINPUT" != "" ] && RECORDPATH=$RECORDPATHINPUT
     fi
-    if [ ! -d "$RECORDPATH" ] 
+    if [ ! -d "$RECORDPATH" ]
     then
       if $whiptail
       then
@@ -847,11 +847,11 @@ then
         echo "Cancelled by user. Quit." 1>&2
         exit 1
       fi
-    fi 
+    fi
     write_to_crontab
     $quiet || echo "Done."
     exit 0
-  else 
+  else
     echo "You must specify either --duration or --endtime" 1>&2
     exit 1
   fi
@@ -884,7 +884,7 @@ function compose_outfile {
   else
     OUTFILE="$TMPPATH/stream.flv"
   fi
-} 
+}
 
 function player_recorder {
   # ARGS:
@@ -894,7 +894,7 @@ function player_recorder {
   then
     dump_rtmp_stream $1 "$OUTFILE" || return 1
   else
-    # Make sure there is an empty OUTFILE 
+    # Make sure there is an empty OUTFILE
     > "$OUTFILE"
     dump_rtmp_stream $1 "$OUTFILE" || return 1
     # Only start mplayer after having downloaded BUFFER bytes
@@ -918,7 +918,7 @@ function player_recorder {
 
 # Da Keestroke Waitah
 function  wait_s_key {
-  $quiet || echo "Press the 's' key to stop the recording." 
+  $quiet || echo "Press the 's' key to stop the recording."
   keypress=""
   while [ "$keypress" != "s" ]
   do
