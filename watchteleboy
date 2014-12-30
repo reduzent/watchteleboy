@@ -307,6 +307,22 @@ else
   fi
 fi
 
+function get_channel_list {
+	URL=$1
+	stationlistraw="$(
+	  wget --output-document - \
+	    --load-cookies ${TMPPATH}/cookie1 \
+	    --user-agent "$UAGENT" \
+	    --quiet $URL | \
+	    grep "<tr class=\"playable\">" | \
+	    cut -d"/" -f4,5 | \
+	    sed 's/%/\\\\x/g' | \
+	    xargs -r -I@ echo -e @ | \
+	    iconv -f latin1 -t utf8
+	  )"
+	echo $stationlistraw
+}
+
 # get the channel list
 # CHANNELS is an array containing an element per station
 # Each element follows this format:
@@ -315,16 +331,11 @@ fi
 # Those again are used to request the proper RTMP parameters for the
 # desired station.
 $quiet || echo -n "receive channel list..."
-URL="http://www.teleboy.ch/programm/?program_date=live"
-stationlistraw="$(
-  wget --output-document - \
-    --user-agent "$UAGENT" \
-    --quiet $URL | \
-    grep "<tr class=\"playable\">"  | \
-    cut -d"/" -f4,5 | \
-    sed -e "s/%FC/ü/g"
-  )"
-CHANNELS=($stationlistraw)
+CHANNEL_URL="http://www.teleboy.ch/programm/?program_date=live&layout=0"
+CHANNELS=(
+    $(get_channel_list $CHANNEL_URL)
+)
+
 # Check if we received something
 if [ ${#CHANNELS[@]} -gt 0 ]
 then
@@ -420,7 +431,7 @@ function set_cids_by_sid {
   fi
 }
 
-function set_rtmpparams_by_cids {
+function set_rtmpparams_json_by_cid {
   # ARGS:
   # 1: cid
   # set profile by parsing channel name. Profile correlates with video resolutin
@@ -431,6 +442,9 @@ function set_rtmpparams_by_cids {
     --output-document - \
     --load-cookies ${TMPPATH}/cookie1 \
     $URL )"
+}
+
+function set_rtmpparams {
   rtmpparamstring=$(echo -e "$rtmpparamjson" | cut -d'"' -f12 | sed -e 's|\\||g')
   OIFS=$IFS
   IFS="|"
@@ -453,7 +467,8 @@ function dump_rtmp_stream {
   [ -d $TMPPATH ] || exit 1
   set_sid_by_channel "$1"
   set_cids_by_sid "$sid"
-  set_rtmpparams_by_cids "$cid" "$cid2" || return 1
+  set_rtmpparams_json_by_cid "$cid" "$cid2"
+  set_rtmpparams || return 1
   # Things with params work different now. Don't know of ORIGAUDIO
   # still works.
   ## switch to original audio channel (if configured)
