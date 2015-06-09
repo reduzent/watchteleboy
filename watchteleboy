@@ -431,7 +431,7 @@ function set_rtmpparams_by_cids {
     --output-document - \
     --load-cookies ${TMPPATH}/cookie1 \
     $URL )"
-  rtmpparamstring=$(echo -e "$rtmpparamjson" | cut -d'"' -f12 | sed -e 's|\\||g')
+  rtmpparamstring=$(echo -e "$rtmpparamjson" | cut -d'"' -f16 | sed -e 's|\\||g')
   OIFS=$IFS
   IFS="|"
   rtmpparams=($rtmpparamstring)
