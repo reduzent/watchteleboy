@@ -318,6 +318,7 @@ $quiet || echo -n "receive channel list..."
 URL="http://www.teleboy.ch/programm/?program_date=live"
 stationlistraw="$(
   wget --output-document - \
+    --load-cookies ${TMPPATH}/cookie1 \
     --user-agent "$UAGENT" \
     --quiet $URL | \
     grep "<tr class=\"playable\">"  | \
