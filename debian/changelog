@@ -1,3 +1,12 @@
+watchteleboy (1.17~trusty~ppa0) trusty; urgency=low
+
+  * Fix json string parsing (service added new fields, old version 
+    do not work anymore)
+  * Use sorted channel listing (patch by Stucki)
+  * Use absolute path in cronjobs
+
+ -- Roman Haefeli <reduzent@gmail.com>  Tue, 16 Jun 2015 22:38:36 +0200
+
 watchteleboy (1.16~trusty~ppa0) trusty; urgency=low
 
   * Only allow Teleboy Plus users (in compliance with the
