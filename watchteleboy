@@ -784,7 +784,7 @@ function write_to_crontab {
   # mandatory: CHANNEL, STARTTIME, DURATION
   DELETEME=${RANDOM}${RANDOM}
   crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
-  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(basename ${0}) --record " >> $crontempfile
+  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $crontempfile
   echo -ne "--quiet --channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
   echo -ne "--deleteme ${DELETEME} " >> $crontempfile
   $showname && echo -ne "--showname \"${SHOWNAME}\" " >> $crontempfile
