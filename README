@@ -2,6 +2,15 @@
 watchteleboy
 ============
 
+IMPORTANT NOTICE:
+
+As of late June 2015, Teleboy AG reworked their service and watchteleboy is
+not functional anymore. It appears they switched from RTMP to HTTP as
+transport protocol. Their service needs to be reverse-engineered again in
+order to provide a functional script. My skills and time are limited, 
+so please do not expect a working version soon. Any help is greatly
+appreciated.
+
 is a script to watch and record live TV streams from 
 http://www.teleboy.ch without browser nor flash.
 
