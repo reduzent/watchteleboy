@@ -278,9 +278,11 @@ wget --user-agent "$UAGENT" \
 # Check if login was successfull
 if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
 then
-  echo "ok"
+  $quiet || echo "ok"
 else
   echo "failed"
+  echo "Please check your credentials in the config file:" >&2
+  echo "$CONFIG" >&2
   exit 1
 fi
 
@@ -291,36 +293,22 @@ rawuserdata=$(wget --user-agent "$UAGENT" \
   --load-cookies $TMPPATH/cookie1 \
   --output-document - \
   $URL)
-userid=$(llocal=$(echo "$rawuserdata" | grep " id: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+tb_userid=$(llocal=$(echo "$rawuserdata" | grep " id: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+tb_locale=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
+tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
 
-echo $userid
-
-exit 0
-
-if $skiplogincheck
-  then
-  $quiet || echo "ok (forced)"
-else 
-  if ! grep "^www\.teleboy\.ch.*cinergy_auth" $TMPPATH/cookie1 > /dev/null
-  then
-    $quiet && exit 1
-    echo "failed!" 
-    echo "Please check your credentials in the config file:" 1>&2
-    echo "$CONFIG" 1>&2
-    exit 1
-  else
-    $quiet || echo "ok"
-  fi
+# did we get a valid userid?
+if ! [[ "$tb_userid" =~ ^-?[0-9]+$ ]]
+then 
+  echo "Could not extract a valid user id" >&2
+  exit 1
 fi
 
 # get the channel list
 # CHANNELS is an array containing an element per station
 # Each element follows this format:
 # STATIONNAME/STATIONID
-# Later on, the STATIONID (sid) is mapped to two channel ids: cid, cid2
-# Those again are used to request the proper RTMP parameters for the
-# desired station.
-$quiet || echo -n "receive channel list..."
+$quiet || echo -n "receiving channel list..."
 URL="http://www.teleboy.ch/programm/?program_date=live"
 stationlistraw="$(
   wget --output-document - \
