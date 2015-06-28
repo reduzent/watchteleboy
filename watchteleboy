@@ -248,49 +248,55 @@ touch $TMPPATH/loggedin
 
 # remove TMPPATH dir on exit
 function cleanup {
-  rm -rf $TMPPATH
+#  rm -rf $TMPPATH
   $quiet || echo ""
 }
 trap cleanup INT TERM EXIT
 
-# get the session cookie
+# get the session cookie (cinergy_s) and login auth cookie (cinergy_auth)
 # this seems to be a two-step process...
 $quiet || echo -n "login (as '$USER')..."
 URL="http://www.teleboy.ch/watchlist/"
-wget -U "$UAGENT" \
+wget --user-agent "$UAGENT" \
   --quiet \
   --save-cookies $TMPPATH/cookie0 \
   --keep-session-cookies \
-  -O /dev/null \
+  --output-document /dev/null \
   $URL
 POST="login=${USER}&password=${PASS}&x=14&y=7&keep_login=1"
 URL="http://www.teleboy.ch/layer/login_check"
-wget -U "$UAGENT" \
+wget --user-agent "$UAGENT" \
   --quiet \
   --load-cookies $TMPPATH/cookie0 \
   --save-cookies $TMPPATH/cookie1 \
   --keep-session-cookies \
   --save-headers \
   --post-data $POST \
-  -O /dev/null \
+  --output-document /dev/null \
   $URL
 
-# check if login was successfull
-URL="http://www.teleboy.ch"
-if ! wget \
-    --quiet \
-    --output-document - \
-    --load-cookies ${TMPPATH}/cookie1 \
-    $URL | \
-    grep "Teleboy Plus" > /dev/null
+# Check if login was successfull
+if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
 then
-  $quiet || echo "failed (no Teleboy Plus)"
-  echo "In order to comply with the terms of service of Teleboy" 1>&2
-  echo "this script requires a Teleboy Plus account." 1>&2
-  echo "" 1>&2
-  echo "Please visit: http://www.teleboy.ch/shop/list" 1>&2
+  echo "ok"
+else
+  echo "failed"
   exit 1
 fi
+
+# get user id
+URL="http://www.teleboy.ch/tv/player/player.php"
+rawuserdata=$(wget --user-agent "$UAGENT" \
+  --quiet \
+  --load-cookies $TMPPATH/cookie1 \
+  --output-document - \
+  $URL)
+userid=$(llocal=$(echo "$rawuserdata" | grep " id: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+
+echo $userid
+
+exit 0
+
 if $skiplogincheck
   then
   $quiet || echo "ok (forced)"
@@ -387,11 +393,11 @@ sid2cidmap="$(
     sed -e "s/};//" | \
     sed -e "s/},/}\n/g"
   )"
-if [ "$sid2cidmap" = "" ]
-then
-  $quiet || echo -e "Could not get a sid->cid map." 1>&2
-  exit 1
-fi
+#if [ "$sid2cidmap" = "" ]
+#then
+#  $quiet || echo -e "Could not get a sid->cid map." 1>&2
+#  exit 1
+#fi
 
 function set_cids_by_sid {
   # ARGS:
