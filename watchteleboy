@@ -379,9 +379,10 @@ function set_stream_data_from_api {
    "$URL")
   stream_data_url="$(echo -e \
     $(echo "$stream_data_json" | \
-      sed -e 's/{/\n/g' -e 's/}/\n/g' -e 's/,/\n/g' -e 's|\\||g' | \
+      sed -e 's/{/\n/g' -e 's/}/\n/g' -e 's/,/\n/g' | \
       grep '^"url"') | \
-      cut -d'"' -f4)"
+      cut -d'"' -f4 | \
+      sed -e 's/\\//g')"
   stream_data_channelname="$(echo "$stream_data_json" | \
     sed -e 's/{/\n/g' -e 's/}/\n/g' | \
     grep '^"id"' | head -n1 | \
@@ -796,12 +797,12 @@ then
 fi
 
 # Compose mplayer command
-MPLAYER="mplayer $MPLAYEROPTS "
+MPLAYER="mplayer --really-quiet $MPLAYEROPTS "
 function play_http_stream {
   # ARGS: None
   # Required variables:
   # stream_data_url
-  $MPLAYER -vid 4 "${stream_data_url}"
+  $MPLAYER -vid 4 "${stream_data_url}" 2> /dev/null
 }
 
 
@@ -826,6 +827,7 @@ function player_recorder {
   # ARGS:
   # 1: Channel
   set_stream_data_from_api
+  echo -e "$stream_data_channelname"
   compose_outfile $1
   if $record
   then
