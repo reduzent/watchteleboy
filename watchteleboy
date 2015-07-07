@@ -797,12 +797,13 @@ then
 fi
 
 # Compose mplayer command
-MPLAYER="mplayer --really-quiet $MPLAYEROPTS "
+MPLAYER="mpv --really-quiet "
 function play_http_stream {
   # ARGS: None
   # Required variables:
   # stream_data_url
-  $MPLAYER -vid 4 "${stream_data_url}" 2> /dev/null
+  $MPLAYER -vid 5 "${stream_data_url}" 2> /dev/null
+  #echo "$CHANNEL $stream_data_url"
 }
 
 
@@ -827,7 +828,7 @@ function player_recorder {
   # ARGS:
   # 1: Channel
   set_stream_data_from_api
-  echo -e "$stream_data_channelname"
+  $quiet || echo -e "$stream_data_channelname"
   compose_outfile $1
   if $record
   then
