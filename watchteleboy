@@ -323,7 +323,9 @@ stationlistraw="$(
     --quiet $URL | \
     grep "<tr class=\"playable\">"  | \
     cut -d"/" -f4,5 | \
-    sed -e "s/%FC/ü/g"
+    sed 's/%/\\\\x/g' | \
+    xargs -r -I@ echo -e @ | \
+    iconv -f latin1 -t utf8
   )"
 CHANNELS=($stationlistraw)
 # Check if we received something
