@@ -282,7 +282,7 @@ if ! wget \
     --output-document - \
     --load-cookies ${TMPPATH}/cookie1 \
     $URL | \
-    grep "Teleboy Plus" > /dev/null
+    grep "plusMember: 1," > /dev/null
 then
   $quiet || echo "failed (no Teleboy Plus)"
   echo "In order to comply with the terms of service of Teleboy" 1>&2
