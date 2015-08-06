@@ -58,7 +58,198 @@ CONFIG="$HOME/.${SCRIPTNAME}rc"
 if [ -f $CONFIG ]
 then
   . $CONFIG
+  createconfig=false
 else
+  createconfig=true
+fi
+
+# Comandline argument parsing
+channel=false
+deletecron=false
+deleteme=false
+duration=false
+endtime=false
+help=false
+list=false
+path=false
+quiet=false
+record=false
+showname=false
+skiplogincheck=false
+starttime=false
+version=false
+while [ $# -gt 0 ]
+do
+  case "$1" in
+    -c|--channel) channel=true; CHANNEL=$2; shift;;
+    -d|--duration) duration=true; DURATION="$2"; shift;;
+    -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
+    -h|--help) help=true;;
+    -l|--list) list=true;;
+    -n|--showname) showname=true; SHOWNAME="$2"; shift;;
+    -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
+    -p|--path) path=true; RECORDPATH="$2"; shift;;
+    -q|--quiet) quiet=true;;
+    -r|--record) record=true;;
+    -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
+    -v|--version) version=true;;
+    --deleteme) deleteme=true; DELETEME="$2"; shift;;
+    --delete-cron) deletecron=true; DELCHAN="$2"; DELTIME="$3"; shift; shift;;
+    -*) echo "$SCRIPTNAME: error - unrecognized option '$1'" 1>&2
+        echo "use '$SCRIPTNAME --help' to get a list of available options" 1>&2
+        exit 1;;
+    *)  break;;
+  esac
+  shift
+done
+
+# option -v|--version
+if $version
+then
+  echo "$SCRIPTNAME $VERSION"
+  echo "Authors:   
+  2011-2015   Roman Haefeli
+  2012        Doma Smoljo
+  2011        Alexander Tuchaček"
+  echo "Licensed under the GNU Public License 2.0 (GPL-2)"
+  exit
+fi
+
+# option -h|--help
+if $help
+then
+  cat << EOF
+
+$SCRIPTNAME
+------------
+
+  <no options>                go into interactive mode
+
+GENERAL OPTIONS:
+
+  -c|--channel CHANNEL        specify a channel
+  --delete-cron CHANNEL TIME  delete a previously scheduled job
+  -h|--help                   show this help and exit
+  -l|--list                   print a list of all channels and exit
+  -q|--quiet                  suppress any output and do not ask
+  -v|--version                print the version of this program
+
+OPTIONS FOR RECORDING (require -r|--record):
+
+  -e|--endtime TIME           schedule the end time of the recording
+  -d|--duration SECONDS	      specify the duration of the recording
+  -n|--showname SHOWNAME      specify file name prefix
+  -p|--path DIR		      specify target directory
+  -r|--record                 record a stream instead of watching it
+  -t|--starttime TIME	      schedule the start time for a recording
+
+EOF
+  exit
+fi
+
+# delete cron entry (used by tvbrowser record plugin)
+if $deletecron
+then
+  if ! date -d "$DELTIME" > /dev/null 2>&1
+  then
+    echo "Could not parse specified time: $DELTIME" 1>&2
+    exit 1
+  fi
+  crontempfile="/tmp/crontab.tmp"
+  searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]\"${DELCHAN}\".*"
+  if ! crontab -l | grep "$searchstring" > /dev/null
+  then
+    echo "Could not find specified job in crontab." 1>&2
+    exit 1
+  else
+    crontab -l | grep -v "$searchstring" > $crontempfile 
+    crontab < $crontempfile
+    rm $crontempfile
+    $quiet || echo "Successfully deleted crontab entry."
+    exit 0
+  fi
+fi
+
+# Check record path validity
+if $record
+then
+  if [ ! -d "$RECORDPATH" ]
+  then
+    echo "There is no such directory: $RECORDPATH" 1>&2
+    exit 1
+  elif [ ! -w "$RECORDPATH" ]
+  then
+    echo "You don't have permission to write to $RECORDPATH" 1>&2
+    exit 1
+  fi
+fi
+
+# set working directory for keeping session data
+TMPPATH="${TMPDIR}/$SCRIPTNAME"
+
+# Create TMPDIR 
+if  [ ! -d $TMPPATH ]
+then
+  if ! mkdir -p $TMPPATH
+  then
+    echo "Could not create directory: $TMPPATH" 1>&2
+    exit 1
+  fi
+fi
+touch $TMPPATH/loggedin
+
+# remove TMPPATH dir on exit
+function cleanup {
+  rm -rf $TMPPATH
+  $quiet || echo ""
+}
+trap cleanup INT TERM EXIT
+
+# Teleboy Login
+function teleboy_login {
+  # PARAMS:
+  # ARG 1: teleboy user name
+  # ARG 2: password
+  # get the session cookie (cinergy_s) and login auth cookie (cinergy_auth)
+  # this seems to be a two-step process...
+  _USER=$1
+  _PASS=$2
+  $quiet || echo -n "login (as '$_USER')..."
+  URL="http://www.teleboy.ch/watchlist/"
+  wget --user-agent "$UAGENT" \
+    --quiet \
+    --save-cookies $TMPPATH/cookie0 \
+    --keep-session-cookies \
+    --output-document /dev/null \
+    $URL
+  POST="login=${_USER}&password=${_PASS}&x=14&y=7&keep_login=1"
+  URL="http://www.teleboy.ch/layer/login_check"
+  wget --user-agent "$UAGENT" \
+    --quiet \
+    --load-cookies $TMPPATH/cookie0 \
+    --save-cookies $TMPPATH/cookie1 \
+    --keep-session-cookies \
+    --save-headers \
+    --post-data $POST \
+    --output-document /dev/null \
+    $URL
+  
+  # Check if login was successfull
+  if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
+  then
+    $quiet || echo "ok"
+  else
+    echo "failed"
+    echo "Please check your credentials in the config file:" >&2
+    echo "$CONFIG" >&2
+    exit 1
+  fi
+}
+
+
+# Create config file if necessary
+if $createconfig
+then
   echo "In order for this script to work properly you need to"
   echo "provide your user credentials for the teleboy.ch"
   echo "service."
@@ -121,216 +312,7 @@ USER=$USER
 PASS=$PASS
 EOF
   . $CONFIG
-  echo "created config file $CONFIG"  
-fi
-
-# Comandline argument parsing
-channel=false
-deletecron=false
-deleteme=false
-duration=false
-endtime=false
-help=false
-list=false
-path=false
-quiet=false
-record=false
-showname=false
-skiplogincheck=false
-starttime=false
-version=false
-while [ $# -gt 0 ]
-do
-  case "$1" in
-    -c|--channel) channel=true; CHANNEL=$2; shift;;
-    -d|--duration) duration=true; DURATION="$2"; shift;;
-    -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
-    -h|--help) help=true;;
-    -l|--list) list=true;;
-    -n|--showname) showname=true; SHOWNAME="$2"; shift;;
-    -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
-    -p|--path) path=true; RECORDPATH="$2"; shift;;
-    -q|--quiet) quiet=true;;
-    -r|--record) record=true;;
-    -t|--starttime) starttime=true; STARTTIME="$2"; shift;;
-    -v|--version) version=true;;
-    --deleteme) deleteme=true; DELETEME="$2"; shift;;
-    --delete-cron) deletecron=true; DELCHAN="$2"; DELTIME="$3"; shift; shift;;
-    -*) echo "$SCRIPTNAME: error - unrecognized option '$1'" 1>&2
-        echo "use '$SCRIPTNAME --help' to get a list of available options" 1>&2
-        exit 1;;
-    *)  break;;
-  esac
-  shift
-done
-
-# option -v|--version
-if $version
-then
-  echo "watchteleboy $VERSION"
-  echo "Authors:   
-  2011-2014   Roman Haefeli
-  2012        Doma Smoljo
-  2011        Alexander Tuchaček"
-  echo "Licensed under the GNU Public License 2.0 (GPL-2)"
-  exit
-fi
-
-# option -h|--help
-if $help
-then
-  cat << EOF
-
-watchteleboy
-------------
-
-  <no options>                go into interactive mode
-
-GENERAL OPTIONS:
-
-  -c|--channel CHANNEL        specify a channel
-  --delete-cron CHANNEL TIME  delete a previously scheduled job
-  -h|--help                   show this help and exit
-  -l|--list                   print a list of all channels and exit
-  -q|--quiet                  suppress any output and do not ask
-  --skip-logincheck           do not test if login was successfull
-  -v|--version                print the version of this program
-
-OPTIONS FOR RECORDING (require -r|--record):
-
-  -e|--endtime TIME           schedule the end time of the recording
-  -d|--duration SECONDS	      specify the duration of the recording
-  -n|--showname SHOWNAME      specify file name prefix
-  -p|--path DIR		      specify target directory
-  -r|--record                 record a stream instead of watching it
-  -t|--starttime TIME	      schedule the start time for a recording
-
-MPLAYER SPECIFIC OPTIONS:
-
-  -m|--mplayer-opts OPTS      pass options to mplayer
-
-EOF
-  exit
-fi
-
-# delete cron entry (used by tvbrowser record plugin)
-if $deletecron
-then
-  if ! date -d "$DELTIME" > /dev/null 2>&1
-  then
-    echo "Could not parse specified time: $DELTIME" 1>&2
-    exit 1
-  fi
-  crontempfile="/tmp/crontab.tmp"
-  searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*watchteleboy.*channel[[:space:]]${DELCHAN}.*"
-  if ! crontab -l | grep "$searchstring" > /dev/null
-  then
-    echo "Could not find specified job in crontab." 1>&2
-    exit 1
-  else
-    crontab -l | grep -v "$searchstring" > $crontempfile 
-    crontab < $crontempfile
-    rm $crontempfile
-    $quiet || echo "Successfully deleted crontab entry."
-    exit 0
-  fi
-fi
-
-# Check record path validity
-if $record
-then
-  if [ ! -d "$RECORDPATH" ]
-  then
-    echo "There is no such directory: $RECORDPATH" 1>&2
-    exit 1
-  elif [ ! -w "$RECORDPATH" ]
-  then
-    echo "You don't have permission to write to $RECORDPATH" 1>&2
-    exit 1
-  fi
-fi
-
-# check availability of login
-# since teleboy.ch only allows you to stream one channel per session, 
-# we use a different login for each session (if available)
-# more users can be configured in CONFIG
-userinc=1
-if [ -f $TMPDIR/watchteleboy.${USER}/loggedin ]
-then 
-  while true
-  do
-    ((userinc += 1))
-    uservar="USER${userinc}"
-    if [ -z "${!uservar}" ]
-    then
-      $quiet || exit 1
-      echo "Available logins already in use. Exiting" 1>&2 
-      echo "You might want to configure more credentials in $CONFIG" 1>&2
-      exit 1
-    fi
-    if ! [ -f $TMPDIR/watchteleboy.${!uservar}/loggedin ]
-    then
-      break # we found a login not yet in use
-    fi
-  done
-  # use login not yet in use
-  USER=${!uservar}
-  passvar="PASS${userinc}"
-  PASS=${!passvar}
-fi
-
-# set working directory for keeping session data
-TMPPATH="${TMPDIR}/watchteleboy.${USER}"
-
-# Create TMPDIR 
-if  [ ! -d $TMPPATH ]
-then
-  if ! mkdir -p $TMPPATH
-  then
-    echo "Could not create directory: $TMPPATH" 1>&2
-    exit 1
-  fi
-fi
-touch $TMPPATH/loggedin
-
-# remove TMPPATH dir on exit
-function cleanup {
-  rm -rf $TMPPATH
-  $quiet || echo ""
-}
-trap cleanup INT TERM EXIT
-
-# get the session cookie (cinergy_s) and login auth cookie (cinergy_auth)
-# this seems to be a two-step process...
-$quiet || echo -n "login (as '$USER')..."
-URL="http://www.teleboy.ch/watchlist/"
-wget --user-agent "$UAGENT" \
-  --quiet \
-  --save-cookies $TMPPATH/cookie0 \
-  --keep-session-cookies \
-  --output-document /dev/null \
-  $URL
-POST="login=${USER}&password=${PASS}&x=14&y=7&keep_login=1"
-URL="http://www.teleboy.ch/layer/login_check"
-wget --user-agent "$UAGENT" \
-  --quiet \
-  --load-cookies $TMPPATH/cookie0 \
-  --save-cookies $TMPPATH/cookie1 \
-  --keep-session-cookies \
-  --save-headers \
-  --post-data $POST \
-  --output-document /dev/null \
-  $URL
-
-# Check if login was successfull
-if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
-then
-  $quiet || echo "ok"
-else
-  echo "failed"
-  echo "Please check your credentials in the config file:" >&2
-  echo "$CONFIG" >&2
-  exit 1
+  echo "created config file $CONFIG"
 fi
 
 # Store value of session cookie (cinergy_s)
