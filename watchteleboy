@@ -236,23 +236,23 @@ trap cleanup INT TERM EXIT
 
 # Teleboy Login
 function teleboy_login {
-  # PARAMS:
-  # ARG 1: teleboy user name
-  # ARG 2: password
+  # ARGS:
+  # 1: teleboy user name
+  # 2: password
   # get the session cookie (cinergy_s) and login auth cookie (cinergy_auth)
   # this seems to be a two-step process...
-  _USER=$1
-  _PASS=$2
+  local _USER=$1
+  local _PASS=$2
   $quiet || echo -n "login (as '$_USER')..."
-  URL="http://www.teleboy.ch/watchlist/"
+  local URL="http://www.teleboy.ch/watchlist/"
   wget --user-agent "$UAGENT" \
     --quiet \
     --save-cookies $TMPPATH/cookie0 \
     --keep-session-cookies \
     --output-document /dev/null \
     $URL
-  POST="login=${_USER}&password=${_PASS}&x=14&y=7&keep_login=1"
-  URL="http://www.teleboy.ch/layer/login_check"
+  local POST="login=${_USER}&password=${_PASS}&x=14&y=7&keep_login=1"
+  local URL="http://www.teleboy.ch/layer/login_check"
   wget --user-agent "$UAGENT" \
     --quiet \
     --load-cookies $TMPPATH/cookie0 \
@@ -267,46 +267,49 @@ function teleboy_login {
   if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
   then
     $quiet || echo "ok"
+    return 0
   else
     echo "failed"
-    echo "Please check your credentials in the config file:" >&2
-    echo "$CONFIG" >&2
-    exit 1
+    return 1
   fi
 }
 
-
-# Create config file if necessary
-if $createconfig
+# Add login credentials to config (if necessary)
+if [ -z "$TELEBOY_USER" ]
 then
   echo "In order for this script to work properly you need to"
   echo "provide your user credentials for the teleboy.ch"
   echo "service."
-  while true
+  read -p    "Please enter your user name: " TELEBOY_USER
+  read -s -p "Please enter your password:  " TELEBOY_PASS
+  echo
+  while ! teleboy_login $TELEBOY_USER $TELEBOY_PASS 
   do
-    read -p "Please enter your user name: " USER
-    read -s -p "Please enter your password:  " PASS
-    echo ""
-    read -s -p "Confirm your password:       " PASS2
-    echo "" 
-    if [ "$PASS" == "$PASS2" ]
-    then
-      break
-    else
-      echo "The password entries don't match."
-    fi
+    read -p    "Please re-enter your user name: " TELEBOY_USER
+    read -s -p "Please re-enter your password:  " TELEBOY_PASS
+    echo
   done  
   echo "CAUTION: writing plain text password to the config file!"
   read -p "Proceed? y/N " -n 1 install_configuration
   if ! [[ "$install_configuration" =~ [Yy] ]]
   then
-    echo
-    echo "Doing nothing. Bye!"
-    exit 0
+    echo "Not saving credentials in config file"
+  else
+      cat << EOF >> $CONFIG
+
+# Teleboy Login Credentials
+
+TELEBOY_USER=$TELEBOY_USER
+TELEBOY_PASS=$TELEBOY_PASS
+EOF
   fi
-  echo
-  . $CONFIG
-  echo "created config file $CONFIG"
+else
+  if ! teleboy_login $TELEBOY_USER $TELEBOY_PASS
+  then
+    echo "Please check your credentials in the configuration:"
+    echo "$CONFIG"
+    exit 1
+  fi
 fi
 
 # Store value of session cookie (cinergy_s)
