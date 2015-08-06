@@ -19,13 +19,13 @@ VERSION=1.17
 TMPDIR=/tmp
 UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12.0'
 MPLAYEROPTS="-really-quiet"
+MPVOPTS="--really-quiet --keep-open"
 RECORDPATH=$(pwd)
-SDBUFFER=500000
-HDBUFFER=1500000
-ORIGAUDIO=0
+BUFFERSECONDS=3
+SCRIPTNAME=$(basename $0)
 
 # Check dependencies
-programlist="rtmpdump mplayer wget grep cut crontab date iconv"
+programlist="avconv crontab cut grep wget"
 for program in $programlist
 do
     if ! which $program > /dev/null
@@ -36,11 +36,25 @@ do
     fi
 done
 
+# Check player dependency (mpv, mplayer in that order)
+if which mpv > /dev/null
+then
+  PLAYER=mpv
+elif which mplayer > /dev/null
+then
+  PLAYER=mplayer
+else
+  echo "No suitable player found: mpv, mplayer"
+  echo "Please install mpv or mplayer, before using"
+  echo "this script."
+  exit 1
+fi
+
 # whiptail dialog boxes are optional (fallback to tradition shell dialogs)
 whiptail=$(which whiptail > /dev/null && echo true || echo false)
 
 # Read config (overrides default values) or create it
-CONFIG=~/.watchteleboyrc
+CONFIG="$HOME/.${SCRIPTNAME}rc"
 if [ -f $CONFIG ]
 then
   . $CONFIG
