@@ -77,8 +77,50 @@ else
     fi
   done  
   echo "CAUTION: writing plain text password to the config file!"
-  echo "USER='$USER'" >> $CONFIG
-  echo "PASS='$PASS'" >> $CONFIG
+  read -p "Proceed? y/N " -n 1 install_configuration
+  if ! [[ "$install_configuration" =~ [Yy] ]]
+  then
+    echo
+    echo "Doing nothing. Bye!"
+    exit 0
+  fi
+  echo
+  cat << EOF > $CONFIG
+# Configuration for $SCRIPTNAME
+# Feel free to adapt to your needs
+
+# Set directory where played streams are cached
+
+TMPDIR=$TMPDIR
+
+# $SCRIPTNAME allows you to use either mpv or mplayer. Since both
+# players are not fully compatible, use separate configurations
+# for each player.
+# mpv flags:
+
+MPVOPTS="$MPVOPTS"
+
+# mplayer flags:
+
+MPLAYEROPTS="$MPLAYEROPTS"
+
+# Where should stream recordings be saved?
+# This can be overridden by the -p/--path flag
+
+#RECORDPATH=~/mytvshows
+
+# How much data should be downloaded before starting playback?
+# The value is given in seconds. The playback begins after
+# BUFFERSECONDS * BITRATE data has been downloaded.
+
+BUFFERSECONDS=$BUFFERSECONDS
+
+# Teleboy login credentials
+
+USER=$USER
+PASS=$PASS
+EOF
+  . $CONFIG
   echo "created config file $CONFIG"  
 fi
 
