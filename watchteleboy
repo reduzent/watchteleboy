@@ -156,23 +156,14 @@ do
     -v|--version) version=true;;
     --deleteme) deleteme=true; DELETEME="$2"; shift;;
     --delete-cron) deletecron=true; DELCHAN="$2"; DELTIME="$3"; shift; shift;;
-    --skip-logincheck) skiplogincheck=true;;
-    -*) echo "$(basename $0): error - unrecognized option '$1'" 1>&2
-        echo "use '$(basename $0) --help' to get a list of available options" 1>&2
+    -*) echo "$SCRIPTNAME: error - unrecognized option '$1'" 1>&2
+        echo "use '$SCRIPTNAME --help' to get a list of available options" 1>&2
         exit 1;;
     *)  break;;
   esac
   shift
 done
 
-# ORIGAUDIO (convert 0|1 to false|true)
-if [ $ORIGAUDIO = 1 ] || [ $ORIGAUDIO = true ]
-then
-  ORIGAUDIO=true
-else
-  ORIGAUDIO=false
-fi
- 
 # option -v|--version
 if $version
 then
