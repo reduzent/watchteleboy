@@ -214,7 +214,7 @@ then
 fi
 
 # set working directory for keeping session data
-TMPPATH="${TMPDIR}/$SCRIPTNAME"
+TMPPATH="${TMPDIR}/${SCRIPTNAME}/${TELEBOY_USER}"
 
 # Create TMPDIR 
 if  [ ! -d $TMPPATH ]
@@ -225,7 +225,6 @@ then
     exit 1
   fi
 fi
-touch $TMPPATH/loggedin
 
 # remove TMPPATH dir on exit
 function cleanup {
