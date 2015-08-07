@@ -534,7 +534,6 @@ function player_recorder {
     $quiet || echo -ne "\rNow playing: $stream_data_channelname"
     $PLAYERCMD "$OUTFILE" 2> /dev/null
     kill $PID
-    echo 
   fi
 }
 
