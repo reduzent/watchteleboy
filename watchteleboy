@@ -307,8 +307,8 @@ EOF
 else
   if ! teleboy_login $TELEBOY_USER $TELEBOY_PASS
   then
-    echo "Please check your credentials in the configuration:"
-    echo "$CONFIG"
+    $quiet || echo "Please check your credentials in the configuration:"
+    $quiet || echo "$CONFIG"
     exit 1
   fi
 fi
@@ -318,7 +318,7 @@ fi
 cinergy_s=$(grep cinergy_s $TMPPATH/cookie1 | cut -d$'\t' -f 7)
 if [ "cinergy_s" == "" ]
 then
-  echo "Could not retrieve session cookie (cinergy_s)" >&2
+  $quiet || echo "Could not retrieve session cookie (cinergy_s)" >&2
   exit 1
 fi
 
@@ -341,7 +341,7 @@ tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s
 # did we get a valid userid?
 if ! [[ "$tb_userid" =~ ^-?[0-9]+$ ]]
 then 
-  echo "Could not extract a valid user id" >&2
+  $quiet || echo "Could not extract a valid user id" >&2
   exit 1
 fi
 
