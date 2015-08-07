@@ -390,12 +390,13 @@ function set_sid_by_channel {
 
 # Get stream-URL from teleboy-api by providing user, session, sid
 function set_stream_data_from_api {
-  # ARGS: No
+  # ARGS:
+  # 1: CHANNEL
   # The following variables need to be set
-  # CHANNEL
   # tb_userid  (numeric user id)
   # tb_apikey
   # cinergy_s (session cookie)
+  local CHANNEL=$1
   set_sid_by_channel $CHANNEL
   URL="http://tv.api.teleboy.ch/users/${tb_userid}/stream/live/${sid}?alternative=false"
   stream_data_json=$(wget \
@@ -428,6 +429,120 @@ then
   print_channel_list
   exit
 fi
+
+function dump_hls_stream {
+  # ARGS:
+  # 1: channel
+  # 2: output file
+  [ -d $TMPPATH ] || exit 1
+
+  set_stream_data_from_api $1
+
+  # get highest quality stream
+  selected_streamurl=$(wget --output-document - \
+    --quiet "$stream_data_url" | \
+    grep '^http.*\.m3u8' | \
+    sort -V | \
+    tail -n1)
+  
+  # Use differenct container format depending on whether we record or watch live
+  # flv is designed for live streaming. It supports reading from it while data is
+  # still appended
+  # mkv cannot easily be read from while it is written, but unlike flv it allows
+  # to quickly seek within the file without reading the whole file.
+  # For given reasons, mkv is used for recording and flv for live watching.
+  containerformat=$( $record && echo "matroska" || echo "flv" )
+  # hls dump command
+  avconv -y -v quiet -re -i "$selected_streamurl" -c copy -f $containerformat "$2"  &
+  PID=$!
+}
+
+# Compose player command
+PLAYERCMD="$PLAYER $([ "$PLAYER" == "mpv" ] && echo $MPVOPTS || echo $MPLAYEROPTS) "
+
+# Compose output filename
+function compose_outfile {
+  # ARGS:
+  # 1: Channel
+  if $record
+  then
+    if $showname
+    then
+      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed -e 's|/|-|g')-$(date +%Y%m%d%H%M).mkv"
+    else
+      OUTFILE="${RECORDPATH}/${1}-$(date +%Y%m%d%H%M).mkv"
+    fi
+  else
+    OUTFILE="$TMPPATH/stream.flv"
+  fi
+}
+
+# recorder (mkv) / player with progressbar and caching (flv)
+function player_recorder {
+  # ARGS:
+  # 1: Channel
+  compose_outfile "$1"
+  if $record
+  then
+    $quiet || echo "Now recording: $1"
+    dump_hls_stream "$1" "$OUTFILE" || return 1
+  else
+    # Make sure there is an empty OUTFILE 
+    > "$OUTFILE"
+    dump_hls_stream "$1" "$OUTFILE" || return 1
+
+    # calculate buffer size from bitrate of selected stream
+    # so that we get consistent waiting times independent from bitrate
+    BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f8)
+    BUFFER=$(( BITRATE * BUFFERSECONDS / 8 ))
+
+    # Only start mplayer after having downloaded BUFFER bytes
+    eval $(resize)
+    PROGRESSBARWIDTH=$(( $COLUMNS - 20 ))
+    OUTFILESIZE=0
+    # Hide terminal cursor
+    tput civis -- invisible
+    while [  "$OUTFILESIZE" -lt "$BUFFER" ]
+    do
+      OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
+      if ! $quiet
+      then
+        echo -ne "\r"
+        echo -n "  Buffering: ["
+        progresscount=$(( $OUTFILESIZE * $PROGRESSBARWIDTH / $BUFFER ))
+        progresscount=$((PROGRESSBARWIDTH < progresscount ? PROGRESSBARWIDTH : progresscount))
+        for i in $(seq $progresscount); do echo -n "="; done
+        progressempty=$(( $PROGRESSBARWIDTH - $progresscount ))
+        for i in $(seq $progressempty); do echo -n " "; done
+        echo -n "]"
+      fi
+      sleep 0.1
+      if ! kill -0 $PID 2> /dev/null
+      then
+        code=$(wait $PID; echo $?)
+        echo "avconv returned an error code: $code" 1>&2
+        sleep 2
+        return 1
+      fi
+    done
+    echo -ne "\r"
+    for i in $(seq $COLUMNS); do echo -n " "; done
+    $quiet || echo -ne "\rNow playing: $1"
+    $PLAYERCMD "$OUTFILE" 2> /dev/null
+    kill $PID
+    echo 
+  fi
+}
+
+# Da Keestroke Waitah
+function  wait_s_key {
+  $quiet || echo "Press the 's' key to stop the recording." 
+  keypress=""
+  while [ "$keypress" != "s" ]
+  do
+    read -s -n1  keypress
+  done
+}
 
 # Da Time Valeditee Checkah
 function check_time_validity {
@@ -822,59 +937,6 @@ then
   crontab < $crontempfile
   rm $crontempfile
 fi
-
-# Compose mplayer command
-MPLAYER="mpv --really-quiet "
-function play_http_stream {
-  # ARGS: None
-  # Required variables:
-  # stream_data_url
-  $MPLAYER -vid 5 "${stream_data_url}" 2> /dev/null
-  #echo "$CHANNEL $stream_data_url"
-}
-
-
-# Compose rmtpdump output filename
-function compose_outfile {
-  # ARGS:
-  # 1: Channel
-  if $record
-  then
-    if $showname
-    then
-      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed -e 's|/|-|g')-$(date +%Y%m%d%H%M).flv"
-    else
-      OUTFILE="${RECORDPATH}/${1}-$(date +%Y%m%d%H%M).flv"
-    fi
-  else
-    OUTFILE="$TMPPATH/stream.flv"
-  fi
-} 
-
-function player_recorder {
-  # ARGS:
-  # 1: Channel
-  set_stream_data_from_api
-  $quiet || echo -e "$stream_data_channelname"
-  compose_outfile $1
-  if $record
-  then
-    dump_http_stream $1 "$OUTFILE" || return 1
-  else
-    # Make sure there is an empty OUTFILE 
-    play_http_stream || return 1
-  fi
-}
-
-# Da Keestroke Waitah
-function  wait_s_key {
-  $quiet || echo "Press the 's' key to stop the recording." 
-  keypress=""
-  while [ "$keypress" != "s" ]
-  do
-    read -s -n1  keypress
-  done
-}
 
 # option -e|--endtime
 if $endtime && ! $duration
