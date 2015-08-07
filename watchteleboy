@@ -484,7 +484,7 @@ function player_recorder {
   compose_outfile "$1"
   if $record
   then
-    $quiet || echo "Now recording: $1"
+    $quiet || echo "Now recording: $stream_data_channelname"
     dump_hls_stream "$1" "$OUTFILE" || return 1
   else
     # Make sure there is an empty OUTFILE 
@@ -527,7 +527,7 @@ function player_recorder {
     done
     echo -ne "\r"
     for i in $(seq $COLUMNS); do echo -n " "; done
-    $quiet || echo -ne "\rNow playing: $1"
+    $quiet || echo -ne "\rNow playing: $stream_data_channelname"
     $PLAYERCMD "$OUTFILE" 2> /dev/null
     kill $PID
     echo 
@@ -965,10 +965,8 @@ then
   fi
   channel_validity $CHANNEL || exit 1
   player_recorder $CHANNEL || exit 1
-  $quiet || echo "Now recording $CHANNEL for $DURATION seconds."
   sleep $DURATION
   kill $PID
-  $quiet || echo "Stopped recording."
   exit 0
 fi
 
@@ -979,14 +977,11 @@ then
   then
     if $record
     then
-      $quiet || echo -n "Now recording: "
       player_recorder $CHANNEL || exit 1
       wait_s_key
       kill $PID
-      $quiet || echo "Stopped recording."
       exit 0
     else
-      $quiet || echo -n "Now playing: "
       player_recorder $CHANNEL || exit 1
     fi
     exit 0
@@ -1026,15 +1021,12 @@ $(crontab -l | grep $DELETEME)" \
     else
       channel_dialog
       player_recorder $CHANNEL || exit 1
-      $quiet || echo -n "Now recording: "
       wait_s_key
       kill $PID
-      $quiet || echo "Stopped recording."
       exit 0
     fi
   else
     channel_dialog
-    $quiet || echo -n "Now playing: "
     player_recorder $CHANNEL || sleep 2
   fi
 done
