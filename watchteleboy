@@ -228,6 +228,7 @@ fi
 
 # remove TMPPATH dir on exit
 function cleanup {
+  rm -f "$OUTFILE"
   $quiet || echo ""
 }
 trap cleanup INT TERM EXIT
@@ -486,7 +487,7 @@ function compose_outfile {
       OUTFILE="${RECORDPATH}/${1}-$(date +%Y%m%d%H%M).mkv"
     fi
   else
-    OUTFILE="$TMPPATH/stream.flv"
+    OUTFILE="$TMPPATH/${1}_live.flv"
   fi
 }
 
@@ -543,6 +544,7 @@ function player_recorder {
     $quiet || echo -ne "\rNow playing: $stream_data_channelname"
     $PLAYERCMD "$OUTFILE" 2> /dev/null
     kill $PID
+    rm "$OUTFILE"
   fi
 }
 
