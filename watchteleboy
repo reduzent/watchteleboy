@@ -291,6 +291,7 @@ then
   done  
   echo "CAUTION: writing plain text password to the config file!"
   read -p "Proceed? y/N " -n 1 install_configuration
+  echo
   if ! [[ "$install_configuration" =~ [Yy] ]]
   then
     echo "Not saving credentials in config file"
