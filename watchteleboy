@@ -437,6 +437,10 @@ function dump_hls_stream {
   [ -d $TMPPATH ] || exit 1
 
   set_stream_data_from_api $1
+  
+  # Ugly: We need to print the canonical channel name _before_
+  # we start downling in record mode
+  $record && ! $quiet && echo "$stream_data_channelname"
 
   # get highest quality stream
   selected_streamurl=$(wget --output-document - \
@@ -484,7 +488,7 @@ function player_recorder {
   compose_outfile "$1"
   if $record
   then
-    $quiet || echo "Now recording: $stream_data_channelname"
+    $quiet || echo -n "Now recording: "
     dump_hls_stream "$1" "$OUTFILE" || return 1
   else
     # Make sure there is an empty OUTFILE 
