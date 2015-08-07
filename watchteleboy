@@ -228,7 +228,6 @@ fi
 
 # remove TMPPATH dir on exit
 function cleanup {
-  rm -rf $TMPPATH
   $quiet || echo ""
 }
 trap cleanup INT TERM EXIT
@@ -242,6 +241,17 @@ function teleboy_login {
   # this seems to be a two-step process...
   local _USER=$1
   local _PASS=$2
+  if [ -f "$TMPPATH/cookie1" ]
+  then
+    # When does the current session expire (make it artificially a minute early
+    session_expires=$(( $(grep cinergy_s $TMPPATH/cookie1 | cut -f5) - 60 ))
+    now=$(date +%s)
+    if [ "$session_expires" -gt "$now" ]
+    then
+      $quiet || echo "Already logged in as $_USER"
+      return 0
+    fi
+  fi
   $quiet || echo -n "login (as '$_USER')..."
   local URL="http://www.teleboy.ch/watchlist/"
   wget --user-agent "$UAGENT" \
@@ -268,7 +278,7 @@ function teleboy_login {
     $quiet || echo "ok"
     return 0
   else
-    echo "failed"
+    $quiet || echo "failed"
     return 1
   fi
 }
