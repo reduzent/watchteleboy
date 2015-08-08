@@ -104,7 +104,6 @@ path=false
 quiet=false
 record=false
 showname=false
-skiplogincheck=false
 starttime=false
 version=false
 while [ $# -gt 0 ]
