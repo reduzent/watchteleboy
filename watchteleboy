@@ -185,7 +185,7 @@ then
     exit 1
   fi
   crontempfile="/tmp/crontab.tmp"
-  searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]\"${DELCHAN}\".*"
+  searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]'${DELCHAN}'.*"
   if ! crontab -l | grep "$searchstring" > /dev/null
   then
     echo "Could not find specified job in crontab." 1>&2
@@ -882,10 +882,10 @@ function write_to_crontab {
   DELETEME=${RANDOM}${RANDOM}
   crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
   echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $crontempfile
-  echo -ne "--quiet --channel ${CHANNEL} --duration ${DURATION} " >> $crontempfile
+  echo -ne "--quiet --channel '${CHANNEL}' --duration ${DURATION} " >> $crontempfile
   echo -ne "--deleteme ${DELETEME} " >> $crontempfile
-  $showname && echo -ne "--showname \"${SHOWNAME}\" " >> $crontempfile
-  echo -ne "--path ${RECORDPATH}\n" >> $crontempfile
+  $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
+  echo -ne "--path '${RECORDPATH}'\n" >> $crontempfile
   crontab < $crontempfile
   rm $crontempfile
 }
