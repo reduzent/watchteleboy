@@ -8,9 +8,8 @@ Homepage: http://github.com/reduzent/watchteleboy
 
 Package: watchteleboy
 Architecture: all
-Depends: mplayer,
+Depends: mpv | mplayer,
          wget,
-         rtmpdump,
          ${misc:Depends}
 Suggests: tvbrowser,
          whiptail
