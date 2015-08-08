@@ -5,18 +5,6 @@ watchteleboy
 is a script to watch and record live TV streams from 
 http://www.teleboy.ch without browser nor flash.
 
-IMPORTANT NOTICE:
-
-As of late June 2015, Teleboy AG reworked their service and watchteleboy is
-not functional anymore. It appears they switched from RTMP to HTTP as
-transport protocol. Their service needs to be reverse-engineered again in
-order to provide a functional script. My skills and time are limited, 
-so please do not expect a working version soon. Any help is greatly
-appreciated.
-
-The service was reverse-engineered  by:
-Alexander Tuchaček
-
 THIS MOST LIKELY WORKS ONLY FROM SWITZERLAND, SINCE THE IPTV SERVICE
 FROM TELEBOY.CH IS ONLY AVAILABLE TO SWISS IP ADDRESSES.
 
@@ -34,13 +22,11 @@ Requirements
 
 This script is based on the following binary programs:
 
-     o MPlayer - The Movie Player
-       Most likely mplayer is delivered by your distribution. If you need
-       a bleeding edge version, go to:
-       http://www.mplayerhq.hu/
+     o MPV - A versatile CLI movie player (fork of MPlayer)
+       Optionally, this script also works with the older MPlayer
 
-     o rtmpdump - a dumping tool for rtmp streams
-       http://rtmpdump.mplayerhq.hu/
+     o avconv - video converter
+       In many distros it comes packaged as part of 'libav-tools'      
 
      o wget
 
@@ -61,12 +47,8 @@ options. When invoked without options it starts in interactive mode.
 Bugs
 ----
 
-  * Sometimes in live watching mode, streaming is suddenly terminated.
+Please report bugs and feature requests to the author by email or by opening
+an issue on github.
   
-If you find some or if you have a feature request, post them to the author:
-Roman Haefeli <reduzent@gmail>
-
-
 HAVE FUN!
-
 
