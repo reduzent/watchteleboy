@@ -228,7 +228,9 @@ fi
 
 # remove TMPPATH dir on exit
 function cleanup {
-  rm -f "$OUTFILE"
+  # Delete livestream cache
+  # (but _not_ our recording!)
+  $record || rm -f "$OUTFILE"
   $quiet || echo ""
 }
 trap cleanup INT TERM EXIT
@@ -250,6 +252,7 @@ function teleboy_login {
     if [ "$session_expires" -gt "$now" ]
     then
       $quiet || echo "Already logged in as $_USER"
+      new_session=false
       return 0
     fi
   fi
@@ -277,6 +280,7 @@ function teleboy_login {
   if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
   then
     $quiet || echo "ok"
+    new_session=true
     return 0
   else
     $quiet || echo "failed"
@@ -359,26 +363,33 @@ fi
 # CHANNELS is an array containing an element per station
 # Each element follows this format:
 # STATIONNAME/STATIONID
-$quiet || echo -n "receiving channel list..."
-URL="http://www.teleboy.ch/programm/?program_date=live"
-stationlistraw="$(
-  wget --output-document - \
-    --load-cookies ${TMPPATH}/cookie1 \
-    --user-agent "$UAGENT" \
-    --quiet $URL | \
-    grep "<tr class=\"playable\">"  | \
-    cut -d"/" -f4,5 | \
-    sed -e "s/%FC/ü/g"
-  )"
-CHANNELS=($stationlistraw)
-
-# Check if we received something
-if [ ${#CHANNELS[@]} -gt 0 ]
+channel_list_file="$TMPPATH/channel_list"
+if [ -f "$channel_list_file" ] && ! $new_session
 then
-  $quiet || echo "ok (${#CHANNELS[@]} channels)"
+  CHANNELS=($(cat $channel_list_file))
 else
-  $quiet || echo "failed"
-   exit 1
+  $quiet || echo -n "receiving channel list..."
+  URL="http://www.teleboy.ch/programm/?program_date=live"
+  stationlistraw="$(
+    wget --output-document - \
+      --load-cookies ${TMPPATH}/cookie1 \
+      --user-agent "$UAGENT" \
+      --quiet $URL | \
+      grep "<tr class=\"playable\">"  | \
+      cut -d"/" -f4,5 | \
+      sed -e "s/%FC/ü/g"
+    )"
+  CHANNELS=($stationlistraw)
+
+  # Check if we received something
+  if [ ${#CHANNELS[@]} -gt 0 ]
+  then
+    $quiet || echo "ok (${#CHANNELS[@]} channels)"
+    echo "${CHANNELS[@]}" > "$channel_list_file"
+  else
+    $quiet || echo "failed"
+     exit 1
+  fi
 fi
 
 # Convert selected channel to station_id (sid)
