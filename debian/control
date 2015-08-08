@@ -9,6 +9,7 @@ Homepage: http://github.com/reduzent/watchteleboy
 Package: watchteleboy
 Architecture: all
 Depends: mpv | mplayer,
+         libav-tools,
          wget,
          ${misc:Depends}
 Suggests: tvbrowser,
