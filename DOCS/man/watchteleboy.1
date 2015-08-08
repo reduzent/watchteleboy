@@ -1,6 +1,6 @@
-.TH watchteleboy "1" "2014 Sept 12" "GNU2"
+.TH watchteleboy "1" "2015 July 10" "GNU2"
 .SH NAME
-watchteleboy \- watch and record online TV streams from teleboy.ch
+watchteleboy \- watch and record online HDTV streams
 .SH SYNOPSYS
 .B watchteleboy
 [
@@ -32,8 +32,7 @@ watchteleboy \- watch and record online TV streams from teleboy.ch
 ]]
 .SH DESCRIPTION
 .B watchteleboy
-plays and records live IPTV streams provided by the free
-(as in "free beer") online TV service from teleboy.ch.
+plays and records live HDTV streams.
 .PP
 When launched without any options, 
 .B watchteleboy
@@ -41,11 +40,8 @@ goes into interactive mode and presents a list of available channels.
 .PP
 When launched for the first time, 
 .B watchteleboy
-will ask you to provide your login for the teleboy.ch service. Those
-settings will be saved to the configuration file $HOME/.watchteleboyrc.
+wants to create a configuration file in $HOME/.watchteleboyrc.
 .br
-.I CAUTION:
-The password will be stored in plain text!
 .SH GENERAL OPTIONS
 .IP "\fB\-c, \-\-channel CHANNEL"
 Specify the channel to be played or recorded. Without any other options
@@ -61,14 +57,9 @@ specific job you need to specify the CHANNEL and its start time TIME.
 .IP "\fB\-h, \-\-help"
 Print a summary of available options and exit.
 .IP "\fB\-l, \-\-list"
-Print a list of available channels and exit. The list of available channels is 
-directly retrieved from teleboy.ch. 
+Print a list of available channels and exit. 
 .IP "\fB\-q, \-\-quiet"
 Try to suppress any output to stderr and also do not ask for confirmation.
-.IP "\fB\-\-skip\-logincheck"
-Don't check, if login was successfull and continue anyway. This might be useful
-when login actually was successful but is wronly reported as failed. This might
-happen when teleboy.ch change their service.
 .IP "\fB\-v, \-\-version"
 Print the version of this software and exit. 
 .SH OPTIONS FOR RECORDING
@@ -81,10 +72,10 @@ writes the received stream to a local file. The name of the resulting
 file is composed of the channel name and the current date and time, following
 this template:
 .PP
-\fBCHANNEL\fR-\fBYYYYMMDDhhmm\fR.flv
+\fBCHANNEL\fR-\fBYYYYMMDDhhmm\fR.mkv
 .PP
-The format is flash video (.flv), containing a H.264 video and an AAC encoded
-audio stream. The video resolution usually is 768x432 pixels.
+The format is matroska (.mkv), containing a H.264 video and an AAC encoded
+audio stream. The video resolution usually is 1280x720px.
 .IP "\fB\-e, \-\-endtime TIME"
 Schedule the end time of the recording. If used without the
 .I --starttime
@@ -102,7 +93,7 @@ and ends after SECONDS seconds.
 .IP "\fB\-n, \-\-showname NAME"
 Specify a filename prefix that is used instead of the channel name.
 .IP "\fB\-p, \-\-path DIRECTORY"
-Specify target directory. This works also for interactive mode. The
+Specify directory where recorded shows are saved. The 
 default is the current directory.
 .IP "\fB\-r, \-\-record"
 Record a stream instead of watching it.
@@ -127,27 +118,15 @@ or
 and the option 
 .I --channel
 are mandatory.
-.SH MPLAYER SPECIFIC OPTIONS
-.IP "\fB\-m, \-\-mplayer\-opts OPTS"
-Allows to pass options directly to 
-.BR mplayer (1).
 .SH CONFIGURATION FILE
 If it exists, 
-.B watchteleboy 
+.B watchteleboy
 will read parameters from its configuration file, which is located
-in $HOME/.watchteleboyrc. Those parameters are overriden by options specified on the
+in $HOME/.watchteleboyrc. Those parameters may be overriden by options specified on the
 command line.
 .PP
 .I PARAMETERS:
-.RS 
-USER
 .RS
-Username from the teleboy.ch login.
-.RE
-PASS
-.RS
-Password from the teleboy.ch login.
-.RE
 RECORDPATH
 .RS 
 Directory where recordings are saved (overriden by
@@ -160,27 +139,34 @@ Default channel to be used (overriden by
 .I --channel
 ).
 .RE
-ORIGAUDIO
+MPVOPTS
 .RS
-Some channels come with two audio tracks: standard (overdub) and original. Setting
-this parameter to 1 makes watchteleboy chose the original track, if available. 
+Options passed to mpv. This option applies only to playback mode (when 
+.I --record
+is not used).
 .RE
 MPLAYEROPTS
 .RS
-Options passed to mplayer (overriden by
-.I --mplayer-opts
-). This option will be ignored, when 
+Options passed to mplayer. This option applies only to playback mode (when 
 .I --record
-is used.
+is not used). Either MPVOPTS or MPLAYEROPTS is used, depending on which player is used or available.
 .RE
-BUFFER
+BUFFERSECONDS
 .RS
-Sets the buffer size in bytes. In watching mode, 
+defines how much data is downloaded before playback starts. 
 .B watchteleboy 
 will wait to play the stream until 
-.I BUFFER
-bytes have been downloaded. If you often experience sudden abortions, it is advised
-to increase that value. The default is 500000.
+.I BUFFERSECONDS * BITRATE / 8
+bytes have been downloaded. If you often experience premature player exits, it is advised
+to increase that value. The default is 2.
+.RE
+TELEBOY_USER
+.RS
+Teleboy account the script uses to login to the service.
+.RE
+TELEBOY_PASS
+.RS
+Password for the given Teleboy acconut. 
 .RE
 .SH EXAMPLES
 .B Schedule a recording using interactive dialogs:
@@ -192,36 +178,29 @@ watchteleboy --record
 .B Schedule a recording:
 .RS
 .PP
-watchteleboy --record --channel arte --starttime "20:15" --endtime "22:00"
+watchteleboy --record --channel "arte (de) HD" --starttime "20:15" --endtime "22:00"
 .PP
 .RE
 .B Record for an hour from now:
 .RS
 .PP
-watchteleboy --record --channel arte --duration 3600
+watchteleboy --record --channel "arte (de) HD" --duration 3600
 .PP
 .RE
 .B Record from now until tonight at 23:15:
 .RS
 .PP
-watchteleboy --record --channel arte --endtime "23:15"
+watchteleboy --record --channel "arte (de) HD" --endtime "23:15"
 .PP
 .RE
-.B Watch ARTE in fullscreen mode, correct the aspect ratio  and use jack as audio back-end:
-.RS
-.PP
-watchteleboy --channel arte --mplayer-opts "-fs -aspect 4/3 -ao jack"
-.PP
-.SH RESTRICTIONS
-This program might only work in Switzerland, since the teleboy.ch service is only
-available to Swiss IP addresses.
 .SH "REPORTING BUGS"
 Report bugs and suggestions to reduzent@gmail.com
 .SH AUTHOR
 Roman Haefeli <reduzent@gmail.com>
 .SH SEE ALSO
-.BR mplayer (1), 
-.BR rtmpdump (1),
+.BR mpv (1),
+.BR mplayer (1),
+.BR avconv (1),
 .BR crontab (1),
 .BR date (1)
 
