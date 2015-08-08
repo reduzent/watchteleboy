@@ -65,23 +65,23 @@ else
 
 # Set directory where played streams are cached
 
-TMPDIR=$TMPDIR
+TMPDIR='$TMPDIR'
 
 # $SCRIPTNAME allows you to use either mpv or mplayer. Since both
 # players are not fully compatible, use separate configurations
 # for each player.
 # mpv flags:
 
-MPVOPTS="$MPVOPTS"
+MPVOPTS='$MPVOPTS'
 
 # mplayer flags:
 
-MPLAYEROPTS="$MPLAYEROPTS"
+MPLAYEROPTS='$MPLAYEROPTS'
 
 # Where should stream recordings be saved?
 # This can be overridden by the -p/--path flag
 
-#RECORDPATH=~/mytvshows
+#RECORDPATH='~/mytvshows'
 
 # How much data should be downloaded before starting playback?
 # The value is given in seconds. The playback begins after
@@ -313,8 +313,8 @@ then
 
 # Teleboy Login Credentials
 
-TELEBOY_USER=$TELEBOY_USER
-TELEBOY_PASS=$TELEBOY_PASS
+TELEBOY_USER='$TELEBOY_USER'
+TELEBOY_PASS='$TELEBOY_PASS'
 EOF
   fi
 else
