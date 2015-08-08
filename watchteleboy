@@ -290,9 +290,8 @@ function teleboy_login {
 # Add login credentials to config (if necessary)
 if [ -z "$TELEBOY_USER" ]
 then
-  echo "In order for this script to work properly you need to"
-  echo "provide your user credentials for the teleboy.ch"
-  echo "service."
+  echo "Please provide your Teleboy credentials. If you don't have"
+  echo "any, you can create a free account on http://www.teleboy.ch"
   read -p    "Please enter your user name: " TELEBOY_USER
   read -s -p "Please enter your password:  " TELEBOY_PASS
   echo
