@@ -338,7 +338,7 @@ fi
 # Set teleboy api key
 # It seems that key is hard-coded, thus it didn't appear
 # necessary to retrieve its value from the web
-tb_apikey="f0e7bdfb822fa88c0c7a13f752a7e8d5c3757a13f757a13f9c0c7a13f7dfb822"
+tb_apikey=$(base64 -d <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
 
 # get user id
 URL="http://www.teleboy.ch/tv/player/player.php"
