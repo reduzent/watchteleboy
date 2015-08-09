@@ -21,8 +21,10 @@ UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12
 MPLAYEROPTS="-really-quiet"
 MPVOPTS="--really-quiet --keep-open"
 RECORDPATH=$(pwd)
+LIVEPAUSE=true
 BUFFERSECONDS=3
 SCRIPTNAME=$(basename $0)
+
 
 # Check dependencies
 programlist="avconv crontab cut grep wget"
@@ -63,7 +65,7 @@ else
 # Configuration for $SCRIPTNAME
 # Feel free to adapt to your needs
 
-# Set directory where played streams are cached
+# Set directory where played streams are cached:
 
 TMPDIR='$TMPDIR'
 
@@ -79,15 +81,24 @@ MPVOPTS='$MPVOPTS'
 MPLAYEROPTS='$MPLAYEROPTS'
 
 # Where should stream recordings be saved?
-# This can be overridden by the -p/--path flag
+# This can be overridden by the -p/--path flag:
 
 #RECORDPATH='~/mytvshows'
+
+# This parameter turns live stream buffering on/off. When turned on,
+# you can pause while watching and continue playback anytime later. Also,
+# it enables you to seek back and forth within the downloaded buffer. This
+# comes at the cost of longer delays when switching channels.
+# Allowed values: true, false:
+
+LIVEPAUSE='$LIVEPAUSE'
 
 # How much data should be downloaded before starting playback?
 # The value is given in seconds. The playback begins after
 # BUFFERSECONDS * BITRATE data has been downloaded.
+# This parameter has only effect when LIVEPAUSE is set to true:
 
-BUFFERSECONDS=$BUFFERSECONDS
+BUFFERSECONDS='$BUFFERSECONDS'
 EOF
   echo "created config file '$CONFIG'"
 fi
@@ -109,6 +120,7 @@ version=false
 while [ $# -gt 0 ]
 do
   case "$1" in
+    -b|--live) LIVEPAUSE=$2; shift;;
     -c|--channel) channel=true; CHANNEL=$2; shift;;
     -d|--duration) duration=true; DURATION="$2"; shift;;
     -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
@@ -162,7 +174,11 @@ GENERAL OPTIONS:
   -q|--quiet                  suppress any output and do not ask
   -v|--version                print the version of this program
 
-OPTIONS FOR RECORDING (require -r|--record):
+WATCHING OPTIONS:
+
+  -b|--livepause true|false   turn live pausing (buffering) on/off
+
+RECORDING OPTIONS (require -r|--record):
 
   -e|--endtime TIME           schedule the end time of the recording
   -d|--duration SECONDS	      specify the duration of the recording
@@ -510,50 +526,58 @@ function player_recorder {
     $quiet || echo -n "Now recording: "
     dump_hls_stream "$1" "$OUTFILE" || return 1
   else
-    # Make sure there is an empty OUTFILE 
-    > "$OUTFILE"
-    dump_hls_stream "$1" "$OUTFILE" || return 1
-
-    # calculate buffer size from bitrate of selected stream
-    # so that we get consistent waiting times independent from bitrate
-    BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f8)
-    BUFFER=$(( BITRATE * BUFFERSECONDS / 8 ))
-
-    # Only start mplayer after having downloaded BUFFER bytes
-    eval $(resize)
-    PROGRESSBARWIDTH=$(( $COLUMNS - 20 ))
-    OUTFILESIZE=0
-    # Hide terminal cursor
+    # Hide the terminal cursor
     tput civis -- invisible
-    while [  "$OUTFILESIZE" -lt "$BUFFER" ]
-    do
-      OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
-      if ! $quiet
-      then
-        echo -ne "\r"
-        echo -n "  Buffering: ["
-        progresscount=$(( $OUTFILESIZE * $PROGRESSBARWIDTH / $BUFFER ))
-        progresscount=$((PROGRESSBARWIDTH < progresscount ? PROGRESSBARWIDTH : progresscount))
-        for i in $(seq $progresscount); do echo -n "="; done
-        progressempty=$(( $PROGRESSBARWIDTH - $progresscount ))
-        for i in $(seq $progressempty); do echo -n " "; done
-        echo -n "]"
-      fi
-      sleep 0.1
-      if ! kill -0 $PID 2> /dev/null
-      then
-        code=$(wait $PID; echo $?)
-        echo "avconv returned an error code: $code" 1>&2
-        sleep 2
-        return 1
-      fi
-    done
-    echo -ne "\r"
-    for i in $(seq $COLUMNS); do echo -n " "; done
-    $quiet || echo -ne "\rNow playing: $stream_data_channelname"
-    $PLAYERCMD "$OUTFILE" 2> /dev/null
-    kill $PID
-    rm "$OUTFILE"
+    if $LIVEPAUSE
+    then
+      # Make sure there is an empty OUTFILE
+      > "$OUTFILE"
+      dump_hls_stream "$1" "$OUTFILE" || return 1
+
+      # calculate buffer size from bitrate of selected stream
+      # so that we get consistent waiting times independent from bitrate
+      BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f8)
+      BUFFER=$(( BITRATE * BUFFERSECONDS / 8 ))
+
+      # Only start mplayer after having downloaded BUFFER bytes
+      eval $(resize)
+      PROGRESSBARWIDTH=$(( $COLUMNS - 20 ))
+      OUTFILESIZE=0
+      while [  "$OUTFILESIZE" -lt "$BUFFER" ]
+      do
+        OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
+        if ! $quiet
+        then
+          echo -ne "\r"
+          echo -n "  Buffering: ["
+          progresscount=$(( $OUTFILESIZE * $PROGRESSBARWIDTH / $BUFFER ))
+          progresscount=$((PROGRESSBARWIDTH < progresscount ? PROGRESSBARWIDTH : progresscount))
+          for i in $(seq $progresscount); do echo -n "="; done
+          progressempty=$(( $PROGRESSBARWIDTH - $progresscount ))
+          for i in $(seq $progressempty); do echo -n " "; done
+          echo -n "]"
+        fi
+        sleep 0.1
+        if ! kill -0 $PID 2> /dev/null
+        then
+          code=$(wait $PID; echo $?)
+          echo "avconv returned an error code: $code" 1>&2
+          sleep 2
+          return 1
+        fi
+      done
+      echo -ne "\033[2K" # this clears the current line
+      $quiet || echo -ne "\rNow playing: $stream_data_channelname"
+      $PLAYERCMD "$OUTFILE" 2> /dev/null
+      echo -ne "\033[2K" # this clears the current line
+      kill $PID
+      rm "$OUTFILE"
+    else
+      echo -ne "\033[2K" # this clears the current line
+      set_stream_data_from_api "$1"
+      $quiet || echo -ne "\rNow playing: $stream_data_channelname"
+      $PLAYERCMD "$stream_data_url"
+    fi
   fi
 }
 
