@@ -362,9 +362,11 @@ rawuserdata=$(wget --user-agent "$UAGENT" \
   --load-cookies $TMPPATH/cookie1 \
   --output-document - \
   $URL)
-tb_userid=$(llocal=$(echo "$rawuserdata" | grep " id: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+tb_userid=$(llocal=$(echo "$rawuserdata" | grep " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
 tb_locale=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
 tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+echo "tb_userid=$tb_userid"
+
 
 # did we get a valid userid?
 if ! [[ "$tb_userid" =~ ^-?[0-9]+$ ]]
