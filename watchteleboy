@@ -22,7 +22,7 @@ MPLAYEROPTS="-really-quiet"
 MPVOPTS="--really-quiet --keep-open"
 RECORDPATH=$(pwd)
 LIVEPAUSE=true
-BUFFERSECONDS=3
+BUFFERSECONDS=5
 SCRIPTNAME=$(basename $0)
 
 
