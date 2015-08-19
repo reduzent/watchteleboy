@@ -576,7 +576,7 @@ function player_recorder {
       echo -ne "\033[2K" # this clears the current line
       set_stream_data_from_api "$1"
       $quiet || echo -ne "\rNow playing: $stream_data_channelname"
-      $PLAYERCMD "$stream_data_url"
+      $PLAYERCMD "$stream_data_url" 2> /dev/null
     fi
   fi
 }
