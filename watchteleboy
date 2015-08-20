@@ -62,8 +62,11 @@ then
   . $CONFIG
 else
   cat << EOF > $CONFIG
-# Configuration for $SCRIPTNAME
-# Feel free to adapt to your needs
+##########################################################################
+# CONFIGURATION FILE FOR $SCRIPTNAME                                     #
+# Feel free to adapt to your needs                                       #
+##########################################################################
+
 
 # Set directory where played streams are cached:
 
