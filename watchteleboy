@@ -450,9 +450,12 @@ function set_stream_data_from_api {
       cut -d'"' -f4 | \
       sed -e 's/\\//g')"
   stream_data_channelname="$(echo "$stream_data_json" | \
-    sed -e 's/{/\n/g' -e 's/}/\n/g' | \
-    grep '^"id"' | head -n1 | \
-    cut -d'"' -f6)"
+    sed -e 's/{/\n/g' | \
+    grep '^"has_stream"' | \
+    sed -e 's/,/\n/g' | \
+    grep '^"name":' | \
+    head -n1 | \
+    cut -d'"' -f4)"
 }
 
 # option -l|--list
