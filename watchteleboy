@@ -282,8 +282,8 @@ function teleboy_login {
     --keep-session-cookies \
     --output-document /dev/null \
     $URL
-  local POST="login=${_USER}&password=${_PASS}&x=14&y=7&keep_login=1"
-  local URL="http://www.teleboy.ch/layer/login_check"
+  local POST="login=${_USER}&password=${_PASS}&keep_login=1"
+  local URL="http://www.teleboy.ch/login_check"
   wget --user-agent "$UAGENT" \
     --quiet \
     --load-cookies $TMPPATH/cookie0 \
