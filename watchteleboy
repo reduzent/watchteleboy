@@ -542,7 +542,7 @@ function player_recorder {
 
       # calculate buffer size from bitrate of selected stream
       # so that we get consistent waiting times independent from bitrate
-      BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f8)
+      BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f9)
       BUFFER=$(( BITRATE * BUFFERSECONDS / 8 ))
 
       # Only start mplayer after having downloaded BUFFER bytes
