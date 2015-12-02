@@ -1,3 +1,11 @@
+watchteleboy (1.19~trusty~ppa0) trusty; urgency=low
+
+  * Use new login URL
+  * Fix channel name display
+  * Fix bitrate detection (and thus buffering)
+
+ -- Roman Haefeli <reduzent@gmail.com>  Thu, 26 Nov 2015 21:38:30 +0100
+
 watchteleboy (1.18~trusty~ppa0) trusty; urgency=low
 
   * Support new HLS streaming protocol
