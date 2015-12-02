@@ -13,7 +13,7 @@
 # program version: (check below)
 ################################################
 
-VERSION=1.18
+VERSION=1.19
 
 # Set some default values
 TMPDIR=/tmp
@@ -62,8 +62,11 @@ then
   . $CONFIG
 else
   cat << EOF > $CONFIG
-# Configuration for $SCRIPTNAME
-# Feel free to adapt to your needs
+##########################################################################
+# CONFIGURATION FILE FOR $SCRIPTNAME                                     #
+# Feel free to adapt to your needs                                       #
+##########################################################################
+
 
 # Set directory where played streams are cached:
 
@@ -279,8 +282,8 @@ function teleboy_login {
     --keep-session-cookies \
     --output-document /dev/null \
     $URL
-  local POST="login=${_USER}&password=${_PASS}&x=14&y=7&keep_login=1"
-  local URL="http://www.teleboy.ch/layer/login_check"
+  local POST="login=${_USER}&password=${_PASS}&keep_login=1"
+  local URL="http://www.teleboy.ch/login_check"
   wget --user-agent "$UAGENT" \
     --quiet \
     --load-cookies $TMPPATH/cookie0 \
@@ -447,9 +450,12 @@ function set_stream_data_from_api {
       cut -d'"' -f4 | \
       sed -e 's/\\//g')"
   stream_data_channelname="$(echo "$stream_data_json" | \
-    sed -e 's/{/\n/g' -e 's/}/\n/g' | \
-    grep '^"id"' | head -n1 | \
-    cut -d'"' -f6)"
+    sed -e 's/{/\n/g' | \
+    grep '^"has_stream"' | \
+    sed -e 's/,/\n/g' | \
+    grep '^"name":' | \
+    head -n1 | \
+    cut -d'"' -f4)"
 }
 
 # option -l|--list
@@ -536,7 +542,7 @@ function player_recorder {
 
       # calculate buffer size from bitrate of selected stream
       # so that we get consistent waiting times independent from bitrate
-      BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f8)
+      BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f9)
       BUFFER=$(( BITRATE * BUFFERSECONDS / 8 ))
 
       # Only start mplayer after having downloaded BUFFER bytes
