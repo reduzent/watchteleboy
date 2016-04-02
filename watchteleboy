@@ -389,6 +389,7 @@ else
   URL="http://tv.api.teleboy.ch/users/$tb_userid/broadcasts/now?expand=station&stream=true"
   stationlist_json="$(
     wget \
+      --quiet \
       --header "x-teleboy-apikey: $tb_apikey" \
       --header "x-teleboy-session: $cinergy_s" \
       --output-document - \
@@ -398,8 +399,13 @@ else
   if [ "$wget_exit" -ne "0" ]
   then
     $quiet || echo "wget returned error $wget_exit while retreiving channel list" 1>&2
+    exit 1
   fi
-  
+  CHANNELS=($(echo "$stationlist_json" | \
+      jq -M '.data.items[] | {(.station.label): .station.id}' | \
+      grep '^ ' | \
+      sed -e 's|: |/|' -e 's/^  //' -e 's/"//g' \
+    ))
   # Check if we received something
   if [ ${#CHANNELS[@]} -gt 0 ]
   then
