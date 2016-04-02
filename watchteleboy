@@ -27,7 +27,7 @@ SCRIPTNAME=$(basename $0)
 
 
 # Check dependencies
-programlist="avconv crontab cut grep wget"
+programlist="avconv crontab cut grep jq wget"
 for program in $programlist
 do
     if ! which $program > /dev/null
@@ -386,18 +386,20 @@ then
   CHANNELS=($(cat $channel_list_file))
 else
   $quiet || echo -n "receiving channel list..."
-  URL="http://www.teleboy.ch/programm/?program_date=live"
-  stationlistraw="$(
-    wget --output-document - \
-      --load-cookies ${TMPPATH}/cookie1 \
-      --user-agent "$UAGENT" \
-      --quiet $URL | \
-      grep "<tr class=\"playable\">"  | \
-      cut -d"/" -f4,5 | \
-      sed -e "s/%FC/ü/g"
+  URL="http://tv.api.teleboy.ch/users/$tb_userid/broadcasts/now?expand=station&stream=true"
+  stationlist_json="$(
+    wget \
+      --header "x-teleboy-apikey: $tb_apikey" \
+      --header "x-teleboy-session: $cinergy_s" \
+      --output-document - \
+      "$URL"
     )"
-  CHANNELS=($stationlistraw)
-
+  wget_exit=$?
+  if [ "$wget_exit" -ne "0" ]
+  then
+    $quiet || echo "wget returned error $wget_exit while retreiving channel list" 1>&2
+  fi
+  
   # Check if we received something
   if [ ${#CHANNELS[@]} -gt 0 ]
   then
