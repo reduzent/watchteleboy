@@ -204,12 +204,12 @@ then
   fi
   crontempfile="/tmp/crontab.tmp"
   searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]'${DELCHAN}'.*"
-  if ! crontab -l | grep "$searchstring" > /dev/null
+  if ! crontab -l | grep -a "$searchstring" > /dev/null
   then
     echo "Could not find specified job in crontab." 1>&2
     exit 1
   else
-    crontab -l | grep -v "$searchstring" > $crontempfile 
+    crontab -l | grep -va "$searchstring" > $crontempfile 
     crontab < $crontempfile
     rm $crontempfile
     $quiet || echo "Successfully deleted crontab entry."
@@ -265,7 +265,7 @@ function teleboy_login {
   if [ -f "$TMPPATH/cookie1" ]
   then
     # When does the current session expire (make it artificially a minute early
-    session_expires=$(( $(grep cinergy_s $TMPPATH/cookie1 | cut -f5) - 60 ))
+    session_expires=$(( $(grep -a cinergy_s $TMPPATH/cookie1 | cut -f5) - 60 ))
     now=$(date +%s)
     if [ "$session_expires" -gt "$now" ]
     then
@@ -295,7 +295,7 @@ function teleboy_login {
     $URL
   
   # Check if login was successfull
-  if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
+  if grep -a cinergy_auth $TMPPATH/cookie1 > /dev/null
   then
     $quiet || echo "ok"
     new_session=true
@@ -346,7 +346,7 @@ fi
 
 # Store value of session cookie (cinergy_s)
 # We only need to do that once per session and every stream request
-cinergy_s=$(grep cinergy_s $TMPPATH/cookie1 | cut -d$'\t' -f 7)
+cinergy_s=$(grep -a cinergy_s $TMPPATH/cookie1 | cut -d$'\t' -f 7)
 if [ "cinergy_s" == "" ]
 then
   $quiet || echo "Could not retrieve session cookie (cinergy_s)" >&2
@@ -365,9 +365,10 @@ rawuserdata=$(wget --user-agent "$UAGENT" \
   --load-cookies $TMPPATH/cookie1 \
   --output-document - \
   $URL)
-tb_userid=$(llocal=$(echo "$rawuserdata" | grep " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
-tb_locale=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
-tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+
+tb_userid=$(llocal=$(echo "$rawuserdata" | grep -a " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
+tb_locale=$(echo "$rawuserdata" | grep -a " locale: "| cut -d"'" -f2)
+tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep -a " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
 
 # did we get a valid userid?
 if ! [[ "$tb_userid" =~ ^-?[0-9]+$ ]]
@@ -403,7 +404,7 @@ else
   fi
   CHANNELS=($(echo "$stationlist_json" | \
       jq -M '.data.items[] | {(.station.label): .station.id}' | \
-      grep '^ ' | \
+      grep -a '^ ' | \
       sed -e 's|: |/|' -e 's/^  //' -e 's/"//g' \
     ))
   # Check if we received something
@@ -424,7 +425,7 @@ function set_sid_by_channel {
   sid=$(
     for channel in ${CHANNELS[@]}
     do
-      echo $channel | grep -i ^$1/ | cut -d'/' -f2
+      echo $channel | grep -a -i ^$1/ | cut -d'/' -f2
     done
   )
   if [[ $sid = *[!0-9]* || "$sid" = "" ]] 
@@ -454,14 +455,14 @@ function set_stream_data_from_api {
   stream_data_url="$(echo -e \
     $(echo "$stream_data_json" | \
       sed -e 's/{/\n/g' -e 's/}/\n/g' -e 's/,/\n/g' | \
-      grep '^"url"') | \
+      grep -a '^"url"') | \
       cut -d'"' -f4 | \
       sed -e 's/\\//g')"
   stream_data_channelname="$(echo "$stream_data_json" | \
     sed -e 's/{/\n/g' | \
-    grep '^"has_stream"' | \
+    grep -a '^"has_stream"' | \
     sed -e 's/,/\n/g' | \
-    grep '^"name":' | \
+    grep -a '^"name":' | \
     head -n1 | \
     cut -d'"' -f4)"
 }
@@ -494,7 +495,7 @@ function dump_hls_stream {
   # get highest quality stream
   selected_streamurl=$(wget --output-document - \
     --quiet "$stream_data_url" | \
-    grep '^http.*\.m3u8' | \
+    grep -a '^http.*\.m3u8' | \
     sort -V | \
     tail -n1)
   
@@ -624,7 +625,7 @@ function channel_validity {
   then
     echo "Please specify a channel"
     return 1
-  elif print_channel_list | grep -i "^${1}$" > /dev/null
+  elif print_channel_list | grep -ia "^${1}$" > /dev/null
   then
     return 0
   else
@@ -651,7 +652,7 @@ function set_ui_window_params {
 function channel_dialog {
   while true
   do
-    chanlist="$(print_channel_list) $( uname | grep "Darwin" > /dev/null && echo QUIT)"
+    chanlist="$(print_channel_list) $( uname | grep -a "Darwin" > /dev/null && echo QUIT)"
     if $whiptail
     then
       wpsetdefault=""
@@ -1072,11 +1073,11 @@ do
       then
         whiptail --title "$TITLE" --msgbox \
           " Successfully added crontab entry:\n\n
-$(crontab -l | grep $DELETEME)" \
+$(crontab -l | grep -a $DELETEME)" \
           $BOXWIDTH $BOXHEIGHT
         else
           echo "Successfully added crontab entry:"
-          crontab -l | grep $DELETEME
+          crontab -l | grep -a $DELETEME
         fi
       exit 0
     else
