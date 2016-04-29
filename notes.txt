@@ -104,3 +104,21 @@ jq '.data.items[].station.id' chanlist_raw.json
 
 Put them together:
 jq '.data.items[] | {(.station.label): .station.id}' chanlist_raw.json
+
+
+Other API params:
+
+GET /epg/broadcasts/now?expand=flags,station,logos,previewImage&language=en&stream=true HTTP/1.1
+Host: tv.api.teleboy.ch
+
+GET /users/792388/broadcasts/now?expand=flags,station,logos,previewImage&stream=true HTTP/1.1
+Host: tv.api.teleboy.ch
+
+GET /users/792388/stations HTTP/1.1
+Host: tv.api.teleboy.ch
+
+GET /epg/stationgroups?language=en HTTP/1.1
+Host: tv.api.teleboy.ch
+
+GET /epg/stations?expand=logos&language=en HTTP/1.1^
+Host: tv.api.teleboy.ch
