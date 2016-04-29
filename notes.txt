@@ -122,3 +122,14 @@ Host: tv.api.teleboy.ch
 
 GET /epg/stations?expand=logos&language=en HTTP/1.1^
 Host: tv.api.teleboy.ch
+
+
+
+=== BITRATES & RESOLUTIONS =========================
+64000		audio only
+394000		320x180
+540000		400x224
+1368000		720x404
+2290000		720x404
+3305000		1280x720
+4240000		1280x720
