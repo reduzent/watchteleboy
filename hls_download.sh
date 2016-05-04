@@ -17,10 +17,10 @@ do
   segment_delta=$((stream_current_segment-stream_ref_segment))
   echo "segment_delta: $segment_delta"
   # set 0 if negative
-  segment_delta=$(( segment_delta > 0 ? segment_delta : 0))
+  [ "$segment_delta" -gt "0" ] || segment_delta=0
   echo "segment_delta: $segment_delta"
   seconds_to_wait=$(( 2 + 4 * segment_delta - time_delta))
-  seconds_to_wait=$(( seconds_to_wait > 0 ? seconds_to_wait : 0))
+  [ "$seconds_to_wait" -gt "0" ] || seconds_to_wait=0 
   stream_current_file=${stream_current_segment}.ts
   cat $stream_current_file >> stream.m2t
   rm $stream_current_file
