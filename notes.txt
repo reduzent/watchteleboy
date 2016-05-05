@@ -133,3 +133,7 @@ Host: tv.api.teleboy.ch
 2290000		720x404
 3305000		1280x720
 4240000		1280x720
+
+=== PARSE MASTER PLAYLIST TO READABLE FORMAT ================
+sed -n '/#EXTM3U/d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' ZDFInfo.m3u8
+
