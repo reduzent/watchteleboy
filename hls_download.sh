@@ -1,5 +1,25 @@
 #/bin/bash
 stream_url="$1"
+
+function mpl_extract_variants {
+# creates an array of 'bitrate url' values
+# ARG1: url of master playlist
+  unset variants
+  eval $(\
+    wget --quiet --output-document - "$1" | \
+   sed -n '/#EXTM3U/d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' | \
+   sort -n | \
+   sed '=' | \
+   sed -n 'N;s/\n/ /;s/^/variants[/;s/ /]="/;s/$/"/;P'\
+   )
+}
+
+mpl_extract_variants "$stream_url"
+echo "${#variants[@]}"
+echo "${variants[7]}"
+
+exit 0
+
 stream_url_base="$(echo "$stream_url"  | \
   cut -d'/' -f-9)"
 stream_start_segment=$(wget -O - -q "$stream_url" | \
