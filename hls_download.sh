@@ -1,5 +1,5 @@
 #/bin/bash
-stream_url="$1"
+master_playlist_url="$1"
 
 function mpl_extract_variants {
 # creates an array of 'bitrate url' values
@@ -14,14 +14,23 @@ function mpl_extract_variants {
    )
 }
 
-mpl_extract_variants "$stream_url"
-echo "${#variants[@]}"
-echo "${variants[7]}"
+function mpl_select_variant {
+# print url of selected variant
+# ARG1: index of variant
+  if [ "$1" -gt "${#variants[@]}" ] || [ "$1" -lt "1" ]
+  then
+    echo "No such variant. The range is 1 to ${#variants[@]}"
+    return 1
+  fi
+  echo ${variants[$1]} | cut -d" " -f2
+}
 
-exit 0
+# create the array of variants
+mpl_extract_variants "$master_playlist_url"
 
-stream_url_base="$(echo "$stream_url"  | \
-  cut -d'/' -f-9)"
+# select the one with the highest index (~ highest bitrate)
+stream_url=$(mpl_select_variant ${#variants[@]})
+stream_url_base="$(dirname $stream_url)"
 stream_start_segment=$(wget -O - -q "$stream_url" | \
   grep "#EXT-X-MEDIA-SEQUENCE" | \
   cut -d':' -f2
