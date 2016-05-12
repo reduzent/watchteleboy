@@ -20,7 +20,7 @@ function fetch_url {
   # ARG1: URL
   local url="$1"
   local errormsg="could not download: $url"
-  curl -ifs "$url"
+  curl -fs "$url"
   local exitcode=$?
   test_success "$errormsg" $exitcode
   return 0
@@ -40,7 +40,7 @@ function hls_get_current_segment {
 
   # validate data
   # check EXTM3U tag
-  echo "$raw" | head -n1 | grep "^#EXTM3U$" > /dev/null
+  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null
   test_success "not a valid playlist file"
   # extract current segment
   local current_segment="$(echo "$raw" | \
