@@ -55,34 +55,46 @@ function hls_get_current_segment {
   return 0
 }
 
-hls_get_current_segment "$url"
+function hls_get_oldest_segment {
+  # retrieve the oldest available segment of given stream variant
+  # ARG1: URL of stream variant index
+  
+  # some vars
+  local indexurl="$1"
+  local baseurl="$(dirname "$url")"
+  local ext="ts"
+  local stepsize=1024
+  
+  # get current segment
+  local current="$(hls_get_current_segment "$indexurl")"
+  test_success "could not extract current segment"
 
-exit 0
-current=$(fetch_url "$url" | \
-  sed '/#EXT-X-MEDIA-SEQUENCE/!d;/#EXT-X-MEDIA-SEQUENCE/s/#EXT-X-MEDIA-SEQUENCE://')
+  # go back in huge steps
+  local oldest=$current
+  while true
+  do
+    oldest=$((oldest - stepsize))
+    curl -s -I -X HEAD "${baseurl}/${oldest}.${ext}" | \
+      head -n1 | grep "HTTP/1.1 200 OK" > /dev/null || break
+  done
 
-oldest=$current
-baseurl="$(dirname "$url")"
-ext="ts"
-stepsize=1024
+  # narrow it down by halving stepsize on each iteration
+  while [ "$stepsize" -gt "1" ]
+  do
+    stepsize=$(( stepsize / 2 ))
+    curl -s -I -X HEAD "${baseurl}/${oldest}.${ext}" | \
+      head -n1 | grep "HTTP/1.1 200 OK" > /dev/null && \
+      oldest=$(( oldest - stepsize )) || \
+      oldest=$(( oldest + stepsize ))
+  done
 
-while true
-do
-  oldest=$(( oldest - stepsize))
-  curl -s -I -X HEAD "${baseurl}/${oldest}.${ext}" | \
-    head -n1 | grep "HTTP/1.1 200 OK" > /dev/null || break
-done
+  # return result
+  echo "$oldest"
+  return 0
+}
 
-while [ "$stepsize" -gt "1" ]
-do
-  stepsize=$(( stepsize / 2 ))
-  curl -s -I -X HEAD "${baseurl}/${oldest}.${ext}" | \
-    head -n1 | grep "HTTP/1.1 200 OK" > /dev/null && \
-    oldest=$(( oldest - stepsize )) || \
-    oldest=$(( oldest + stepsize ))
-  echo "try next: $oldest"
-done
-
+current=$(hls_get_current_segment "$url")
+oldest=$(hls_get_oldest_segment "$url")
 
 echo "oldest $oldest"
 echo "current: $current"
