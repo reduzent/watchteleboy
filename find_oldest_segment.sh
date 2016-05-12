@@ -1,6 +1,6 @@
 #/bin/bash
 
-# curl -I -X HEAD http://62.65.140.218/session/90b5988a-17bf-11e6-9eb8-005056bc1a52/nvnv5a/1/1118/2290000/1439261476.ts
+url="$1"
 
 function test_success {
   # Continue execution only if last command succeeded
@@ -12,27 +12,50 @@ function test_success {
     echo "$1" >&2
     exit $exitcode
   fi
+  return 0
 }
 
 function fetch_url {
-  # download url and print it to stdout, but exit when it fails
+  # download url and print it to stdout, exit on failure
   # ARG1: URL
-  # ARG2: error message printed to stdout (optional)
   local url="$1"
-  local errormsg="$2"
+  local errormsg="could not download: $url"
   curl -ifs "$url"
   local exitcode=$?
-  if [ "$exitcode" -ne "0" ]
-  then
-    echo "exitcode: $exitcode"
-    [ -z "$2" ] || echo "$errormsg" >&2
-    exit $exitcode
-  fi
+  test_success "$errormsg" $exitcode
+  return 0
 }
 
-url="$1"
+function hls_get_current_segment {
+  # retrieve current segment of given stream variant.
+  # the provided URL is expexted to be a valid index file
+  # of a stream variant. the index number is printed
+  # to stdout
+  # ARG1: URL of stream variant index
 
-fetch_url "$url"
+  # get data
+  local indexurl="$1"
+  local raw="$(fetch_url "$indexurl")"
+  test_success "could not download: $url" "$?"
+
+  # validate data
+  # check EXTM3U tag
+  echo "$raw" | head -n1 | grep "^#EXTM3U$" > /dev/null
+  test_success "not a valid playlist file"
+  # extract current segment
+  local current_segment="$(echo "$raw" | \
+    sed '/#EXT-X-MEDIA-SEQUENCE/!d;
+         /#EXT-X-MEDIA-SEQUENCE/s/#EXT-X-MEDIA-SEQUENCE://')"
+  # validate segment
+  [[ $current_segment =~ ^-?[0-9]+$ ]]
+  test_success "could not extract current segment number"
+
+  # return result
+  echo "$current_segment"
+  return 0
+}
+
+hls_get_current_segment "$url"
 
 exit 0
 current=$(fetch_url "$url" | \
