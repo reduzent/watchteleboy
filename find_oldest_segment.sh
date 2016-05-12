@@ -6,9 +6,9 @@ function test_success {
   # Continue execution only if last command succeeded
   # ARG1: exit message
   # ARG2: optional exit code
-  [ -z "$2" ] && local exitcode=1 || local exitcode=$2
   if [ "$?" -ne "0" ]
   then
+    [ -z "$2" ] && local exitcode=1 || local exitcode=$2
     echo "$1" >&2
     exit $exitcode
   fi
