@@ -87,7 +87,7 @@ function hls_get_oldest_segment {
   return 0
 }
 
-function hls_find_segment_of_time {
+function hls_get_segment_of_time {
   # find segment from given time
   # ARG1: url of stream variant index
   # ARG1: time (as understood by 'date')
