@@ -148,15 +148,42 @@ function hls_extract_variants {
   return 0
 }
 
-function mpl_select_variant {
-# print url of selected variant
-# ARG1: index of variant
-  if [ "$1" -gt "${#variants[@]}" ] || [ "$1" -lt "1" ]
-  then
-    echo "No such variant. The range is 1 to ${#variants[@]}"
-    return 1
-  fi
-  echo ${variants[$1]} | cut -d" " -f2
+function hls_select_variant_url {
+  # print url of selected variant
+  # ARG1: index of variant
+  local index="$1"
+  local count=${#HLS_VARIANTS[@]}
+
+  # do we have variants?
+  [ "$count" -gt "0" ]
+  test_success "no variants found"
+
+  # validate given index
+  [ "$index" -le "$count" ] && [ "$1" -ge "1" ]
+  test_success "selected variant not in range 1 to $count"
+
+  # return result
+  echo "${HLS_VARIANTS[$index]}" | cut -d" " -f2
+  return 0
+}
+
+function hls_select_variant_bitrate {
+  # print bitrate of selected variant
+  # ARG1: index of variant
+  local index="$1"
+  local count=${#HLS_VARIANTS[@]}
+
+  # do we have variants?
+  [ "$count" -gt "0" ]
+  test_success "no variants found"
+
+  # validate given index
+  [ "$index" -le "$count" ] && [ "$1" -ge "1" ]
+  test_success "selected variant not in range 1 to $count"
+
+  # return result
+  echo "${HLS_VARIANTS[$index]}" | cut -d" " -f1
+  return 0
 }
 
 function bla {
