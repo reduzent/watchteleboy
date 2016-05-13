@@ -1,5 +1,3 @@
-#/bin/bash
-
 function test_success {
   # Continue execution only if last command succeeded
   # ARG1: exit message
@@ -122,5 +120,3 @@ function hls_find_segment_of_time {
   echo "$segment_then"
   return 0
 }
-
-hls_find_segment_of_time "$1" "$2"
