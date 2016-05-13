@@ -133,13 +133,19 @@ function hls_extract_variants {
   echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null
   test_success "not a valid playlist file"
 
+  # create array HLS_VARIANTS
   eval $(\
-    wget --quiet --output-document - "$1" | \
-   sed -n '/#EXTM3U/d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' | \
-   sort -n | \
-   sed '=' | \
-   sed -n 'N;s/\n/ /;s/^/HLS_VARIANTS[/;s/ /]="/;s/$/"/;P'\
-   )
+    echo "$raw" | \
+    sed -n '/#EXTM3U/d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' | \
+    sort -n | \
+    sed '=' | \
+    sed -n 'N;s/\n/ /;s/^/HLS_VARIANTS[/;s/ /]="/;s/$/"/;P')
+
+  # verify array
+  [ "${#HLS_VARIANTS[@]}" -gt "0" ]
+  test_success "could not extract variants from master playlist"
+
+  return 0
 }
 
 function mpl_select_variant {
@@ -153,6 +159,7 @@ function mpl_select_variant {
   echo ${variants[$1]} | cut -d" " -f2
 }
 
+function bla {
 # create the array of variants
 mpl_extract_variants "$master_playlist_url"
 
@@ -185,3 +192,4 @@ do
   sleep "$seconds_to_wait"
   ((stream_current_segment+=1))
 done
+}
