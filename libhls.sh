@@ -57,7 +57,7 @@ function hls_get_oldest_segment {
   
   # some vars
   local indexurl="$1"
-  local baseurl="$(dirname "$url")"
+  local baseurl="$(dirname "$indexurl")"
   local ext="ts"
   local stepsize=1024
   
@@ -70,16 +70,14 @@ function hls_get_oldest_segment {
   while true
   do
     oldest=$((oldest - stepsize))
-    curl -s -I -X HEAD "${baseurl}/${oldest}.${ext}" | \
-      head -n1 | grep "HTTP/1.1 200 OK" > /dev/null || break
+    curl -fs -I -X HEAD "${baseurl}/${oldest}.${ext}" > /dev/null || break
   done
 
   # narrow it down by halving stepsize on each iteration
   while [ "$stepsize" -gt "1" ]
   do
     stepsize=$(( stepsize / 2 ))
-    curl -s -I -X HEAD "${baseurl}/${oldest}.${ext}" | \
-      head -n1 | grep "HTTP/1.1 200 OK" > /dev/null && \
+    curl -fs -I -X HEAD "${baseurl}/${oldest}.${ext}" > /dev/null && \
       oldest=$(( oldest - stepsize )) || \
       oldest=$(( oldest + stepsize ))
   done
