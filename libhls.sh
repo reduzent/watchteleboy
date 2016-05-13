@@ -1,7 +1,5 @@
 #/bin/bash
 
-url="$1"
-
 function test_success {
   # Continue execution only if last command succeeded
   # ARG1: exit message
@@ -93,9 +91,36 @@ function hls_get_oldest_segment {
   return 0
 }
 
-current=$(hls_get_current_segment "$url")
-oldest=$(hls_get_oldest_segment "$url")
+function hls_find_segment_of_time {
+  # find segment from given time
+  # ARG1: url of stream variant index
+  # ARG1: time (as understood by 'date')
+  local indexurl="$1"
+  local time_given="$2"
+  local baseurl="$(dirname "$indexurl")"
+  local ext="ts"
 
-echo "oldest $oldest"
-echo "current: $current"
-echo "deltaseconds: $(( (current - oldest) * 4 ))"
+  # get current segment
+  local segment_now=$(hls_get_current_segment "$1")
+  segment_now=$((segment_now + 3))
+  test_success "could not extract current segment"
+
+  # set time
+  local time_now=$(date +%s)
+  local time_then=$(date +%s -d "$time_given")
+
+  # deltas
+  local time_delta=$((time_now - time_then))
+  local segment_delta=$(((time_delta + 4) / 4))
+  local segment_then=$((segment_now - segment_delta))
+
+  # check if segment_then is available
+  curl -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null
+  test_success "requested time is too far in the past"
+
+  # return result
+  echo "$segment_then"
+  return 0
+}
+
+hls_find_segment_of_time "$1" "$2"
