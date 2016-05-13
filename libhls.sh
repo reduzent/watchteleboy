@@ -89,8 +89,8 @@ function hls_get_oldest_segment {
 
 function hls_get_segment_of_time {
   # find segment from given time
-  # ARG1: url of stream variant index
-  # ARG1: time (as understood by 'date')
+  # ARG1: url of stream variant
+  # ARG2: time (as understood by 'date')
   local indexurl="$1"
   local time_given="$2"
   local baseurl="$(dirname "$indexurl")"
@@ -186,37 +186,41 @@ function hls_select_variant_bitrate {
   return 0
 }
 
-function bla {
-# create the array of variants
-mpl_extract_variants "$master_playlist_url"
+function hls_download_variant {
+  # download given stream variant to file, starting from given time
+  # ARG1: url of stream variant
+  # ARG2: start time (as understood by 'date')
+  # ARG3: file to write stream into
+  local url="$1"
+  local url_base="$(dirname "$url")"
+  local time_start="$2"
+  local file="$3"
+  local ext="ts"
 
-# select the one with the highest index (~ highest bitrate)
-stream_url=$(mpl_select_variant ${#variants[@]})
-stream_url_base="$(dirname $stream_url)"
-stream_start_segment=$(wget -O - -q "$stream_url" | \
-  grep "#EXT-X-MEDIA-SEQUENCE" | \
-  cut -d':' -f2
-  )
-stream_ref_segment=$((stream_start_segment+3))
-stream_current_segment=$stream_start_segment
-stream_ref_time=$(date +%s)
-while wget "${stream_url_base}/${stream_current_segment}.ts"
-do
-  time_current=$(date +%s)
-  time_delta=$((time_current-stream_ref_time))
-  echo "time_delta: $time_delta"
-  segment_delta=$((stream_current_segment-stream_ref_segment))
-  echo "segment_delta: $segment_delta"
-  # set 0 if negative
-  [ "$segment_delta" -gt "0" ] || segment_delta=0
-  echo "segment_delta: $segment_delta"
-  seconds_to_wait=$(( 2 + 4 * segment_delta - time_delta))
-  [ "$seconds_to_wait" -gt "0" ] || seconds_to_wait=0 
-  stream_current_file=${stream_current_segment}.ts
-  cat $stream_current_file >> stream.m2t
-  rm $stream_current_file
-  echo "==== WAIT $seconds_to_wait SECONDS ======="
-  sleep "$seconds_to_wait"
-  ((stream_current_segment+=1))
-done
+  # get start segment
+  local segment=$(hls_get_segment_of_time "$url" "$time_start")
+  test_success "could not extract start segment"
+
+  # get ref time and ref segment
+  # to make sure not to download from the future
+  local segment_current=$(hls_get_current_segment "$url")
+  local segment_ref=$((segment_current + 3))
+  local time_ref=$(date +%s)
+
+  # now do it
+  local sleep=0
+  > "$file" 2> /dev/null
+  test_success "cannot create file: $file"
+  while sleep $sleep
+  do
+    curl -fs "${url_base}/${segment}.${ext}" >> "$file" || \
+      echo "segment $segment not available" 1>&2
+    local time_current=$(date +%s)
+    local time_delta=$((time_current - time_ref))
+    local segment_delta=$((segment - segment_ref))
+    [ "$segment_delta" -gt "0" ] || segment_delta=0
+    local sleep=$(( 4 + (4 * segment_delta) - time_delta))
+    [ "$sleep" -gt "0" ] || sleep=0
+    ((segment+=1))
+  done
 }
