@@ -189,17 +189,27 @@ function hls_select_variant_bitrate {
 function hls_download_variant {
   # download given stream variant to file, starting from given time
   # ARG1: url of stream variant
-  # ARG2: start time (as understood by 'date')
-  # ARG3: file to write stream into
+  # ARG2: file to write stream into
+  # ARG3: start time (as understood by 'date') [optional]
+  # ARG4: end time [optional]
   local url="$1"
   local url_base="$(dirname "$url")"
-  local time_start="$2"
-  local file="$3"
+  local file="$2"
+  [ -z "$3" ] && local time_start="now" || local time_start="$3"
+  # if no time_stop is given, default it to 6 hours after time_start
+  local time_stop_default="@$(( $(date +%s -d"$time_start") + 21600))"
+  [ -z "$4" ] && local time_stop="$time_stop_default" || local time_stop="$4"
   local ext="ts"
 
-  # get start segment
+  # check if time_stop is after time_start
+  [ "$(date +%s -d"$time_stop")" -gt "$(date +%s -d"$time_start")" ]
+  test_success "given stop time is before start time"
+
+  # get start and stop segment
   local segment=$(hls_get_segment_of_time "$url" "$time_start")
   test_success "could not extract start segment"
+  local segment_stop=$(hls_get_segment_of_time "$url" "$time_stop")
+  test_success "could not extract stop segment"
 
   # get ref time and ref segment
   # to make sure not to download from the future
@@ -215,11 +225,12 @@ function hls_download_variant {
   do
     curl -fs "${url_base}/${segment}.${ext}" >> "$file" || \
       echo "segment $segment not available" 1>&2
+    [ "$segment" -lt "$segment_stop" ] || break
     local time_current=$(date +%s)
     local time_delta=$((time_current - time_ref))
     local segment_delta=$((segment - segment_ref))
     [ "$segment_delta" -gt "0" ] || segment_delta=0
-    local sleep=$(( 4 + (4 * segment_delta) - time_delta))
+    sleep=$(( 4 + (4 * segment_delta) - time_delta))
     [ "$sleep" -gt "0" ] || sleep=0
     ((segment+=1))
   done
