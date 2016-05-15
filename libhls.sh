@@ -112,7 +112,7 @@ function hls_get_segment_of_time {
 
   # check if segment_then is available
   curl -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null
-  test_success "requested time is too far in the past"
+  test_success "requested time is too far in the past: $time_given"
 
   # return result
   echo "$segment_then"
