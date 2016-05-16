@@ -1,13 +1,7 @@
-function test_success {
-  # Continue execution only if last command succeeded
-  # ARG1: exit message
-  # ARG2: optional exit code
-  if [ "$?" -ne "0" ]
-  then
-    [ -z "$2" ] && local exitcode=1 || local exitcode=$2
-    echo "$1" >&2
-    exit $exitcode
-  fi
+function printerr {
+  # print error message to stderr
+  # ARG1: error message
+  echo "$1" >&2
   return 0
 }
 
@@ -16,9 +10,8 @@ function fetch_url {
   # ARG1: URL
   local url="$1"
   local errormsg="could not download: $url"
-  curl -fs "$url"
-  local exitcode=$?
-  test_success "$errormsg" $exitcode
+  curl -fs "$url" \
+    || { printerr "$errormsg"; return 1; }
   return 0
 }
 
@@ -31,20 +24,20 @@ function hls_get_current_segment {
 
   # get data
   local indexurl="$1"
-  local raw="$(fetch_url "$indexurl")"
-  test_success "could not download: $url" "$?"
+  local raw="$(fetch_url "$indexurl")" \
+    || { printerr "could not download: $url"; return 1; }
 
   # validate data
   # check EXTM3U tag
-  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null
-  test_success "not a valid playlist file"
+  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
+    || { printerr "not a valid playlist file"; return 1; }
   # extract current segment
   local current_segment="$(echo "$raw" | \
     sed '/#EXT-X-MEDIA-SEQUENCE/!d;
          /#EXT-X-MEDIA-SEQUENCE/s/#EXT-X-MEDIA-SEQUENCE://')"
   # validate segment
-  [[ $current_segment =~ ^-?[0-9]+$ ]]
-  test_success "could not extract current segment number"
+  [[ $current_segment =~ ^-?[0-9]+$ ]] \
+    || { printerr "could not extract current segment number"; return 1; }
 
   # return result
   echo "$current_segment"
@@ -62,8 +55,8 @@ function hls_get_oldest_segment {
   local stepsize=1024
   
   # get current segment
-  local current="$(hls_get_current_segment "$indexurl")"
-  test_success "could not extract current segment"
+  local current="$(hls_get_current_segment "$indexurl")" \
+    || { printerr "could not extract current segment"; return 1; }
 
   # go back in huge steps
   local oldest=$current
@@ -98,8 +91,8 @@ function hls_get_segment_of_time {
 
   # get current segment
   local segment_now=$(hls_get_current_segment "$1")
-  segment_now=$((segment_now + 3))
-  test_success "could not extract current segment"
+  segment_now=$((segment_now + 3)) \
+    || { printerr "could not extract current segment"; return 1; }
 
   # set time
   local time_now=$(date +%s)
@@ -113,8 +106,8 @@ function hls_get_segment_of_time {
   # check if segment_then is available (only if it's from the past)
   if [ "$time_then" -lt "$time_now" ]
   then
-    curl -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null
-    test_success "requested time is too far in the past: $time_given"
+    curl -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null \
+      || { printerr "requested time is too far in the past: $time_given"; return 1; }
   fi
 
   # return result
@@ -129,12 +122,12 @@ function hls_extract_variants {
   unset HLS_VARIANTS
   
   # get data
-  local raw="$(curl -fs "$master_url")"
-  test_success "could not download: $master_url"
+  local raw="$(curl -fs "$master_url")" \
+    || { printerr "could not download: $master_url"; return 1; }
 
   # verify data
-  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null
-  test_success "not a valid playlist file"
+  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
+    || { printerr "not a valid playlist file"; return 1; }
 
   # create array HLS_VARIANTS
   eval $(\
@@ -145,9 +138,11 @@ function hls_extract_variants {
     sed -n 'N;s/\n/ /;s/^/HLS_VARIANTS[/;s/ /]="/;s/$/"/;P')
 
   # verify array
-  [ "${#HLS_VARIANTS[@]}" -gt "0" ]
-  test_success "could not extract variants from master playlist"
-
+  if [ "${#HLS_VARIANTS[@]}" -eq "0" ]
+  then
+    printerr "could not extract variants from master playlist"
+    return 1
+  fi
   return 0
 }
 
@@ -158,12 +153,18 @@ function hls_select_variant_url {
   local count=${#HLS_VARIANTS[@]}
 
   # do we have variants?
-  [ "$count" -gt "0" ]
-  test_success "no variants found"
+  if [ "$count" -eq "0" ]
+  then
+    printerr "no variants found"
+    return 1
+  fi
 
   # validate given index
-  [ "$index" -le "$count" ] && [ "$1" -ge "1" ]
-  test_success "selected variant not in range 1 to $count"
+  if [ "$index" -gt "$count" ] || [ "$index" -lt "1" ]
+  then
+    printerr "selected variant not in range 1 to $count"
+    return 1
+  fi
 
   # return result
   echo "${HLS_VARIANTS[$index]}" | cut -d" " -f2
@@ -177,12 +178,18 @@ function hls_select_variant_bitrate {
   local count=${#HLS_VARIANTS[@]}
 
   # do we have variants?
-  [ "$count" -gt "0" ]
-  test_success "no variants found"
+  if [ "$count" -eq "0" ]
+  then
+    printerr "no variants found"
+    return 1
+  fi
 
   # validate given index
-  [ "$index" -le "$count" ] && [ "$1" -ge "1" ]
-  test_success "selected variant not in range 1 to $count"
+  if [ "$index" -gt "$count" ] || [ "$index" -lt "1" ]
+  then
+    printerr "selected variant not in range 1 to $count"
+    return 1
+  fi
 
   # return result
   echo "${HLS_VARIANTS[$index]}" | cut -d" " -f1
@@ -205,14 +212,17 @@ function hls_download_variant {
   local ext="ts"
 
   # check if time_stop is after time_start
-  [ "$(date +%s -d"$time_stop")" -gt "$(date +%s -d"$time_start")" ]
-  test_success "given stop time is before start time"
+  if [ "$(date +%s -d"$time_stop")" -le "$(date +%s -d"$time_start")" ]
+  then
+    printerr "given stop time is before start time"
+    return 1
+  fi
 
   # get start and stop segment
-  local segment=$(hls_get_segment_of_time "$url" "$time_start")
-  test_success "could not extract start segment"
-  local segment_stop=$(hls_get_segment_of_time "$url" "$time_stop")
-  test_success "could not extract stop segment"
+  local segment=$(hls_get_segment_of_time "$url" "$time_start") \
+    || { printerr "could not extract start segment"; return 1; }
+  local segment_stop=$(hls_get_segment_of_time "$url" "$time_stop") \
+    || { printerr "could not extract stop segment"; return 1; }
 
   # get ref time and ref segment
   # to make sure not to download from the future
@@ -222,8 +232,8 @@ function hls_download_variant {
 
   # now do it
   local sleep=0
-  > "$file" 2> /dev/null
-  test_success "cannot create file: $file"
+  > "$file" 2> /dev/null \
+    || { printerr "cannot create file: $file"; return 1; }
   while sleep $sleep
   do
     curl -fs "${url_base}/${segment}.${ext}" >> "$file" || \
