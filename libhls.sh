@@ -110,9 +110,12 @@ function hls_get_segment_of_time {
   local segment_delta=$(((time_delta + 4) / 4))
   local segment_then=$((segment_now - segment_delta))
 
-  # check if segment_then is available
-  curl -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null
-  test_success "requested time is too far in the past: $time_given"
+  # check if segment_then is available (only if it's from the past)
+  if [ "$time_then" -lt "$time_now" ]
+  then
+    curl -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null
+    test_success "requested time is too far in the past: $time_given"
+  fi
 
   # return result
   echo "$segment_then"
