@@ -24,8 +24,8 @@ function hls_get_current_segment {
 
   # get data
   local indexurl="$1"
-  local raw="$(fetch_url "$indexurl")" \
-    || { printerr "could not download: $url"; return 1; }
+  local raw
+  raw="$(fetch_url "$indexurl")" || return 1;
 
   # validate data
   # check EXTM3U tag
@@ -55,8 +55,7 @@ function hls_get_oldest_segment {
   local stepsize=1024
   
   # get current segment
-  local current="$(hls_get_current_segment "$indexurl")" \
-    || { printerr "could not extract current segment"; return 1; }
+  local current="$(hls_get_current_segment "$indexurl")" || return 1
 
   # go back in huge steps
   local oldest=$current
@@ -90,9 +89,9 @@ function hls_get_segment_of_time {
   local ext="ts"
 
   # get current segment
-  local segment_now=$(hls_get_current_segment "$1")
-  segment_now=$((segment_now + 3)) \
-    || { printerr "could not extract current segment"; return 1; }
+  local segment_now
+  segment_now=$(hls_get_current_segment "$1") || return 1
+  segment_now=$((segment_now + 3))
 
   # set time
   local time_now=$(date +%s)
@@ -122,8 +121,8 @@ function hls_extract_variants {
   unset HLS_VARIANTS
   
   # get data
-  local raw="$(curl -fs "$master_url")" \
-    || { printerr "could not download: $master_url"; return 1; }
+  local raw
+  raw="$(fetch_url "$master_url")" || return 1
 
   # verify data
   echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
@@ -219,10 +218,10 @@ function hls_download_variant {
   fi
 
   # get start and stop segment
-  local segment=$(hls_get_segment_of_time "$url" "$time_start") \
-    || { printerr "could not extract start segment"; return 1; }
-  local segment_stop=$(hls_get_segment_of_time "$url" "$time_stop") \
-    || { printerr "could not extract stop segment"; return 1; }
+  local segment
+  segment=$(hls_get_segment_of_time "$url" "$time_start") || return 1
+  local segment_stop
+  segment_stop=$(hls_get_segment_of_time "$url" "$time_stop") || return 1
 
   # get ref time and ref segment
   # to make sure not to download from the future
