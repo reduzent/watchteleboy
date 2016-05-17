@@ -27,7 +27,7 @@ SCRIPTNAME=$(basename $0)
 
 
 # Check dependencies
-programlist="avconv crontab cut grep jq wget"
+programlist="crontab curl grep jq sed"
 for program in $programlist
 do
     if ! which $program > /dev/null
@@ -244,6 +244,13 @@ then
   fi
 fi
 
+function printerr {
+  # print error message to stderr
+  # ARG1: error message
+  echo "$1" >&2
+  return 0
+}
+
 # remove TMPPATH dir on exit
 function cleanup {
   # Delete livestream cache
@@ -260,48 +267,48 @@ function teleboy_login {
   # 2: password
   # get the session cookie (cinergy_s) and login auth cookie (cinergy_auth)
   # this seems to be a two-step process...
-  local _USER=$1
-  local _PASS=$2
+  local USER=$1
+  local PASS=$2
   if [ -f "$TMPPATH/cookie1" ]
   then
     # When does the current session expire (make it artificially a minute early
     session_expires=$(( $(grep cinergy_s $TMPPATH/cookie1 | cut -f5) - 60 ))
     now=$(date +%s)
-    if [ "$session_expires" -gt "$now" ]
+    if [ "$session_expires" -gt "$now" ] && grep -q cinergy_auth $TMPPATH/cookie1
     then
-      $quiet || echo "Already logged in as $_USER"
-      new_session=false
+      $quiet || echo "Already logged in as $USER"
+      NEW_SESSION=false
       return 0
     fi
   fi
-  $quiet || echo -n "login (as '$_USER')..."
-  local URL="http://www.teleboy.ch/watchlist/"
-  wget --user-agent "$UAGENT" \
-    --quiet \
-    --save-cookies $TMPPATH/cookie0 \
-    --keep-session-cookies \
-    --output-document /dev/null \
-    $URL
-  local POST="login=${_USER}&password=${_PASS}&keep_login=1"
+  $quiet || echo -n "login (as '$USER')..."
+  local URL="http://www.teleboy.ch/"
+  curl --user-agent "$UAGENT" \
+    --silent \
+    --fail \
+    --cookie-jar $TMPPATH/cookie0 \
+    --output /dev/null \
+    "$URL" || { printerr "error"; return 1; }
+  local POST="login=${USER}&password=${PASS}&keep_login=1"
   local URL="http://www.teleboy.ch/login_check"
-  wget --user-agent "$UAGENT" \
-    --quiet \
-    --load-cookies $TMPPATH/cookie0 \
-    --save-cookies $TMPPATH/cookie1 \
-    --keep-session-cookies \
-    --save-headers \
-    --post-data $POST \
-    --output-document /dev/null \
-    $URL
+  curl --user-agent "$UAGENT" \
+    --silent \
+    --fail \
+    --cookie $TMPPATH/cookie0 \
+    --cookie-jar $TMPPATH/cookie1 \
+    --data $POST \
+    --output /dev/null \
+    "$URL" || { printerr "could not login"; return 1; }
   
   # Check if login was successfull
-  if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
+  if grep -q cinergy_auth $TMPPATH/cookie1
   then
     $quiet || echo "ok"
-    new_session=true
+    NEW_SESSION=true
     return 0
   else
     $quiet || echo "failed"
+    rm $TMPPATH/cookie1
     return 1
   fi
 }
@@ -381,7 +388,7 @@ fi
 # Each element follows this format:
 # STATIONNAME/STATIONID
 channel_list_file="$TMPPATH/channel_list"
-if [ -f "$channel_list_file" ] && ! $new_session
+if [ -f "$channel_list_file" ] && ! $NEW_SESSION
 then
   CHANNELS=($(cat $channel_list_file))
 else
