@@ -357,7 +357,7 @@ fi
 cinergy_s=$(grep cinergy_s $TMPPATH/cookie1 | cut -d$'\t' -f 7)
 if [ "cinergy_s" == "" ]
 then
-  $quiet || echo "Could not retrieve session cookie (cinergy_s)" >&2
+  printerr "Could not retrieve session cookie (cinergy_s)"
   exit 1
 fi
 
@@ -368,11 +368,13 @@ tb_apikey=$(base64 -d <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2
 
 # get user id
 URL="http://www.teleboy.ch/tv/player/player.php"
-rawuserdata=$(wget --user-agent "$UAGENT" \
-  --quiet \
-  --load-cookies $TMPPATH/cookie1 \
-  --output-document - \
-  $URL)
+rawuserdata=$(curl \
+  --user-agent "$UAGENT" \
+  --silent \
+  --fail \
+  --cookie $TMPPATH/cookie1 \
+  --output - \
+  "$URL") || { printerr "could not get page containing user id"; exit 1; }
 tb_userid=$(llocal=$(echo "$rawuserdata" | grep " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
 tb_locale=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
 tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
@@ -380,7 +382,7 @@ tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s
 # did we get a valid userid?
 if ! [[ "$tb_userid" =~ ^-?[0-9]+$ ]]
 then 
-  $quiet || echo "Could not extract a valid user id" >&2
+  printerr "Could not extract a valid user id"
   exit 1
 fi
 
@@ -395,20 +397,13 @@ then
 else
   $quiet || echo -n "receiving channel list..."
   URL="http://tv.api.teleboy.ch/users/$tb_userid/broadcasts/now?expand=station&stream=true"
-  stationlist_json="$(
-    wget \
-      --quiet \
+  stationlist_json="$(curl \
+      --silent \
+      --fail \
       --header "x-teleboy-apikey: $tb_apikey" \
       --header "x-teleboy-session: $cinergy_s" \
-      --output-document - \
-      "$URL"
-    )"
-  wget_exit=$?
-  if [ "$wget_exit" -ne "0" ]
-  then
-    $quiet || echo "wget returned error $wget_exit while retreiving channel list" 1>&2
-    exit 1
-  fi
+      --output - \
+      "$URL")" || { printerr "could not download channel list"; exit 1; }
   CHANNELS=($(echo "$stationlist_json" | \
       jq -M '.data.items[] | {(.station.label): .station.id}' | \
       grep '^ ' | \
