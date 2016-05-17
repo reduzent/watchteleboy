@@ -439,34 +439,28 @@ function set_sid_by_channel {
 
 # Get stream-URL from teleboy-api by providing user, session, sid
 function set_stream_data_from_api {
-  # ARGS:
-  # 1: CHANNEL
   # The following variables need to be set
   # tb_userid  (numeric user id)
   # tb_apikey
   # cinergy_s (session cookie)
-  local CHANNEL=$1
-  set_sid_by_channel $CHANNEL
+  # ARG1: channel
+  local channel=$1
+  set_sid_by_channel $channel
   URL="http://tv.api.teleboy.ch/users/${tb_userid}/stream/live/${sid}?alternative=false"
-  stream_data_json=$(wget \
-  --header "x-teleboy-apikey: ${tb_apikey}" \
-  --header "x-teleboy-session: ${cinergy_s}" \
-  --output-document - \
-  --quiet \
-   "$URL")
-  stream_data_url="$(echo -e \
-    $(echo "$stream_data_json" | \
-      sed -e 's/{/\n/g' -e 's/}/\n/g' -e 's/,/\n/g' | \
-      grep '^"url"') | \
-      cut -d'"' -f4 | \
-      sed -e 's/\\//g')"
+  local stream_data_json
+  stream_data_json="$(curl \
+    --silent \
+    --fail \
+    --header "x-teleboy-apikey: ${tb_apikey}" \
+    --header "x-teleboy-session: ${cinergy_s}" \
+    --output - \
+    "$URL")" || { printerr "API request failed"; return 1; }
+  local stream_data_url
+  stream_data_url="$(echo "$stream_data_json" | \
+    jq -M '.data.stream.url')"
+  local stream_data_channelname
   stream_data_channelname="$(echo "$stream_data_json" | \
-    sed -e 's/{/\n/g' | \
-    grep '^"has_stream"' | \
-    sed -e 's/,/\n/g' | \
-    grep '^"name":' | \
-    head -n1 | \
-    cut -d'"' -f4)"
+    jq -M '.data.epg.current.station.name')"
 }
 
 # option -l|--list
