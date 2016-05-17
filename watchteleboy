@@ -455,12 +455,12 @@ function set_stream_data_from_api {
     --header "x-teleboy-session: ${cinergy_s}" \
     --output - \
     "$URL")" || { printerr "API request failed"; return 1; }
-  local stream_data_url
+  # local stream_data_url
   stream_data_url="$(echo "$stream_data_json" | \
-    jq -M '.data.stream.url')"
-  local stream_data_channelname
+    jq --raw-output '.data.stream.url')"
+  # local stream_data_channelname
   stream_data_channelname="$(echo "$stream_data_json" | \
-    jq -M '.data.epg.current.station.name')"
+    jq --raw-output '.data.epg.current.station.name')"
 }
 
 # option -l|--list
@@ -484,18 +484,20 @@ function dump_hls_stream {
 
   set_stream_data_from_api $1
   
-  # Ugly: We need to print the canonical channel name _before_
+ # Ugly: We need to print the canonical channel name _before_
   # we start downling in record mode
   $record && ! $quiet && echo "$stream_data_channelname"
 
   # get highest quality stream
-  selected_streamurl=$(wget --output-document - \
-    --quiet "$stream_data_url" | \
+  selected_streamurl="$(curl \
+      --silent \
+      --fail \
+      "$stream_data_url" | \
     grep '^http.*\.m3u8' | \
     sort -V | \
-    tail -n1)
+    tail -n1)"
   
-  # Use differenct container format depending on whether we record or watch live
+# Use differenct container format depending on whether we record or watch live
   # flv is designed for live streaming. It supports reading from it while data is
   # still appended
   # mkv cannot easily be read from while it is written, but unlike flv it allows
@@ -512,8 +514,7 @@ PLAYERCMD="$PLAYER $([ "$PLAYER" == "mpv" ] && echo $MPVOPTS || echo $MPLAYEROPT
 
 # Compose output filename
 function compose_outfile {
-  # ARGS:
-  # 1: Channel
+  # ARG1: Channel
   if $record
   then
     if $showname
