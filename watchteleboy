@@ -242,6 +242,7 @@ then
     echo "Could not create directory: $TMPPATH" 1>&2
     exit 1
   fi
+  chmod 777 "${TMPDIR}/${SCRIPTNAME}"
 fi
 
 function printerr {
