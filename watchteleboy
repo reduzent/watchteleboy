@@ -406,9 +406,7 @@ else
       "$URL")" || { printerr "could not download channel list"; exit 1; }
   CHANNELS=($(echo "$stationlist_json" | \
       jq -M '.data.items[] | {(.station.label): .station.id}' | \
-      grep '^ ' | \
-      sed -e 's|: |/|' -e 's/^  //' -e 's/"//g' \
-    ))
+      sed '/^  /!d;s/^  "//;s/": /\//'))
   # Check if we received something
   if [ ${#CHANNELS[@]} -gt 0 ]
   then
