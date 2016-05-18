@@ -512,6 +512,7 @@ function print_channel_list {
   do
     echo $channel | cut -d'/' -f1
   done
+  return 0
 }
 if $list
 then
@@ -520,12 +521,11 @@ then
 fi
 
 function dump_hls_stream {
-  # ARGS:
-  # 1: channel
-  # 2: output file
-  [ -d $TMPPATH ] || exit 1
+  # ARG1: channel
+  # ARG2: output file
+  [ -d $TMPPATH ] || return 1
 
-  set_stream_data_from_api $1
+  set_stream_data_from_api $1 || return 1
   
  # Ugly: We need to print the canonical channel name _before_
   # we start downling in record mode
@@ -538,7 +538,7 @@ function dump_hls_stream {
       "$HLS_MASTER_URL" | \
     grep '^http.*\.m3u8' | \
     sort -V | \
-    tail -n1)"
+    tail -n1)" || { printerr "could not extract variant"; return 1; }
   
 # Use differenct container format depending on whether we record or watch live
   # flv is designed for live streaming. It supports reading from it while data is
@@ -550,6 +550,7 @@ function dump_hls_stream {
   # hls dump command
   avconv -y -v quiet -re -i "$selected_streamurl" -c copy -f $containerformat "$2"  &
   PID=$!
+
 }
 
 # Compose player command
