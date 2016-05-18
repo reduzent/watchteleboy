@@ -482,6 +482,7 @@ function set_stream_data_from_api {
   # TELEBOY_API_KEY
   # TELEBOY_SESSION_ID
   # ARG1: channel
+  # sets HLS_MASTER_URL
   local channel=$1
   set_sid_by_channel $channel || return 1
   local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=false"
@@ -493,16 +494,20 @@ function set_stream_data_from_api {
     --header "x-teleboy-session: ${TELEBOY_SESSION_ID}" \
     --output - \
     "$url")" || { printerr "API request failed"; return 1; }
-  # local stream_data_url
-  stream_data_url="$(echo "$stream_data_json" | \
+  HLS_MASTER_URL="$(echo "$stream_data_json" | \
     jq --raw-output '.data.stream.url')"
-  # local stream_data_channelname
-  stream_data_channelname="$(echo "$stream_data_json" | \
+  CHANNEL_LABEL="$(echo "$stream_data_json" | \
     jq --raw-output '.data.epg.current.station.name')"
+  
+  # validate data
+  local regex='http://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+  [[ "$HLS_MASTER_URL" =~ "$regex" ]] && return 0 || \
+    { printerr "could not extract master url"; return 1; }
 }
 
 # option -l|--list
 function print_channel_list {
+  local channel
   for channel in "${CHANNELS[@]}"
   do
     echo $channel | cut -d'/' -f1
@@ -524,13 +529,13 @@ function dump_hls_stream {
   
  # Ugly: We need to print the canonical channel name _before_
   # we start downling in record mode
-  $record && ! $quiet && echo "$stream_data_channelname"
+  $record && ! $quiet && echo "$CHANNEL_LABEL"
 
   # get highest quality stream
   selected_streamurl="$(curl \
       --silent \
       --fail \
-      "$stream_data_url" | \
+      "$HLS_MASTER_URL" | \
     grep '^http.*\.m3u8' | \
     sort -V | \
     tail -n1)"
@@ -617,7 +622,7 @@ function player_recorder {
         fi
       done
       echo -ne "\033[2K" # this clears the current line
-      $quiet || echo -ne "\rNow playing: $stream_data_channelname"
+      $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
       $PLAYERCMD "$OUTFILE" 2> /dev/null
       echo -ne "\033[2K" # this clears the current line
       kill $PID
@@ -625,8 +630,8 @@ function player_recorder {
     else
       echo -ne "\033[2K" # this clears the current line
       set_stream_data_from_api "$1"
-      $quiet || echo -ne "\rNow playing: $stream_data_channelname"
-      $PLAYERCMD "$stream_data_url" 2> /dev/null
+      $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
+      $PLAYERCMD "$HLS_MASTER_URL" 2> /dev/null
     fi
   fi
 }
