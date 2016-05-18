@@ -25,86 +25,12 @@ LIVEPAUSE=true
 BUFFERSECONDS=5
 SCRIPTNAME=$(basename $0)
 
-
-# Check dependencies
-programlist="crontab curl grep jq sed"
-for program in $programlist
-do
-    if ! which $program > /dev/null
-    then
-        echo "ERROR:" 1>&2
-        echo "Could not find ${program}. Is it installed?" 1>&2
-        exit 1
-    fi
-done
-
-# Check player dependency (mpv, mplayer in that order)
-if which mpv > /dev/null
-then
-  PLAYER=mpv
-elif which mplayer > /dev/null
-then
-  PLAYER=mplayer
-else
-  echo "No suitable player found: mpv, mplayer"
-  echo "Please install mpv or mplayer, before using"
-  echo "this script."
-  exit 1
-fi
-
-# whiptail dialog boxes are optional (fallback to tradition shell dialogs)
-whiptail=$(which whiptail > /dev/null && echo true || echo false)
-
-# Read config (overrides default values) or create it
-CONFIG="$HOME/.${SCRIPTNAME}rc"
-if [ -f $CONFIG ]
-then
-  . $CONFIG
-else
-  cat << EOF > $CONFIG
-##########################################################################
-# CONFIGURATION FILE FOR $SCRIPTNAME                                     #
-# Feel free to adapt to your needs                                       #
-##########################################################################
-
-
-# Set directory where played streams are cached:
-
-TMPDIR='$TMPDIR'
-
-# $SCRIPTNAME allows you to use either mpv or mplayer. Since both
-# players are not fully compatible, use separate configurations
-# for each player.
-# mpv flags:
-
-MPVOPTS='$MPVOPTS'
-
-# mplayer flags:
-
-MPLAYEROPTS='$MPLAYEROPTS'
-
-# Where should stream recordings be saved?
-# This can be overridden by the -p/--path flag:
-
-#RECORDPATH='~/mytvshows'
-
-# This parameter turns live stream buffering on/off. When turned on,
-# you can pause while watching and continue playback anytime later. Also,
-# it enables you to seek back and forth within the downloaded buffer. This
-# comes at the cost of longer delays when switching channels.
-# Allowed values: true, false:
-
-LIVEPAUSE='$LIVEPAUSE'
-
-# How much data should be downloaded before starting playback?
-# The value is given in seconds. The playback begins after
-# BUFFERSECONDS * BITRATE data has been downloaded.
-# This parameter has only effect when LIVEPAUSE is set to true:
-
-BUFFERSECONDS='$BUFFERSECONDS'
-EOF
-  echo "created config file '$CONFIG'"
-fi
+function printerr {
+  # print error message to stderr
+  # ARG1: error message
+  $quiet || echo "$1" >&2
+  return 0
+}
 
 # Comandline argument parsing
 channel=false
@@ -138,8 +64,8 @@ do
     -v|--version) version=true;;
     --deleteme) deleteme=true; DELETEME="$2"; shift;;
     --delete-cron) deletecron=true; DELCHAN="$2"; DELTIME="$3"; shift; shift;;
-    -*) echo "$SCRIPTNAME: error - unrecognized option '$1'" 1>&2
-        echo "use '$SCRIPTNAME --help' to get a list of available options" 1>&2
+    -*) printerr "$SCRIPTNAME: error - unrecognized option '$1'"
+        printerr "use '$SCRIPTNAME --help' to get a list of available options"
         exit 1;;
     *)  break;;
   esac
@@ -199,14 +125,14 @@ if $deletecron
 then
   if ! date -d "$DELTIME" > /dev/null 2>&1
   then
-    echo "Could not parse specified time: $DELTIME" 1>&2
+    printerr "Could not parse specified time: $DELTIME"
     exit 1
   fi
   crontempfile="/tmp/crontab.tmp"
   searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]'${DELCHAN}'.*"
   if ! crontab -l | grep "$searchstring" > /dev/null
   then
-    echo "Could not find specified job in crontab." 1>&2
+    printerr "Could not find specified job in crontab."
     exit 1
   else
     crontab -l | grep -v "$searchstring" > $crontempfile 
@@ -222,13 +148,92 @@ if $record
 then
   if [ ! -d "$RECORDPATH" ]
   then
-    echo "There is no such directory: $RECORDPATH" 1>&2
+    printerr "There is no such directory: $RECORDPATH"
     exit 1
   elif [ ! -w "$RECORDPATH" ]
   then
-    echo "You don't have permission to write to $RECORDPATH" 1>&2
+    printerr "You don't have permission to write to $RECORDPATH"
     exit 1
   fi
+fi
+
+# Check dependencies
+programlist="crontab curl grep jq sed"
+for program in $programlist
+do
+    if ! which $program > /dev/null
+    then
+        printerr "Could not find ${program}. Is it installed?"
+        exit 1
+    fi
+done
+
+# Check player dependency (mpv, mplayer in that order)
+if which mpv > /dev/null
+then
+  PLAYER=mpv
+elif which mplayer > /dev/null
+then
+  PLAYER=mplayer
+else
+  printerr "No suitable player found: mpv, mplayer"
+  printerr "Please install mpv or mplayer, before using"
+  printerr "this script."
+  exit 1
+fi
+
+# whiptail dialog boxes are optional (fallback to tradition shell dialogs)
+whiptail=$(which whiptail > /dev/null && echo true || echo false)
+
+# Read config (overrides default values) or create it
+CONFIG="$HOME/.${SCRIPTNAME}rc"
+if [ -f $CONFIG ]
+then
+  . $CONFIG
+else
+  cat << EOF > $CONFIG
+##########################################################################
+# CONFIGURATION FILE FOR $SCRIPTNAME                                     #
+# Feel free to adapt to your needs                                       #
+##########################################################################
+
+
+# Set directory where played streams are cached:
+
+TMPDIR='$TMPDIR'
+
+# $SCRIPTNAME allows you to use either mpv or mplayer. Since both
+# players are not fully compatible, use separate configurations
+# for each player.
+# mpv flags:
+
+MPVOPTS='$MPVOPTS'
+
+# mplayer flags:
+
+MPLAYEROPTS='$MPLAYEROPTS'
+
+# Where should stream recordings be saved?
+# This can be overridden by the -p/--path flag:
+
+#RECORDPATH='~/mytvshows'
+
+# This parameter turns live stream buffering on/off. When turned on,
+# you can pause while watching and continue playback anytime later. Also,
+# it enables you to seek back and forth within the downloaded buffer. This
+# comes at the cost of longer delays when switching channels.
+# Allowed values: true, false:
+
+LIVEPAUSE='$LIVEPAUSE'
+
+# How much data should be downloaded before starting playback?
+# The value is given in seconds. The playback begins after
+# BUFFERSECONDS * BITRATE data has been downloaded.
+# This parameter has only effect when LIVEPAUSE is set to true:
+
+BUFFERSECONDS='$BUFFERSECONDS'
+EOF
+  echo "created config file '$CONFIG'"
 fi
 
 # set working directory for keeping session data
@@ -239,18 +244,11 @@ if  [ ! -d $TMPPATH ]
 then
   if ! mkdir -p $TMPPATH
   then
-    echo "Could not create directory: $TMPPATH" 1>&2
+    printerr "Could not create directory: $TMPPATH"
     exit 1
   fi
   chmod 777 "${TMPDIR}/${SCRIPTNAME}"
 fi
-
-function printerr {
-  # print error message to stderr
-  # ARG1: error message
-  echo "$1" >&2
-  return 0
-}
 
 # remove TMPPATH dir on exit
 function cleanup {
@@ -273,7 +271,7 @@ function teleboy_login {
   if [ -f "$TMPPATH/cookie1" ]
   then
     # When does the current session expire (make it artificially a minute early
-    session_expires=$(( $(grep cinergy_s $TMPPATH/cookie1 | cut -f5) - 60 ))
+    session_expires=$(( $(sed '/cinergy_s/!d;s/^.*\s\(.*\)\s.*\.*\s.*$/\1/' $TMPPATH/cookie1) - 60 ))
     now=$(date +%s)
     if [ "$session_expires" -gt "$now" ] && grep -q cinergy_auth $TMPPATH/cookie1
     then
@@ -354,8 +352,8 @@ fi
 
 # Store value of session cookie (cinergy_s)
 # We only need to do that once per session and every stream request
-cinergy_s=$(grep cinergy_s $TMPPATH/cookie1 | cut -d$'\t' -f 7)
-if [ "cinergy_s" == "" ]
+TELEBOY_SESSION_ID="$(sed '/cinergy_s/!d;/cinergy_s/s/^.*cinergy_s\s//' $TMPPATH/cookie1)"
+if [ "$TELEBOY_SESSION_ID" == "" ]
 then
   printerr "Could not retrieve session cookie (cinergy_s)"
   exit 1
@@ -401,7 +399,7 @@ else
       --silent \
       --fail \
       --header "x-teleboy-apikey: $tb_apikey" \
-      --header "x-teleboy-session: $cinergy_s" \
+      --header "x-teleboy-session: $TELEBOY_SESSION_ID" \
       --output - \
       "$URL")" || { printerr "could not download channel list"; exit 1; }
   CHANNELS=($(echo "$stationlist_json" | \
@@ -450,7 +448,7 @@ function set_stream_data_from_api {
     --silent \
     --fail \
     --header "x-teleboy-apikey: ${tb_apikey}" \
-    --header "x-teleboy-session: ${cinergy_s}" \
+    --header "x-teleboy-session: ${TELEBOY_SESSION_ID}" \
     --output - \
     "$URL")" || { printerr "API request failed"; return 1; }
   # local stream_data_url
@@ -517,7 +515,7 @@ function compose_outfile {
   then
     if $showname
     then
-      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed -e 's|/|-|g')-$(date +%Y%m%d%H%M).mkv"
+      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed 's|/|-|g')-$(date +%Y%m%d%H%M).mkv"
     else
       OUTFILE="${RECORDPATH}/${1}-$(date +%Y%m%d%H%M).mkv"
     fi
@@ -973,7 +971,7 @@ then
       read -p "Are those settings correct? (Y/n) "
       if [ "$REPLY" == "n" ]
       then
-        echo "Cancelled by user. Quit." 1>&2
+        printerr "Cancelled by user. Quit."
         exit 1
       fi
     fi 
@@ -990,7 +988,7 @@ fi
 if $deleteme
 then
   crontab -l > $crontempfile
-  sed -i "/$DELETEME/ d" $crontempfile
+  sed -i "/$DELETEME/d" $crontempfile
   crontab < $crontempfile
   rm $crontempfile
 fi
