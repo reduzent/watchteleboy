@@ -501,7 +501,7 @@ function set_stream_data_from_api {
   
   # validate data
   local regex='http://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
-  [[ "$HLS_MASTER_URL" =~ "$regex" ]] && return 0 || \
+  [[ $HLS_MASTER_URL =~ $regex ]] && return 0 || \
     { printerr "could not extract master url"; return 1; }
 }
 
