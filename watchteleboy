@@ -23,6 +23,7 @@ MPVOPTS="--really-quiet --keep-open"
 RECORDPATH=$(pwd)
 LIVEPAUSE=true
 BUFFERSECONDS=5
+TELEBOY_AUTHENTICATED=false
 SCRIPTNAME=$(basename $0)
 
 function printerr {
@@ -268,6 +269,7 @@ function teleboy_login {
   # visit any teleboy page to get a session cookie.
   # ARG1: teleboy user name
   # ARG2: teleboy password
+  # sets NEW_SESSION, TELEBOY_AUTHENTICATED
   local USER=$1
   local PASS=$2
   if [ -f "$TMPPATH/cookie1" ]
@@ -279,6 +281,7 @@ function teleboy_login {
     then
       $quiet || echo "Already logged in as $USER"
       NEW_SESSION=false
+      TELEBOY_AUTHENTICATED=true
       return 0
     fi
   fi
@@ -301,20 +304,12 @@ function teleboy_login {
     --output /dev/null \
     "$URL" || { printerr "could not login"; return 1; }
   
-  # Store value of session cookie (cinergy_s)
-  # We only need to do that once per session and every stream request
-  TELEBOY_SESSION_ID="$(sed '/cinergy_s/!d;/cinergy_s/s/^.*cinergy_s\s//' $TMPPATH/cookie1)"
-  if [ "$TELEBOY_SESSION_ID" == "" ]
-  then
-    printerr "Could not retrieve session cookie (cinergy_s)"
-    return 1
-  fi
-
   # Check if login was successfull
   if grep -q cinergy_auth $TMPPATH/cookie1
   then
     $quiet || echo "ok"
     NEW_SESSION=true
+    TELEBOY_AUTHENTICATED=true
     return 0
   else
     $quiet || echo "failed"
@@ -361,9 +356,27 @@ else
   fi
 fi
 
+function teleboy_set_session_id {
+  # We need to be logged in for this to work
+  # Store value of session cookie (cinergy_s)
+  # We only need to do that once per session and every stream request
+  $TELEBOY_AUTHENTICATED || { printerr "not logged in yet."; return 1; }
+  TELEBOY_SESSION_ID="$(sed '/cinergy_s/!d;/cinergy_s/s/^.*cinergy_s\s//' $TMPPATH/cookie1)"
+  if [ "$TELEBOY_SESSION_ID" == "" ]
+  then
+    printerr "Could not retrieve session cookie (cinergy_s)"
+    return 1
+  fi
+}
+
+teleboy_set_session_id || exit 1
+
 function teleboy_create_user_env {
   # Set some variables that are required for accessing the teleboy api.
   # no arguments are taken, but login must have happened (we need the cookie).
+
+  # are we loggin already?
+  $TELEBOY_AUTHENTICATED || { printerr "not logged in yet."; return 1; }
 
   # It seems that key is hard-coded, thus it didn't appear
   # necessary to retrieve its value from the web
@@ -391,73 +404,95 @@ function teleboy_create_user_env {
   fi
 } 
 
-# get the channel list
-# CHANNELS is an array containing an element per station
-# Each element follows this format:
-# STATIONNAME/STATIONID
-channel_list_file="$TMPPATH/channel_list"
-if [ -f "$channel_list_file" ] && ! $NEW_SESSION
-then
-  CHANNELS=($(cat $channel_list_file))
-else
-  $quiet || echo -n "receiving channel list..."
-  URL="http://tv.api.teleboy.ch/users/$tb_userid/broadcasts/now?expand=station&stream=true"
-  stationlist_json="$(curl \
-      --silent \
-      --fail \
-      --header "x-teleboy-apikey: $tb_apikey" \
-      --header "x-teleboy-session: $TELEBOY_SESSION_ID" \
-      --output - \
-      "$URL")" || { printerr "could not download channel list"; exit 1; }
-  CHANNELS=($(echo "$stationlist_json" | \
-      jq -M '.data.items[] | {(.station.label): .station.id}' | \
-      sed '/^  /!d;s/^  "//;s/": /\//'))
-  # Check if we received something
-  if [ ${#CHANNELS[@]} -gt 0 ]
-  then
-    $quiet || echo "ok (${#CHANNELS[@]} channels)"
-    echo "${CHANNELS[@]}" > "$channel_list_file"
-  else
-    $quiet || echo "failed"
-     exit 1
-  fi
-fi
+# do it
+teleboy_create_user_env || exit 1
 
-# Convert selected channel to station_id (sid)
+function teleboy_create_channel_list {
+  # get the channel list through the teleboy api
+  # CHANNELS is an array containing an element per station
+  # Each element follows this format:
+  # STATIONNAME/STATIONID
+  # no ARGS, but TELEBOY_USER_ID, TELEBOY_API_KEY, NEW_SESSION
+  # need to be set
+
+  # check if we're ready
+  [ -z "$TELEBOY_USER_ID" ] && { printerr "TELEBOY_USER_ID not set"; return 1; }
+
+  # if we have channel list pre-cached, we use the cache
+  local channel_list_file="$TMPPATH/channel_list"
+  if [ -f "$channel_list_file" ] && ! $NEW_SESSION
+  then
+    CHANNELS=($(cat $channel_list_file))
+    return 0
+  else
+    $quiet || echo -n "receiving channel list..."
+    local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/broadcasts/now?expand=station&stream=true"
+    local stationlist_json
+    stationlist_json="$(curl \
+        --silent \
+        --fail \
+        --header "x-teleboy-apikey: $TELEBOY_API_KEY" \
+        --header "x-teleboy-session: $TELEBOY_SESSION_ID" \
+        --output - \
+        "$url")" || { printerr "could not download channel list"; exit 1; }
+    CHANNELS=($(echo "$stationlist_json" | \
+        jq -M '.data.items[] | {(.station.label): .station.id}' | \
+        sed '/^  /!d;s/^  "//;s/": /\//'))
+    # Check if we received something
+    if [ ${#CHANNELS[@]} -gt 0 ]
+    then
+      $quiet || echo "ok (${#CHANNELS[@]} channels)"
+      # write cache
+      echo "${CHANNELS[@]}" > "$channel_list_file"
+      return 0
+    else
+      $quiet || echo "failed"
+      return 1
+    fi
+  fi
+}
+
+# do it
+teleboy_create_channel_list || exit 1
+
 function set_sid_by_channel {
-  # ARGS:
-  # 1: CHANNEL
-  sid=$(
+  # Convert selected channel to station_id (sid)
+  # set global SID
+  # ARG1: channel name
+  # CHANNELS needs to be set
+  SID=$(
     for channel in ${CHANNELS[@]}
     do
       echo $channel | grep -i ^$1/ | cut -d'/' -f2
     done
   )
-  if [[ $sid = *[!0-9]* || "$sid" = "" ]] 
+  if [[ $SID = *[!0-9]* || "$SID" = "" ]]
   then
-    $quiet || echo -e "\nCould not get a valid sid." 1>&2
-    exit 1
+    printerr " Could not get a valid sid."
+    return 1
+  else
+    return 0
   fi
 }
 
-# Get stream-URL from teleboy-api by providing user, session, sid
 function set_stream_data_from_api {
+  # Get stream-URL of given channel from teleboy api
   # The following variables need to be set
-  # tb_userid  (numeric user id)
-  # tb_apikey
-  # cinergy_s (session cookie)
+  # TELEBOY_USER_ID  (numeric user id)
+  # TELEBOY_API_KEY
+  # TELEBOY_SESSION_ID
   # ARG1: channel
   local channel=$1
-  set_sid_by_channel $channel
-  URL="http://tv.api.teleboy.ch/users/${tb_userid}/stream/live/${sid}?alternative=false"
+  set_sid_by_channel $channel || return 1
+  local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=false"
   local stream_data_json
   stream_data_json="$(curl \
     --silent \
     --fail \
-    --header "x-teleboy-apikey: ${tb_apikey}" \
+    --header "x-teleboy-apikey: ${TELEBOY_API_KEY}" \
     --header "x-teleboy-session: ${TELEBOY_SESSION_ID}" \
     --output - \
-    "$URL")" || { printerr "API request failed"; return 1; }
+    "$url")" || { printerr "API request failed"; return 1; }
   # local stream_data_url
   stream_data_url="$(echo "$stream_data_json" | \
     jq --raw-output '.data.stream.url')"
