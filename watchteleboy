@@ -261,11 +261,13 @@ trap cleanup INT TERM EXIT
 
 # Teleboy Login
 function teleboy_login {
-  # ARGS:
-  # 1: teleboy user name
-  # 2: password
-  # get the session cookie (cinergy_s) and login auth cookie (cinergy_auth)
-  # this seems to be a two-step process...
+  # get the session cookie (cinergy_s) and set TELEBOY_SESSION_ID then login to
+  # get auth cookie (cinergy_auth).
+  # this seems to be a two-step process, since we need to already have
+  # a session cookie before we can attempt a login. It is sufficient to
+  # visit any teleboy page to get a session cookie.
+  # ARG1: teleboy user name
+  # ARG2: teleboy password
   local USER=$1
   local PASS=$2
   if [ -f "$TMPPATH/cookie1" ]
@@ -299,6 +301,15 @@ function teleboy_login {
     --output /dev/null \
     "$URL" || { printerr "could not login"; return 1; }
   
+  # Store value of session cookie (cinergy_s)
+  # We only need to do that once per session and every stream request
+  TELEBOY_SESSION_ID="$(sed '/cinergy_s/!d;/cinergy_s/s/^.*cinergy_s\s//' $TMPPATH/cookie1)"
+  if [ "$TELEBOY_SESSION_ID" == "" ]
+  then
+    printerr "Could not retrieve session cookie (cinergy_s)"
+    return 1
+  fi
+
   # Check if login was successfull
   if grep -q cinergy_auth $TMPPATH/cookie1
   then
@@ -350,39 +361,35 @@ else
   fi
 fi
 
-# Store value of session cookie (cinergy_s)
-# We only need to do that once per session and every stream request
-TELEBOY_SESSION_ID="$(sed '/cinergy_s/!d;/cinergy_s/s/^.*cinergy_s\s//' $TMPPATH/cookie1)"
-if [ "$TELEBOY_SESSION_ID" == "" ]
-then
-  printerr "Could not retrieve session cookie (cinergy_s)"
-  exit 1
-fi
+function teleboy_create_user_env {
+  # Set some variables that are required for accessing the teleboy api.
+  # no arguments are taken, but login must have happened (we need the cookie).
 
-# Set teleboy api key
-# It seems that key is hard-coded, thus it didn't appear
-# necessary to retrieve its value from the web
-tb_apikey=$(base64 -d <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
-
-# get user id
-URL="http://www.teleboy.ch/tv/player/player.php"
-rawuserdata=$(curl \
-  --user-agent "$UAGENT" \
-  --silent \
-  --fail \
-  --cookie $TMPPATH/cookie1 \
-  --output - \
-  "$URL") || { printerr "could not get page containing user id"; exit 1; }
-tb_userid=$(llocal=$(echo "$rawuserdata" | grep " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
-tb_locale=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
-tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
-
-# did we get a valid userid?
-if ! [[ "$tb_userid" =~ ^-?[0-9]+$ ]]
-then 
-  printerr "Could not extract a valid user id"
-  exit 1
-fi
+  # It seems that key is hard-coded, thus it didn't appear
+  # necessary to retrieve its value from the web
+  TELEBOY_API_KEY=$(base64 -d <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
+  
+  # get user id, locale, plus member status
+  local url="http://www.teleboy.ch/tv/player/player.php"
+  local rawuserdata
+  rawuserdata=$(curl \
+    --user-agent "$UAGENT" \
+    --silent \
+    --fail \
+    --cookie $TMPPATH/cookie1 \
+    --output - \
+    "$url") || { printerr "could not get page containing user id"; exit 1; }
+  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
+  TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
+  TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+  
+  # did we get a valid userid?
+  if ! [[ "$TELEBOY_USER_ID" =~ ^-?[0-9]+$ ]]
+  then 
+    printerr "Could not extract a valid user id"
+    exit 1
+  fi
+} 
 
 # get the channel list
 # CHANNELS is an array containing an element per station
