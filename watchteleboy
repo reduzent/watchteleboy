@@ -25,6 +25,7 @@ LIVEPAUSE=true
 BUFFERSECONDS=5
 TELEBOY_AUTHENTICATED=false
 SCRIPTNAME=$(basename $0)
+CRONTEMPFILE="${TMPPATH}/crontab.tmp"
 
 function printerr {
   # print error message to stderr
@@ -121,6 +122,7 @@ EOF
   exit
 fi
 
+# option --delete-cron
 # delete cron entry (used by tvbrowser record plugin)
 if $deletecron
 then
@@ -237,19 +239,62 @@ EOF
   echo "created config file '$CONFIG'"
 fi
 
-# set working directory for keeping session data
-TMPPATH="${TMPDIR}/${SCRIPTNAME}/${TELEBOY_USER}"
-
-# Create TMPDIR 
-if  [ ! -d $TMPPATH ]
-then
-  if ! mkdir -p $TMPPATH
+#### FUNCTIONS ###################################################
+function set_credentials {
+  # This makes sure we have TELEBOY_USER and TELEBOY_PASS set,
+  # either by reading from the config file or by asking the
+  # the user interactively.
+  if [ -z "$TELEBOY_USER" ]
   then
-    printerr "Could not create directory: $TMPPATH"
-    exit 1
+    echo "Please provide your Teleboy credentials. If you don't have"
+    echo "any, you can create a free account on http://www.teleboy.ch"
+    read -p    "Please enter your user name: " TELEBOY_USER
+    read -s -p "Please enter your password:  " TELEBOY_PASS
+    echo
+    setup_work_dir || return 1
+    while ! teleboy_login $TELEBOY_USER $TELEBOY_PASS 
+    do
+      read -p    "Please re-enter your user name: " TELEBOY_USER
+      read -s -p "Please re-enter your password:  " TELEBOY_PASS
+      echo
+    done  
+    echo "CAUTION: writing plain text password to the config file!"
+    read -p "Proceed? y/N " -n 1 install_configuration
+    echo
+    if ! [[ "$install_configuration" =~ [Yy] ]]
+    then
+      printerr "Not saving credentials in config file"
+    else
+        cat << EOF >> $CONFIG
+
+# Teleboy Login Credentials
+
+TELEBOY_USER='$TELEBOY_USER'
+TELEBOY_PASS='$TELEBOY_PASS'
+EOF
+    fi
   fi
-  chmod 777 "${TMPDIR}/${SCRIPTNAME}"
-fi
+  return 0
+}
+
+function setup_work_dir {
+  # set working directory for keeping session data
+  # and for stream caching
+  # no ARGs
+  # required vars: TELEBOY_USER
+  TMPPATH="${TMPDIR}/${SCRIPTNAME}/${TELEBOY_USER}"
+
+  # Create TMPDIR 
+  if  [ ! -d $TMPPATH ]
+  then
+    if ! mkdir -p $TMPPATH
+    then
+      printerr "Could not create directory: $TMPPATH"
+      return 1
+    fi
+    chmod 777 "${TMPDIR}/${SCRIPTNAME}"
+  fi
+}
 
 # remove TMPPATH dir on exit
 function cleanup {
@@ -318,44 +363,6 @@ function teleboy_login {
   fi
 }
 
-# Add login credentials to config (if necessary)
-if [ -z "$TELEBOY_USER" ]
-then
-  echo "Please provide your Teleboy credentials. If you don't have"
-  echo "any, you can create a free account on http://www.teleboy.ch"
-  read -p    "Please enter your user name: " TELEBOY_USER
-  read -s -p "Please enter your password:  " TELEBOY_PASS
-  echo
-  while ! teleboy_login $TELEBOY_USER $TELEBOY_PASS 
-  do
-    read -p    "Please re-enter your user name: " TELEBOY_USER
-    read -s -p "Please re-enter your password:  " TELEBOY_PASS
-    echo
-  done  
-  echo "CAUTION: writing plain text password to the config file!"
-  read -p "Proceed? y/N " -n 1 install_configuration
-  echo
-  if ! [[ "$install_configuration" =~ [Yy] ]]
-  then
-    echo "Not saving credentials in config file"
-  else
-      cat << EOF >> $CONFIG
-
-# Teleboy Login Credentials
-
-TELEBOY_USER='$TELEBOY_USER'
-TELEBOY_PASS='$TELEBOY_PASS'
-EOF
-  fi
-else
-  if ! teleboy_login $TELEBOY_USER $TELEBOY_PASS
-  then
-    $quiet || echo "Please check your credentials in the configuration:"
-    $quiet || echo "$CONFIG"
-    exit 1
-  fi
-fi
-
 function teleboy_set_session_id {
   # We need to be logged in for this to work
   # Store value of session cookie (cinergy_s)
@@ -368,8 +375,6 @@ function teleboy_set_session_id {
     return 1
   fi
 }
-
-teleboy_set_session_id || exit 1
 
 function teleboy_create_user_env {
   # Set some variables that are required for accessing the teleboy api.
@@ -403,9 +408,6 @@ function teleboy_create_user_env {
     exit 1
   fi
 } 
-
-# do it
-teleboy_create_user_env || exit 1
 
 function teleboy_create_channel_list {
   # get the channel list through the teleboy api
@@ -451,9 +453,6 @@ function teleboy_create_channel_list {
     fi
   fi
 }
-
-# do it
-teleboy_create_channel_list || exit 1
 
 function set_sid_by_channel {
   # Convert selected channel to station_id (sid)
@@ -505,8 +504,9 @@ function set_stream_data_from_api {
     { printerr "could not extract master url"; return 1; }
 }
 
-# option -l|--list
 function print_channel_list {
+  # prints channel list
+  # requires: CHANNELS
   local channel
   for channel in "${CHANNELS[@]}"
   do
@@ -514,11 +514,6 @@ function print_channel_list {
   done
   return 0
 }
-if $list
-then
-  print_channel_list
-  exit
-fi
 
 function dump_hls_stream {
   # ARG1: channel
@@ -550,7 +545,6 @@ function dump_hls_stream {
   # hls dump command
   avconv -y -v quiet -re -i "$selected_streamurl" -c copy -f $containerformat "$2"  &
   PID=$!
-
 }
 
 # Compose player command
@@ -946,27 +940,57 @@ function require_r_opt {
   then
     return 0
   else
-    echo "The option '--${1}' requires the '--record' option" 1>&2
+    printerr "The option '--${1}' requires the '--record' option"
     exit 1
   fi
 }
 
-# schedule a recording into crontab
-crontempfile="${TMPPATH}/crontab.tmp"
 function write_to_crontab {
   # when using this function make sure that
   # the necessary vars are set
   # mandatory: CHANNEL, STARTTIME, DURATION
   DELETEME=${RANDOM}${RANDOM}
-  crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
-  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $crontempfile
-  echo -ne "--quiet --channel '${CHANNEL}' --duration ${DURATION} " >> $crontempfile
-  echo -ne "--deleteme ${DELETEME} " >> $crontempfile
-  $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
-  echo -ne "--path '${RECORDPATH}'\n" >> $crontempfile
-  crontab < $crontempfile
-  rm $crontempfile
+  crontab -l > /dev/null 2>&1 && crontab -l > $CRONTEMPFILE || touch $CRONTEMPFILE
+  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $CRONTEMPFILE
+  echo -ne "--quiet --channel '${CHANNEL}' --duration ${DURATION} " >> $CRONTEMPFILE
+  echo -ne "--deleteme ${DELETEME} " >> $CRONTEMPFILE
+  $showname && echo -ne "--showname '${SHOWNAME}' " >> $CRONTEMPFILE
+  echo -ne "--path '${RECORDPATH}'\n" >> $CRONTEMPFILE
+  crontab < $CRONTEMPFILE
+  rm $CRONTEMPFILE
 }
+
+######## DO STUFF ##################################################
+# Set TELEBOY_USER and TELEBOY_PASS
+set_credentials || exit 1
+
+# Set TMPPATH
+setup_work_dir || exit 1
+
+# login
+# Set TELEBOY_AUTHENTICATED=true
+if ! teleboy_login $TELEBOY_USER $TELEBOY_PASS
+then
+  printerr "Please check your credentials in the configuration:"
+  printerr "$CONFIG"
+  exit 1
+fi
+
+# Set TELEBOY_SESSION_ID
+teleboy_set_session_id || exit 1
+
+# Set TELEBOY_USER_ID, TELEBOY_USER_LOCALE
+teleboy_create_user_env || exit 1
+
+# Set CHANNELS (array) 
+teleboy_create_channel_list || exit 1
+
+# option --list
+if $list
+then
+  print_channel_list
+  exit
+fi
 
 # option -t|--starttime
 if $starttime
