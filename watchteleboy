@@ -483,14 +483,14 @@ function set_sid_by_channel {
   fi
 }
 
-function set_stream_data_from_api {
-  # Get stream-URL of given channel from teleboy api
+function teleboy_set_stream_data {
+  # Get HLS master url of given channel from teleboy api
   # The following variables need to be set
   # TELEBOY_USER_ID  (numeric user id)
   # TELEBOY_API_KEY
   # TELEBOY_SESSION_ID
   # ARG1: channel
-  # sets HLS_MASTER_URL
+  # sets HLS_MASTER_URL, CHANNEL_LABEL
   local channel=$1
   set_sid_by_channel $channel || return 1
   local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=false"
@@ -529,30 +529,23 @@ function dump_hls_stream {
   # ARG2: output file
   [ -d $TMPPATH ] || return 1
 
-  set_stream_data_from_api $1 || return 1
+  teleboy_set_stream_data $1 || return 1
   
  # Ugly: We need to print the canonical channel name _before_
   # we start downling in record mode
   $record && ! $quiet && echo "$CHANNEL_LABEL"
 
-  # get highest quality stream
-  selected_streamurl="$(curl \
-      --silent \
-      --fail \
-      "$HLS_MASTER_URL" | \
-    grep '^http.*\.m3u8' | \
-    sort -V | \
-    tail -n1)" || { printerr "could not extract variant"; return 1; }
+  # create array HLS_VARIANTS with urls and bitrates
+  hls_extract_variants "$HLS_MASTER_URL" || return 1
 
-  # Use different container format depending on whether we record or watch live
-  # flv is designed for live streaming. It supports reading from it while data is
-  # still appended
-  # mkv cannot easily be read from while it is written, but unlike flv it allows
-  # to quickly seek within the file without reading the whole file.
-  # For given reasons, mkv is used for recording and flv for live watching.
-  containerformat=$( $record && echo "matroska" || echo "flv" )
-  # hls dump command
-  avconv -y -v quiet -re -i "$selected_streamurl" -c copy -f $containerformat "$2"  &
+  # select variant with highest bitrate
+  local variant=${#HLS_VARIANTS[@]}
+  HLS_VARIANT_URL="$(hls_select_variant_url $variant)" || return 1
+  HLS_VARIANt_BITRATE="$(hls_select_variant_bitrate $variant)" || return 1
+
+  # Download selected variant
+  echo "hls_download_variant '$HLS_VARIANT_URL' '$OUTFILE' '$STARTTIME' '$ENDTIME'"
+  hls_download_variant "$HLS_VARIANT_URL" "$OUTFILE" "$STARTTIME" "$ENDTIME" &
   PID=$!
 }
 
@@ -562,16 +555,17 @@ PLAYERCMD="$PLAYER $([ "$PLAYER" == "mpv" ] && echo $MPVOPTS || echo $MPLAYEROPT
 # Compose output filename
 function compose_outfile {
   # ARG1: Channel
+  local channel="$1"
   if $record
   then
     if $showname
     then
-      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed 's|/|-|g')-$(date +%Y%m%d%H%M).mkv"
+      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed 's|/|-|g').m2t"
     else
-      OUTFILE="${RECORDPATH}/${1}-$(date +%Y%m%d%H%M).mkv"
+      OUTFILE="${RECORDPATH}/${channel}-$(date +%Y%m%d%H%M).m2t"
     fi
   else
-    OUTFILE="$TMPPATH/${1}_live.flv"
+    OUTFILE="$TMPPATH/${channel}-$(date +%Y%m%d%H%M).m2t"
   fi
 }
 
@@ -579,11 +573,12 @@ function compose_outfile {
 function player_recorder {
   # ARGS:
   # 1: Channel
-  compose_outfile "$1"
+  local channel="$1"
+  compose_outfile "$channel"
   if $record
   then
     $quiet || echo -n "Now recording: "
-    dump_hls_stream "$1" "$OUTFILE" || return 1
+    dump_hls_stream "$channel" "$OUTFILE" || return 1
   else
     # Hide the terminal cursor
     tput civis -- invisible
@@ -633,9 +628,9 @@ function player_recorder {
       rm "$OUTFILE"
     else
       echo -ne "\033[2K" # this clears the current line
-      set_stream_data_from_api "$1"
+      teleboy_set_stream_data "$1"
       $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
-      $PLAYERCMD "$HLS_MASTER_URL" 2> /dev/null
+      $PLAYERCMD "$HLS_MASTER_URL" 2> /dev/null || return 1
     fi
   fi
 }
@@ -668,6 +663,7 @@ function check_recordpath {
     printerr "No such directory: '$RECORDPATH'"
     return 1
   elif [ -w "$RECORDPATH" ]
+  then
     printerr "Directory '$RECORDPATH' is not writable."
     return 1
   fi
@@ -1262,20 +1258,9 @@ do
     else
       while true
       do
-        $channel || channel_dialog || exit 1
-        $starttime || starttime_dialog
-        if $endtime || $duration
-        then
-          if $endtime
-          then
-            check_start_before_end "$STARTTIME" "$ENDTIME" || { endtime=false; continue }
-          elif $duration
-            ENDTIME="@$(($(date +%s -d "$STARTTIME") + DURATION ))"
-          fi
-        else
-          endtime_dialog
-          check_start_before_end "$STARTTIME" "$ENDTIME" || continue
-        fi
+        channel_dialog || exit 1
+        starttime_dialog
+        endtime_dialog
         showname_dialog
         recordpath_dialog
         confirm_dialog && break
@@ -1304,7 +1289,11 @@ $(crontab -l | grep $DELETEME)" \
       fi
     fi
   else
-    channel_dialog || exit 0
+    $channel || channel_dialog || exit 0
+    $starttime || STARTTIME="now"
+    $duration && ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
+    $endtime || ENDTIME="@$(( $(date +%s -d "$STARTTIME") + 14400 ))"
+    check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
     player_recorder $CHANNEL || sleep 2
   fi
 done
