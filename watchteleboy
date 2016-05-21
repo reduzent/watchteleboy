@@ -661,6 +661,19 @@ function check_time_validity {
   fi
 }
 
+function check_recordpath {
+  # no ARGS
+  if [ -d "$RECORDPATH" ]
+  then
+    printerr "No such directory: '$RECORDPATH'"
+    return 1
+  elif [ -w "$RECORDPATH" ]
+    printerr "Directory '$RECORDPATH' is not writable."
+    return 1
+  fi
+  return 0
+}
+
 # make sure starttime is before endtime
 function check_start_before_end {
   # ARG1: start time (as understood by date)
@@ -692,7 +705,6 @@ function channel_validity {
     return 1
   fi
 }
-
 
 # interface appearance
 function set_ui_window_params {
@@ -839,30 +851,6 @@ function endtime_dialog {
       fi
     fi
   done
-}
-
-function ifschedule_dialog {
-  if $whiptail
-  then
-    set_ui_window_params 2
-    answer=$(whiptail \
-      --title "$TITLE" \
-      --menu "What do you want to do?" \
-      $BOXWIDTH $BOXHEIGHT $CONTENTHEIGHT \
-      "1)" "Start recording immediately" "2)" "Schedule a recording" \
-      3>&2 2>&1 1>&3 )
-    [ "$?" != "0" ] && exit 0;
-    [ "$answer" = "2)" ] && return 0 || return 1
-  else
-    clear
-    echo "What do you want to do?"
-    PS3="Choose action: "
-    select answer in "Start recording immediately" "Schedule a recording"
-    do
-      [ "$answer" != "" ] && break 
-    done 
-    [ "$answer" = "Schedule a recording" ] && return 0 || return 1
-  fi
 }
 
 function showname_dialog {
@@ -1254,56 +1242,69 @@ then
   fi
 fi
 
+# option -p|--path
+if $path
+then
+  check_recordpath || exit 1
+fi
+
 # Loop for interactive mode
 while true
 do
   if $record
   then
-    if ifschedule_dialog
+    # if enough params are given, don't ask, just do it
+    if $starttime && $endtime && $channel
     then
+      check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
+      player_recorder $CHANNEL || exit 1
+      exit 0
+    else
       while true
       do
-        $channel || channel_dialog
+        $channel || channel_dialog || exit 1
         $starttime || starttime_dialog
         if $endtime || $duration
         then
           if $endtime
           then
-            if [ "" -le "" ]
-            then
-              printerr "Given end time '$ENDTIME' is before start time '$STARTTTIME'"
+            check_start_before_end "$STARTTIME" "$ENDTIME" || { endtime=false; continue }
           elif $duration
+            ENDTIME="@$(($(date +%s -d "$STARTTIME") + DURATION ))"
           fi
         else
           endtime_dialog
+          check_start_before_end "$STARTTIME" "$ENDTIME" || continue
         fi
         showname_dialog
         recordpath_dialog
         confirm_dialog && break
       done
-      DURATION=$(( $(date -d "$ENDTIME" +%s) - $(date -d "$STARTTIME" +%s) ))
-      write_to_crontab
-      set_ui_window_params 2
-      if $whiptail
+      # Write an entry to crontab, if start time is at least 60s in the future
+      # Otherwise try to record immediately
+      epochnow=$(date +s%)
+      if [ $(date +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
       then
-        whiptail --title "$TITLE" --msgbox \
-          " Successfully added crontab entry:\n\n
+        write_to_crontab
+        set_ui_window_params 2
+        if $whiptail
+        then
+          whiptail --title "$TITLE" --msgbox \
+            " Successfully added crontab entry:\n\n
 $(crontab -l | grep $DELETEME)" \
-          $BOXWIDTH $BOXHEIGHT
+            $BOXWIDTH $BOXHEIGHT
         else
           echo "Successfully added crontab entry:"
           crontab -l | grep $DELETEME
         fi
-      exit 0
-    else
-      channel_dialog
-      player_recorder $CHANNEL || exit 1
-      wait_s_key
-      kill $PID
-      exit 0
+        exit 0
+      else
+        player_recorder "$CHANNEL" || exit 1
+        exit 0
+      fi
     fi
   else
-    channel_dialog
+    channel_dialog || exit 0
     player_recorder $CHANNEL || sleep 2
   fi
 done
