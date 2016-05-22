@@ -541,12 +541,12 @@ function dump_hls_stream {
   # select variant with highest bitrate
   local variant=${#HLS_VARIANTS[@]}
   HLS_VARIANT_URL="$(hls_select_variant_url $variant)" || return 1
-  HLS_VARIANt_BITRATE="$(hls_select_variant_bitrate $variant)" || return 1
+  HLS_VARIANT_BITRATE="$(hls_select_variant_bitrate $variant)" || return 1
 
   # Download selected variant
-  echo "hls_download_variant '$HLS_VARIANT_URL' '$OUTFILE' '$STARTTIME' '$ENDTIME'"
   hls_download_variant "$HLS_VARIANT_URL" "$OUTFILE" "$STARTTIME" "$ENDTIME" &
   PID=$!
+  return 0
 }
 
 # Compose player command
@@ -590,8 +590,7 @@ function player_recorder {
 
       # calculate buffer size from bitrate of selected stream
       # so that we get consistent waiting times independent from bitrate
-      BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f9)
-      BUFFER=$(( BITRATE * BUFFERSECONDS / 8 ))
+      BUFFER=$(( HLS_VARIANT_BITRATE * BUFFERSECONDS / 8 ))
 
       # Only start mplayer after having downloaded BUFFER bytes
       eval $(resize)
