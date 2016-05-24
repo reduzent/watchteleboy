@@ -562,10 +562,10 @@ function compose_outfile {
     then
       OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed 's|/|-|g').m2t"
     else
-      OUTFILE="${RECORDPATH}/${channel}-$(date +%Y%m%d%H%M).m2t"
+      OUTFILE="${RECORDPATH}/${channel}-$(date +%Y%m%d%H%M -d "$STARTTIME").m2t"
     fi
   else
-    OUTFILE="$TMPPATH/${channel}-$(date +%Y%m%d%H%M).m2t"
+    OUTFILE="$TMPPATH/${channel}-$(date +%Y%m%d%H%M -d "$STARTTIME").m2t"
   fi
 }
 
