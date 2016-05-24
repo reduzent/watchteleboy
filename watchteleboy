@@ -777,19 +777,7 @@ function starttime_dialog {
     fi
     if date -d "$STARTTIME" > /dev/null 2>&1
     then
-      if [ $(date -d "$STARTTIME" +%s) -lt $(date +%s) ]
-      then
-        if $whiptail 
-        then
-          whiptail --title "$TITLE" --msgbox \
-            " The specified time:\n\n    ${STARTTIME}\n\nis already over." \
-            $BOXWIDTH $BOXHEIGHT
-        else
-          echo -e "The specified time:\n    ${STARTTIME}\nis already over."  
-        fi  
-      else
-        break
-      fi
+      break
     else
       if $whiptail
       then
