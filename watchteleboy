@@ -1294,6 +1294,7 @@ $(crontab -l | grep $DELETEME)" \
     $endtime || ENDTIME="@$(( $(date +%s -d "$STARTTIME") + 14400 ))"
     check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
     player_recorder $CHANNEL || sleep 2
+    $channel && break
   fi
 done
 
