@@ -310,7 +310,7 @@ function cleanup {
   # Delete livestream cache
   # (but _not_ our recording!)
   $record || rm -f "$OUTFILE"
-  $quiet || echo ""
+  tput cnorm
 }
 trap cleanup INT TERM EXIT
 
@@ -581,7 +581,7 @@ function player_recorder {
     dump_hls_stream "$channel" "$OUTFILE" || return 1
   else
     # Hide the terminal cursor
-    tput civis -- invisible
+    tput civis
     if $LIVEPAUSE
     then
       # Make sure there is an empty OUTFILE
