@@ -666,11 +666,11 @@ function check_time_validity {
 
 function check_recordpath {
   # no ARGS
-  if [ -d "$RECORDPATH" ]
+  if ! [ -d "$RECORDPATH" ]
   then
     printerr "No such directory: '$RECORDPATH'"
     return 1
-  elif [ -w "$RECORDPATH" ]
+  elif ! [ -w "$RECORDPATH" ]
   then
     printerr "Directory '$RECORDPATH' is not writable."
     return 1
