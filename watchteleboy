@@ -1235,10 +1235,9 @@ then
 fi
 
 # option -p|--path
-if $path
-then
-  check_recordpath || exit 1
-fi
+# we need to check recordpath anyway, even it --path is not
+# specified
+check_recordpath || exit 1
 
 # Loop for interactive mode
 while true
