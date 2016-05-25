@@ -1240,8 +1240,19 @@ do
     if $starttime && $endtime && $channel
     then
       check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
-      player_recorder $CHANNEL || exit 1
-      exit 0
+      # Schedule for crontab if --starttime is in the future
+      epochnow=$(date +%s)
+      if [ $(date +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
+      then
+        write_to_crontab || exit 1
+        $quiet || echo "Successfully added crontab entry:"
+        $quiet || crontab -l | grep $DELETEME
+        exit 0
+      else
+        player_recorder "$CHANNEL" || exit 1
+        exit 0
+      fi
+    # If not enough params are supplied, present the dialog:
     else
       while true
       do
@@ -1254,7 +1265,7 @@ do
       done
       # Write an entry to crontab, if start time is at least 60s in the future
       # Otherwise try to record immediately
-      epochnow=$(date +s%)
+      epochnow=$(date +%s)
       if [ $(date +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
       then
         write_to_crontab
