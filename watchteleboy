@@ -588,6 +588,9 @@ function player_recorder {
       > "$OUTFILE"
       dump_hls_stream "$1" "$OUTFILE" || return 1
 
+      # make sure the requested start segment is available
+      hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" &> /dev/null || return 1
+
       # calculate buffer size from bitrate of selected stream
       # so that we get consistent waiting times independent from bitrate
       BUFFER=$(( HLS_VARIANT_BITRATE * BUFFERSECONDS / 8 ))
@@ -614,8 +617,7 @@ function player_recorder {
         if ! kill -0 $PID 2> /dev/null
         then
           code=$(wait $PID; echo $?)
-          echo "avconv returned an error code: $code" 1>&2
-          sleep 2
+          printerr "An error during download occured"
           return 1
         fi
       done
@@ -1250,7 +1252,8 @@ do
         exit 0
       else
         player_recorder "$CHANNEL" || exit 1
-        exit 0
+        wait_s_key
+        kill $PID && exit 0 || exit 1
       fi
     # If not enough params are supplied, present the dialog:
     else
@@ -1283,7 +1286,8 @@ $(crontab -l | grep $DELETEME)" \
         exit 0
       else
         player_recorder "$CHANNEL" || exit 1
-        exit 0
+        wait_s_key
+        kill $PID && exit 0 || exit 1
       fi
     fi
   else
