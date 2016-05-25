@@ -311,6 +311,7 @@ function cleanup {
   # (but _not_ our recording!)
   $record || rm -f "$OUTFILE"
   tput cnorm
+  kill $PID &> /dev/null
 }
 trap cleanup INT TERM EXIT
 
@@ -636,14 +637,20 @@ function player_recorder {
   fi
 }
 
-# Da Keestroke Waitah
-function  wait_s_key {
-  $quiet || echo "Press the 's' key to stop the recording." 
-  keypress=""
-  while [ "$keypress" != "s" ]
-  do
-    read -s -n1  keypress
-  done
+function wait_for_download {
+  # waits for the download to finish
+  # No ARGS
+  # PID of the download process needs to be set
+  wait $PID
+  exitcode=$?
+  if [ "$exitcode" -eq "0" ]
+  then 
+    $quiet || echo "Recording complete."
+    return 0
+  else
+    printerr "Error during download. Code: $exitcode"
+    return 1
+  fi
 }
 
 # Da Time Valeditee Checkah
@@ -1252,8 +1259,7 @@ do
         exit 0
       else
         player_recorder "$CHANNEL" || exit 1
-        wait_s_key
-        kill $PID && exit 0 || exit 1
+        wait_for_download && exit 0 || exit 1
       fi
     # If not enough params are supplied, present the dialog:
     else
@@ -1286,8 +1292,7 @@ $(crontab -l | grep $DELETEME)" \
         exit 0
       else
         player_recorder "$CHANNEL" || exit 1
-        wait_s_key
-        kill $PID && exit 0 || exit 1
+        wait_for_download && exit 0 || exit 1
       fi
     fi
   else
