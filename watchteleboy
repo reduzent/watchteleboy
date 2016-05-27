@@ -24,6 +24,7 @@ OMXPLAYEROPTS="--blank"
 VLCOPTS=""
 RECORDPATH=$(pwd)
 BUFFERSECONDS=5
+MAXBITRATE=10000000
 TELEBOY_AUTHENTICATED=false
 SCRIPTNAME=$(basename $0)
 
@@ -566,6 +567,16 @@ function dump_hls_stream {
 
   # select variant with highest bitrate
   local variant=${#HLS_VARIANTS[@]}
+  while [ $MAXBITRATE -lt $(hls_select_variant_bitrate $variant) ]
+  do
+    ((variant-=1))
+    if [ $variant -lt 1 ]
+    then
+      printerr "Couldn't find variant with given bitrate limit ($MAXBITRATE)"
+      return 1
+    fi
+  done
+
   HLS_VARIANT_URL="$(hls_select_variant_url $variant)" || return 1
   HLS_VARIANT_BITRATE="$(hls_select_variant_bitrate $variant)" || return 1
 
