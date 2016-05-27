@@ -223,7 +223,6 @@ else
 # Feel free to adapt to your needs                                       #
 ##########################################################################
 
-
 # Set directory where played streams are cached:
 
 TMPDIR='$TMPDIR'
@@ -253,9 +252,22 @@ VLCOPTS='$VLCOPTS'
 # How much data should be downloaded before starting playback?
 # The value is given in seconds. The playback begins after
 # BUFFERSECONDS * BITRATE data has been downloaded.
-# This parameter has only effect when LIVEPAUSE is set to true:
 
 BUFFERSECONDS='$BUFFERSECONDS'
+
+# Several variants of each stream are available. The variants have
+# different bitrates and different video resolutions.
+# Bitrates and corresponding resolutions:
+#    64000         audio only
+#   394000         320x180
+#   540000         400x224
+#  1368000         720x404
+#  2290000         720x404
+#  3305000         1280x720
+#  4240000         1280x720
+# You may set a maximum bitrate when selecting a variant:
+
+#MAXBITRATE=3305000
 EOF
   echo "created config file '$CONFIG'"
 fi
