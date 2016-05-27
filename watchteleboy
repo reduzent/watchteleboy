@@ -20,8 +20,9 @@ TMPDIR=/tmp
 UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12.0'
 MPLAYEROPTS="-really-quiet"
 MPVOPTS="--really-quiet --keep-open"
+OMXPLAYEROPTS="--blank"
+VLCOPTS=""
 RECORDPATH=$(pwd)
-LIVEPAUSE=true
 BUFFERSECONDS=5
 TELEBOY_AUTHENTICATED=false
 SCRIPTNAME=$(basename $0)
@@ -50,14 +51,13 @@ version=false
 while [ $# -gt 0 ]
 do
   case "$1" in
-    -b|--live) LIVEPAUSE=$2; shift;;
     -c|--channel) channel=true; CHANNEL="$2"; shift;;
     -d|--duration) duration=true; DURATION="$2"; shift;;
     -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
     -h|--help) help=true;;
     -l|--list) list=true;;
     -n|--showname) showname=true; SHOWNAME="$2"; shift;;
-    -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
+    -o|--player-opts) playeropts=true; PLAYEROPTS="$2"; shift;;
     -p|--path) path=true; RECORDPATH="$2"; shift;;
     -q|--quiet) quiet=true;;
     -r|--record) record=true;;
@@ -180,17 +180,29 @@ do
     fi
 done
 
-# Check player dependency (mpv, mplayer in that order)
-if which mpv > /dev/null
+# Check player dependency (omxplayer, mpv, mplayer, vlc in that order)
+if which omxplayer > /dev/null
+then
+  PLAYER=omxplayer
+  $playeropts || PLAYEROPTS="$OMXPLAYEROPTS"
+elif which mpv > /dev/null
 then
   PLAYER=mpv
+  $playeropts || PLAYEROPTS="$MPVOPTS"
 elif which mplayer > /dev/null
 then
   PLAYER=mplayer
+  $playeropts || PLAYEROPTS="$MPLAYEROPTS"
+elif which vlc > /dev/null
+  PLAYER=vlc
+  $playeropts || PLAYEROPTS="$VLCOPTS"
 else
-  printerr "No suitable player found: mpv, mplayer"
-  printerr "Please install mpv or mplayer, before using"
-  printerr "this script."
+  printerr "No suitable player found: omxplayer, mpv, mplayer"
+  printerr "Make sure any of the following players is available:"
+  printerr " * omxplayer (recommended on Raspberry Pis)"
+  printerr " * mpv (recommended on most systems)"
+  printerr " * mplayer"
+  printerr " * vlc (recommended on Mac OS X systems)"
   exit 1
 fi
 
@@ -214,29 +226,27 @@ else
 
 TMPDIR='$TMPDIR'
 
-# $SCRIPTNAME allows you to use either mpv or mplayer. Since both
-# players are not fully compatible, use separate configurations
-# for each player.
-# mpv flags:
+# $SCRIPTNAME supports a few players for displaying the stream. Separate
+# command line options can specified for each player.
+# NOTE: those options are overriden when $SCRIPTNAME is invoked with
+# --player-opts 'PLAYEROPTS'
 
+# omxplayer flags:
+OMXPLAYEROPTS='$OMXPLAYEROPTS'
+
+# mpv flags:
 MPVOPTS='$MPVOPTS'
 
 # mplayer flags:
-
 MPLAYEROPTS='$MPLAYEROPTS'
+
+# vlc flags:
+VLCOPTS='$VLCOPTS'
 
 # Where should stream recordings be saved?
 # This can be overridden by the -p/--path flag:
 
 #RECORDPATH='~/mytvshows'
-
-# This parameter turns live stream buffering on/off. When turned on,
-# you can pause while watching and continue playback anytime later. Also,
-# it enables you to seek back and forth within the downloaded buffer. This
-# comes at the cost of longer delays when switching channels.
-# Allowed values: true, false:
-
-LIVEPAUSE='$LIVEPAUSE'
 
 # How much data should be downloaded before starting playback?
 # The value is given in seconds. The playback begins after
