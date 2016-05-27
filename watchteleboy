@@ -1230,8 +1230,12 @@ do
   if $record
   then
     # if enough params are given, don't ask, just do it
-    if $starttime && $endtime && $channel
+    if $starttime && { $endtime || $duration; } && $channel
     then
+      if $duration && ! $endtime
+      then
+        ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
+      fi
       check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
       # Schedule for crontab if --starttime is in the future
       epochnow=$(date +%s)
