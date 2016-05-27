@@ -664,20 +664,6 @@ function check_time_validity {
   fi
 }
 
-function check_recordpath {
-  # no ARGS
-  if ! [ -d "$RECORDPATH" ]
-  then
-    printerr "No such directory: '$RECORDPATH'"
-    return 1
-  elif ! [ -w "$RECORDPATH" ]
-  then
-    printerr "Directory '$RECORDPATH' is not writable."
-    return 1
-  fi
-  return 0
-}
-
 # make sure starttime is before endtime
 function check_start_before_end {
   # ARG1: start time (as understood by date)
@@ -1233,11 +1219,6 @@ then
     exit 1
   fi
 fi
-
-# option -p|--path
-# we need to check recordpath anyway, even it --path is not
-# specified
-check_recordpath || exit 1
 
 # Loop for interactive mode
 while true
