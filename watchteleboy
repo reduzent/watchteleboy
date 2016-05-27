@@ -322,6 +322,7 @@ function cleanup {
   # Delete livestream cache
   # (but _not_ our recording!)
   $record || rm -f "$OUTFILE"
+  echo -ne "\033[2K\r" # this clears the current line
   tput cnorm
   kill $PID &> /dev/null
 }
@@ -1161,13 +1162,24 @@ function hls_download_variant {
 
   # now do it
   local sleep=0
+  local failcount
+  local triespersegment=3
   > "$file" 2> /dev/null \
     || { printerr "cannot create file: $file"; return 1; }
   while sleep $sleep
   do
-    curl -fs "${url_base}/${segment}.${ext}" >> "$file" || \
-      echo "segment $segment not available" 1>&2
     [ "$segment" -lt "$segment_stop" ] || break
+    # try three times to download segment, then continue
+    failcount=0
+    while ! curl -fs "${url_base}/${segment}.${ext}" >> "$file"
+    do
+      failcount=$(( failcount + 1 ))
+      if  [ $failcount -eq  $triespersegment ]
+      then
+        printerr "segment $segment not available"
+        break
+      fi
+    done
     local time_current=$(date +%s)
     local time_delta=$((time_current - time_ref))
     local segment_delta=$((segment - segment_ref))
@@ -1176,6 +1188,7 @@ function hls_download_variant {
     [ "$sleep" -gt "0" ] || sleep=0
     ((segment+=1))
   done
+  return 0
 }
 
 ######## DO STUFF ##################################################
