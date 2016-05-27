@@ -48,6 +48,7 @@ record=false
 showname=false
 starttime=false
 version=false
+playeropts=false
 while [ $# -gt 0 ]
 do
   case "$1" in
@@ -633,9 +634,7 @@ function player_recorder {
     done
     echo -ne "\033[2K" # this clears the current line
     $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
-    echo ""
-    echo "$PLAYERCMD $OUTFILE"
-    $PLAYERCMD "$OUTFILE" 2> /dev/null
+    $PLAYERCMD "$OUTFILE" &> /dev/null
     echo -ne "\033[2K" # this clears the current line
     kill $PID
     rm "$OUTFILE"
