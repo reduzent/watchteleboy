@@ -1282,8 +1282,8 @@ $(crontab -l | grep $DELETEME)" \
   else
     $channel || channel_dialog || exit 0
     $starttime || STARTTIME="now"
-    $duration && ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
     $endtime || ENDTIME="@$(( $(date +%s -d "$STARTTIME") + 14400 ))"
+    $duration && ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
     check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
     player_recorder $CHANNEL || sleep 2
     $channel && break
