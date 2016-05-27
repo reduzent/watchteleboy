@@ -557,7 +557,7 @@ function dump_hls_stream {
   HLS_VARIANT_BITRATE="$(hls_select_variant_bitrate $variant)" || return 1
 
   # make sure the requested start segment is available
-  hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" || return 1
+  hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" > /dev/null || return 1
 
   # Download selected variant
   hls_download_variant "$HLS_VARIANT_URL" "$OUTFILE" "$STARTTIME" "$ENDTIME" &
