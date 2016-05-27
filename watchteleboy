@@ -1163,6 +1163,8 @@ function hls_download_variant {
   # now do it
   local sleep=0
   local failcount
+  local missedsegments=0
+  local maxmissedsegments=3
   local triespersegment=3
   > "$file" 2> /dev/null \
     || { printerr "cannot create file: $file"; return 1; }
@@ -1171,16 +1173,27 @@ function hls_download_variant {
     [ "$segment" -lt "$segment_stop" ] || break
     # try three times to download segment, then continue
     failcount=0
-    while ! curl -fs "${url_base}/${segment}.${ext}" >> "$file"
+    while [ $failcount -lt $triespersegment ]
     do
-      failcount=$(( failcount + 1 ))
-      if  [ $failcount -eq  $triespersegment ]
+      if curl -fs "${url_base}/${segment}.${ext}" >> "$file"
       then
-        printerr "segment $segment not available"
+        missedsegments=0
         break
+      else
+        ((failcount+=1))
+        if [ $failcount -eq $triespersegment ]
+        then
+          printerr "segment $segment not available"
+          ((missedsegments+=1))
+        fi
       fi
       sleep 1
     done
+    if [ $missedsegments -eq $maxmissedsegments ]
+    then
+      printerr "$maxmissedsegments segments in a row couldn't be downloaded"
+      return 1
+    fi
     local time_current=$(date +%s)
     local time_delta=$((time_current - time_ref))
     local segment_delta=$((segment - segment_ref))
