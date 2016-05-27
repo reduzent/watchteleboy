@@ -556,6 +556,9 @@ function dump_hls_stream {
   HLS_VARIANT_URL="$(hls_select_variant_url $variant)" || return 1
   HLS_VARIANT_BITRATE="$(hls_select_variant_bitrate $variant)" || return 1
 
+  # make sure the requested start segment is available
+  hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" || return 1
+
   # Download selected variant
   hls_download_variant "$HLS_VARIANT_URL" "$OUTFILE" "$STARTTIME" "$ENDTIME" &
   PID=$!
@@ -598,9 +601,6 @@ function player_recorder {
     # Make sure there is an empty OUTFILE
     > "$OUTFILE"
     dump_hls_stream "$channel" "$OUTFILE" || return 1
-
-    # make sure the requested start segment is available
-    hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" &> /dev/null || return 1
 
     # calculate buffer size from bitrate of selected stream
     # so that we get consistent waiting times independent from bitrate
