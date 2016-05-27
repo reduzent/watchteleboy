@@ -562,7 +562,7 @@ function dump_hls_stream {
 }
 
 # Compose player command
-PLAYERCMD="$PLAYER $([ "$PLAYER" == "mpv" ] && echo $MPVOPTS || echo $MPLAYEROPTS) "
+PLAYERCMD="$PLAYER $PLAYEROPTS "
 
 # Compose output filename
 function compose_outfile {
@@ -594,57 +594,51 @@ function player_recorder {
   else
     # Hide the terminal cursor
     tput civis
-    if $LIVEPAUSE
-    then
-      # Make sure there is an empty OUTFILE
-      > "$OUTFILE"
-      dump_hls_stream "$1" "$OUTFILE" || return 1
+    # Make sure there is an empty OUTFILE
+    > "$OUTFILE"
+    dump_hls_stream "$channel" "$OUTFILE" || return 1
 
-      # make sure the requested start segment is available
-      hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" &> /dev/null || return 1
+    # make sure the requested start segment is available
+    hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" &> /dev/null || return 1
 
-      # calculate buffer size from bitrate of selected stream
-      # so that we get consistent waiting times independent from bitrate
-      BUFFER=$(( HLS_VARIANT_BITRATE * BUFFERSECONDS / 8 ))
+    # calculate buffer size from bitrate of selected stream
+    # so that we get consistent waiting times independent from bitrate
+    BUFFER=$(( HLS_VARIANT_BITRATE * BUFFERSECONDS / 8 ))
 
-      # Only start mplayer after having downloaded BUFFER bytes
-      eval $(resize)
-      PROGRESSBARWIDTH=$(( $COLUMNS - 20 ))
-      OUTFILESIZE=0
-      while [  "$OUTFILESIZE" -lt "$BUFFER" ]
-      do
-        OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
-        if ! $quiet
-        then
-          echo -ne "\r"
-          echo -n "  Buffering: ["
-          progresscount=$(( $OUTFILESIZE * $PROGRESSBARWIDTH / $BUFFER ))
-          progresscount=$((PROGRESSBARWIDTH < progresscount ? PROGRESSBARWIDTH : progresscount))
-          for i in $(seq $progresscount); do echo -n "="; done
-          progressempty=$(( $PROGRESSBARWIDTH - $progresscount ))
-          for i in $(seq $progressempty); do echo -n " "; done
-          echo -n "]"
-        fi
-        sleep 0.1
-        if ! kill -0 $PID 2> /dev/null
-        then
-          code=$(wait $PID; echo $?)
-          printerr "An error during download occured"
-          return 1
-        fi
-      done
-      echo -ne "\033[2K" # this clears the current line
-      $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
-      $PLAYERCMD "$OUTFILE" 2> /dev/null
-      echo -ne "\033[2K" # this clears the current line
-      kill $PID
-      rm "$OUTFILE"
-    else
-      echo -ne "\033[2K" # this clears the current line
-      teleboy_set_stream_data "$1"
-      $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
-      $PLAYERCMD "$HLS_MASTER_URL" 2> /dev/null || return 1
-    fi
+    # Only start mplayer after having downloaded BUFFER bytes
+    eval $(resize)
+    PROGRESSBARWIDTH=$(( $COLUMNS - 20 ))
+    OUTFILESIZE=0
+    while [  "$OUTFILESIZE" -lt "$BUFFER" ]
+    do
+      OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
+      if ! $quiet
+      then
+        echo -ne "\r"
+        echo -n "  Buffering: ["
+        progresscount=$(( $OUTFILESIZE * $PROGRESSBARWIDTH / $BUFFER ))
+        progresscount=$((PROGRESSBARWIDTH < progresscount ? PROGRESSBARWIDTH : progresscount))
+        for i in $(seq $progresscount); do echo -n "="; done
+        progressempty=$(( $PROGRESSBARWIDTH - $progresscount ))
+        for i in $(seq $progressempty); do echo -n " "; done
+        echo -n "]"
+      fi
+      sleep 0.1
+      if ! kill -0 $PID 2> /dev/null
+      then
+        code=$(wait $PID; echo $?)
+        printerr "An error during download occured"
+        return 1
+      fi
+    done
+    echo -ne "\033[2K" # this clears the current line
+    $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
+    echo ""
+    echo "$PLAYERCMD $OUTFILE"
+    $PLAYERCMD "$OUTFILE" 2> /dev/null
+    echo -ne "\033[2K" # this clears the current line
+    kill $PID
+    rm "$OUTFILE"
   fi
 }
 
