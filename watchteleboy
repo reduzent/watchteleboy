@@ -590,6 +590,7 @@ function player_recorder {
   # ARGS:
   # 1: Channel
   local channel="$1"
+  local code
   compose_outfile "$channel"
   if $record
   then
@@ -628,16 +629,31 @@ function player_recorder {
       if ! kill -0 $PID 2> /dev/null
       then
         code=$(wait $PID; echo $?)
-        printerr "An error during download occured"
+        printerr "An error during download occured. Error code: $code"
         return 1
       fi
     done
     echo -ne "\033[2K" # this clears the current line
     $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
-    $PLAYERCMD "$OUTFILE" &> /dev/null
+    $PLAYERCMD "$OUTFILE" &> /dev/null || \
+      {
+        code=$?
+        printerr ""
+        printerr "'$PLAYER' exited with error: $code"
+        return 1
+      }
     echo -ne "\033[2K" # this clears the current line
-    kill $PID
+    if ! kill $PID 2> /dev/null
+    then
+      code=$(wait $PID; echo $?)
+      if [ $code -ne 0 ]
+      then
+        printerr "An error during download occured."
+        return 1
+      fi
+    fi
     rm "$OUTFILE"
+    return 0
   fi
 }
 
@@ -1289,7 +1305,7 @@ $(crontab -l | grep $DELETEME)" \
     $endtime || ENDTIME="@$(( $(date +%s -d "$STARTTIME") + 14400 ))"
     $duration && ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
     check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
-    player_recorder $CHANNEL || sleep 2
+    player_recorder $CHANNEL || exit 1
     $channel && break
   fi
 done
