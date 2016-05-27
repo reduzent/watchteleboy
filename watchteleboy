@@ -194,6 +194,7 @@ then
   PLAYER=mplayer
   $playeropts || PLAYEROPTS="$MPLAYEROPTS"
 elif which vlc > /dev/null
+then
   PLAYER=vlc
   $playeropts || PLAYEROPTS="$VLCOPTS"
 else
