@@ -25,6 +25,7 @@ VLCOPTS=""
 RECORDPATH=$(pwd)
 BUFFERSECONDS=5
 MAXBITRATE=10000000
+CHANNELLISTTYPE='all'
 TELEBOY_AUTHENTICATED=false
 SCRIPTNAME=$(basename $0)
 
@@ -256,19 +257,30 @@ VLCOPTS='$VLCOPTS'
 
 BUFFERSECONDS='$BUFFERSECONDS'
 
-# Several variants of each stream are available. The variants have
-# different bitrates and different video resolutions.
-# Bitrates and corresponding resolutions:
-#    64000         audio only
-#   394000         320x180
-#   540000         400x224
-#  1368000         720x404
-#  2290000         720x404
-#  3305000         1280x720
-#  4240000         1280x720
-# You may set a maximum bitrate when selecting a variant:
+# Sometimes several variants of a stream are available. The
+# variants come with different bitrates and different video
+# resolutions.
+# Bitrate:    |   Resolution
+# ------------+--------------
+#    64000    |   audio only
+#   394000    |   320x180
+#   540000    |   400x224
+#  1368000    |   720x404
+#  2290000    |   720x404
+#  3305000    |   1280x720
+#  4240000    |   1280x720
+# Per default $SCRIPTNAME automatically selects the variant
+# with the highest quality. When MAXBITRATE is set, the variant
+# that still fits the constraint is selected.
 
-#MAXBITRATE=3305000
+#MAXBITRATE=$MAXBITRATE
+
+# Teleboy users may customize the channel selection and the channel
+# ordering. You may chose whether you want $SCRIPTNAME to list
+# all channels (in an unordered manner) or only the selected ones
+# in an ordered list. Possible values are 'all', 'customized':
+
+CHANNELLISTTYPE='$CHANNELLISTTYPE'
 EOF
   echo "created config file '$CONFIG'"
 fi
@@ -457,14 +469,26 @@ function teleboy_create_channel_list {
   [ -z "$TELEBOY_USER_ID" ] && { printerr "TELEBOY_USER_ID not set"; return 1; }
 
   # if we have channel list pre-cached, we use the cache
-  local channel_list_file="$TMPPATH/channel_list"
+  local channel_list_file="$TMPPATH/channel_list.${CHANNELLISTTYPE}"
   if [ -f "$channel_list_file" ] && ! $NEW_SESSION
   then
     CHANNELS=($(cat $channel_list_file))
     return 0
   else
+    case "$CHANNELLISTTYPE" in
+      "all")
+        local url="http://tv.api.teleboy.ch/epg/broadcasts/now?expand=flags,station,logos,previewImage&language=en&stream=true"
+        ;;
+      "customized")
+        local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/broadcasts/now?expand=station&stream=true"
+        ;;
+      *)
+        printerr "Unrecognized value for CHANNELLISTTYPE: $CHANNELLISTTYPE"
+        printerr "Allowed values: 'all', 'customized'. Using 'all' now..."
+        local url="http://tv.api.teleboy.ch/epg/broadcasts/now?expand=flags,station,logos,previewImage&language=en&stream=true"
+        ;;
+      esac
     $quiet || echo -n "receiving channel list..."
-    local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/broadcasts/now?expand=station&stream=true"
     local stationlist_json
     stationlist_json="$(curl \
         --silent \
