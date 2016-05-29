@@ -276,9 +276,11 @@ BUFFERSECONDS='$BUFFERSECONDS'
 #MAXBITRATE=$MAXBITRATE
 
 # Teleboy users may customize the channel selection and the channel
-# ordering. You may chose whether you want $SCRIPTNAME to list
-# all channels (in an unordered manner) or only the selected ones
-# in an ordered list. Possible values are 'all', 'customized':
+# ordering. You may chose whether you want $SCRIPTNAME to display
+# all available channels (in default order) or use a customized
+# channel list in user-defined order. You may visit
+# http://www.teleboy.ch/en/sender to customize your personal
+# channel selection. Allowed values: 'all', 'customized'
 
 CHANNELLISTTYPE='$CHANNELLISTTYPE'
 EOF
