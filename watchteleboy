@@ -20,91 +20,20 @@ TMPDIR=/tmp
 UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12.0'
 MPLAYEROPTS="-really-quiet"
 MPVOPTS="--really-quiet --keep-open"
+OMXPLAYEROPTS="--blank"
+VLCOPTS=""
 RECORDPATH=$(pwd)
-LIVEPAUSE=true
 BUFFERSECONDS=5
+MAXBITRATE=10000000
+TELEBOY_AUTHENTICATED=false
 SCRIPTNAME=$(basename $0)
 
-
-# Check dependencies
-programlist="avconv crontab cut grep jq wget"
-for program in $programlist
-do
-    if ! which $program > /dev/null
-    then
-        echo "ERROR:" 1>&2
-        echo "Could not find ${program}. Is it installed?" 1>&2
-        exit 1
-    fi
-done
-
-# Check player dependency (mpv, mplayer in that order)
-if which mpv > /dev/null
-then
-  PLAYER=mpv
-elif which mplayer > /dev/null
-then
-  PLAYER=mplayer
-else
-  echo "No suitable player found: mpv, mplayer"
-  echo "Please install mpv or mplayer, before using"
-  echo "this script."
-  exit 1
-fi
-
-# whiptail dialog boxes are optional (fallback to tradition shell dialogs)
-whiptail=$(which whiptail > /dev/null && echo true || echo false)
-
-# Read config (overrides default values) or create it
-CONFIG="$HOME/.${SCRIPTNAME}rc"
-if [ -f $CONFIG ]
-then
-  . $CONFIG
-else
-  cat << EOF > $CONFIG
-##########################################################################
-# CONFIGURATION FILE FOR $SCRIPTNAME                                     #
-# Feel free to adapt to your needs                                       #
-##########################################################################
-
-
-# Set directory where played streams are cached:
-
-TMPDIR='$TMPDIR'
-
-# $SCRIPTNAME allows you to use either mpv or mplayer. Since both
-# players are not fully compatible, use separate configurations
-# for each player.
-# mpv flags:
-
-MPVOPTS='$MPVOPTS'
-
-# mplayer flags:
-
-MPLAYEROPTS='$MPLAYEROPTS'
-
-# Where should stream recordings be saved?
-# This can be overridden by the -p/--path flag:
-
-#RECORDPATH='~/mytvshows'
-
-# This parameter turns live stream buffering on/off. When turned on,
-# you can pause while watching and continue playback anytime later. Also,
-# it enables you to seek back and forth within the downloaded buffer. This
-# comes at the cost of longer delays when switching channels.
-# Allowed values: true, false:
-
-LIVEPAUSE='$LIVEPAUSE'
-
-# How much data should be downloaded before starting playback?
-# The value is given in seconds. The playback begins after
-# BUFFERSECONDS * BITRATE data has been downloaded.
-# This parameter has only effect when LIVEPAUSE is set to true:
-
-BUFFERSECONDS='$BUFFERSECONDS'
-EOF
-  echo "created config file '$CONFIG'"
-fi
+function printerr {
+  # print error message to stderr
+  # ARG1: error message
+  $quiet || echo "$1" >&2
+  return 0
+}
 
 # Comandline argument parsing
 channel=false
@@ -120,17 +49,17 @@ record=false
 showname=false
 starttime=false
 version=false
+playeropts=false
 while [ $# -gt 0 ]
 do
   case "$1" in
-    -b|--live) LIVEPAUSE=$2; shift;;
-    -c|--channel) channel=true; CHANNEL=$2; shift;;
+    -c|--channel) channel=true; CHANNEL="$2"; shift;;
     -d|--duration) duration=true; DURATION="$2"; shift;;
     -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
     -h|--help) help=true;;
     -l|--list) list=true;;
     -n|--showname) showname=true; SHOWNAME="$2"; shift;;
-    -m|--mplayer-opts) mplayeropts=true; MPLAYEROPTS="$2"; shift;;
+    -o|--player-opts) playeropts=true; PLAYEROPTS="$2"; shift;;
     -p|--path) path=true; RECORDPATH="$2"; shift;;
     -q|--quiet) quiet=true;;
     -r|--record) record=true;;
@@ -138,8 +67,8 @@ do
     -v|--version) version=true;;
     --deleteme) deleteme=true; DELETEME="$2"; shift;;
     --delete-cron) deletecron=true; DELCHAN="$2"; DELTIME="$3"; shift; shift;;
-    -*) echo "$SCRIPTNAME: error - unrecognized option '$1'" 1>&2
-        echo "use '$SCRIPTNAME --help' to get a list of available options" 1>&2
+    -*) printerr "$SCRIPTNAME: error - unrecognized option '$1'"
+        printerr "use '$SCRIPTNAME --help' to get a list of available options"
         exit 1;;
     *)  break;;
   esac
@@ -194,19 +123,20 @@ EOF
   exit
 fi
 
+# option --delete-cron
 # delete cron entry (used by tvbrowser record plugin)
 if $deletecron
 then
   if ! date -d "$DELTIME" > /dev/null 2>&1
   then
-    echo "Could not parse specified time: $DELTIME" 1>&2
+    printerr "Could not parse specified time: $DELTIME"
     exit 1
   fi
   crontempfile="/tmp/crontab.tmp"
   searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]'${DELCHAN}'.*"
   if ! crontab -l | grep "$searchstring" > /dev/null
   then
-    echo "Could not find specified job in crontab." 1>&2
+    printerr "Could not find specified job in crontab."
     exit 1
   else
     crontab -l | grep -v "$searchstring" > $crontempfile 
@@ -217,316 +147,465 @@ then
   fi
 fi
 
+# option --deleteme
+if $deleteme
+then
+  crontempfile="/tmp/crontab.tmp"
+  crontab -l > $crontempfile
+  sed -i "/$DELETEME/d" $crontempfile
+  crontab < $crontempfile
+  rm $crontempfile
+fi
+
 # Check record path validity
 if $record
 then
   if [ ! -d "$RECORDPATH" ]
   then
-    echo "There is no such directory: $RECORDPATH" 1>&2
+    printerr "There is no such directory: $RECORDPATH"
     exit 1
   elif [ ! -w "$RECORDPATH" ]
   then
-    echo "You don't have permission to write to $RECORDPATH" 1>&2
+    printerr "You don't have permission to write to $RECORDPATH"
     exit 1
   fi
 fi
 
-# set working directory for keeping session data
-TMPPATH="${TMPDIR}/${SCRIPTNAME}/${TELEBOY_USER}"
-
-# Create TMPDIR 
-if  [ ! -d $TMPPATH ]
-then
-  if ! mkdir -p $TMPPATH
-  then
-    echo "Could not create directory: $TMPPATH" 1>&2
-    exit 1
-  fi
-fi
-
-# remove TMPPATH dir on exit
-function cleanup {
-  # Delete livestream cache
-  # (but _not_ our recording!)
-  $record || rm -f "$OUTFILE"
-  $quiet || echo ""
-}
-trap cleanup INT TERM EXIT
-
-# Teleboy Login
-function teleboy_login {
-  # ARGS:
-  # 1: teleboy user name
-  # 2: password
-  # get the session cookie (cinergy_s) and login auth cookie (cinergy_auth)
-  # this seems to be a two-step process...
-  local _USER=$1
-  local _PASS=$2
-  if [ -f "$TMPPATH/cookie1" ]
-  then
-    # When does the current session expire (make it artificially a minute early
-    session_expires=$(( $(grep cinergy_s $TMPPATH/cookie1 | cut -f5) - 60 ))
-    now=$(date +%s)
-    if [ "$session_expires" -gt "$now" ]
+# Check dependencies
+programlist="crontab curl grep jq sed"
+for program in $programlist
+do
+    if ! which $program > /dev/null
     then
-      $quiet || echo "Already logged in as $_USER"
-      new_session=false
-      return 0
+        printerr "Could not find ${program}. Is it installed?"
+        exit 1
     fi
-  fi
-  $quiet || echo -n "login (as '$_USER')..."
-  local URL="http://www.teleboy.ch/watchlist/"
-  wget --user-agent "$UAGENT" \
-    --quiet \
-    --save-cookies $TMPPATH/cookie0 \
-    --keep-session-cookies \
-    --output-document /dev/null \
-    $URL
-  local POST="login=${_USER}&password=${_PASS}&keep_login=1"
-  local URL="http://www.teleboy.ch/login_check"
-  wget --user-agent "$UAGENT" \
-    --quiet \
-    --load-cookies $TMPPATH/cookie0 \
-    --save-cookies $TMPPATH/cookie1 \
-    --keep-session-cookies \
-    --save-headers \
-    --post-data $POST \
-    --output-document /dev/null \
-    $URL
-  
-  # Check if login was successfull
-  if grep cinergy_auth $TMPPATH/cookie1 > /dev/null
-  then
-    $quiet || echo "ok"
-    new_session=true
-    return 0
-  else
-    $quiet || echo "failed"
-    return 1
-  fi
-}
+done
 
-# Add login credentials to config (if necessary)
-if [ -z "$TELEBOY_USER" ]
+# Check player dependency (omxplayer, mpv, mplayer, vlc in that order)
+if which omxplayer > /dev/null
 then
-  echo "Please provide your Teleboy credentials. If you don't have"
-  echo "any, you can create a free account on http://www.teleboy.ch"
-  read -p    "Please enter your user name: " TELEBOY_USER
-  read -s -p "Please enter your password:  " TELEBOY_PASS
-  echo
-  while ! teleboy_login $TELEBOY_USER $TELEBOY_PASS 
-  do
-    read -p    "Please re-enter your user name: " TELEBOY_USER
-    read -s -p "Please re-enter your password:  " TELEBOY_PASS
-    echo
-  done  
-  echo "CAUTION: writing plain text password to the config file!"
-  read -p "Proceed? y/N " -n 1 install_configuration
-  echo
-  if ! [[ "$install_configuration" =~ [Yy] ]]
+  PLAYER=omxplayer
+  $playeropts || PLAYEROPTS="$OMXPLAYEROPTS"
+elif which mpv > /dev/null
+then
+  PLAYER=mpv
+  $playeropts || PLAYEROPTS="$MPVOPTS"
+elif which mplayer > /dev/null
+then
+  PLAYER=mplayer
+  $playeropts || PLAYEROPTS="$MPLAYEROPTS"
+elif which vlc > /dev/null
+then
+  PLAYER=vlc
+  $playeropts || PLAYEROPTS="$VLCOPTS"
+else
+  printerr "No suitable player found: omxplayer, mpv, mplayer"
+  printerr "Make sure any of the following players is available:"
+  printerr " * omxplayer (recommended on Raspberry Pis)"
+  printerr " * mpv (recommended on most systems)"
+  printerr " * mplayer"
+  printerr " * vlc (recommended on Mac OS X systems)"
+  exit 1
+fi
+
+# whiptail dialog boxes are optional (fallback to tradition shell dialogs)
+whiptail=$(which whiptail > /dev/null && echo true || echo false)
+
+# Read config (overrides default values) or create it
+CONFIG="$HOME/.${SCRIPTNAME}rc"
+if [ -f $CONFIG ]
+then
+  . $CONFIG
+else
+  cat << EOF > $CONFIG
+##########################################################################
+# CONFIGURATION FILE FOR $SCRIPTNAME                                     #
+# Feel free to adapt to your needs                                       #
+##########################################################################
+
+# Set directory where played streams are cached:
+
+TMPDIR='$TMPDIR'
+
+# $SCRIPTNAME supports a few players for displaying the stream. Separate
+# command line options can specified for each player.
+# NOTE: those options are overriden when $SCRIPTNAME is invoked with
+# --player-opts 'PLAYEROPTS'
+
+# omxplayer flags:
+OMXPLAYEROPTS='$OMXPLAYEROPTS'
+
+# mpv flags:
+MPVOPTS='$MPVOPTS'
+
+# mplayer flags:
+MPLAYEROPTS='$MPLAYEROPTS'
+
+# vlc flags:
+VLCOPTS='$VLCOPTS'
+
+# Where should stream recordings be saved?
+# This can be overridden by the -p/--path flag:
+
+#RECORDPATH='~/mytvshows'
+
+# How much data should be downloaded before starting playback?
+# The value is given in seconds. The playback begins after
+# BUFFERSECONDS * BITRATE data has been downloaded.
+
+BUFFERSECONDS='$BUFFERSECONDS'
+
+# Several variants of each stream are available. The variants have
+# different bitrates and different video resolutions.
+# Bitrates and corresponding resolutions:
+#    64000         audio only
+#   394000         320x180
+#   540000         400x224
+#  1368000         720x404
+#  2290000         720x404
+#  3305000         1280x720
+#  4240000         1280x720
+# You may set a maximum bitrate when selecting a variant:
+
+#MAXBITRATE=3305000
+EOF
+  echo "created config file '$CONFIG'"
+fi
+
+#### FUNCTIONS ###################################################
+function set_credentials {
+  # This makes sure we have TELEBOY_USER and TELEBOY_PASS set,
+  # either by reading from the config file or by asking the
+  # the user interactively.
+  if [ -z "$TELEBOY_USER" ]
   then
-    echo "Not saving credentials in config file"
-  else
-      cat << EOF >> $CONFIG
+    echo "Please provide your Teleboy credentials. If you don't have"
+    echo "any, you can create a free account on http://www.teleboy.ch"
+    read -p    "Please enter your user name: " TELEBOY_USER
+    read -s -p "Please enter your password:  " TELEBOY_PASS
+    echo
+    setup_work_dir || return 1
+    while ! teleboy_login $TELEBOY_USER $TELEBOY_PASS 
+    do
+      read -p    "Please re-enter your user name: " TELEBOY_USER
+      read -s -p "Please re-enter your password:  " TELEBOY_PASS
+      echo
+    done  
+    echo "CAUTION: writing plain text password to the config file!"
+    read -p "Proceed? y/N " -n 1 install_configuration
+    echo
+    if ! [[ "$install_configuration" =~ [Yy] ]]
+    then
+      printerr "Not saving credentials in config file"
+    else
+        cat << EOF >> $CONFIG
 
 # Teleboy Login Credentials
 
 TELEBOY_USER='$TELEBOY_USER'
 TELEBOY_PASS='$TELEBOY_PASS'
 EOF
+    fi
   fi
-else
-  if ! teleboy_login $TELEBOY_USER $TELEBOY_PASS
+  return 0
+}
+
+function setup_work_dir {
+  # set working directory for keeping session data
+  # and for stream caching
+  # no ARGs
+  # required vars: TELEBOY_USER
+  TMPPATH="${TMPDIR}/${SCRIPTNAME}/${TELEBOY_USER}"
+
+  # Create TMPDIR 
+  if  [ ! -d $TMPPATH ]
   then
-    $quiet || echo "Please check your credentials in the configuration:"
-    $quiet || echo "$CONFIG"
-    exit 1
+    if ! mkdir -p $TMPPATH
+    then
+      printerr "Could not create directory: $TMPPATH"
+      return 1
+    fi
+    chmod 777 "${TMPDIR}/${SCRIPTNAME}"
   fi
-fi
+}
 
-# Store value of session cookie (cinergy_s)
-# We only need to do that once per session and every stream request
-cinergy_s=$(grep cinergy_s $TMPPATH/cookie1 | cut -d$'\t' -f 7)
-if [ "cinergy_s" == "" ]
-then
-  $quiet || echo "Could not retrieve session cookie (cinergy_s)" >&2
-  exit 1
-fi
+# remove TMPPATH dir on exit
+function cleanup {
+  # Delete livestream cache
+  # (but _not_ our recording!)
+  $record || rm -f "$OUTFILE"
+  echo -ne "\033[2K\r" # this clears the current line
+  tput cnorm
+  kill $PID &> /dev/null
+}
+trap cleanup INT TERM EXIT
 
-# Set teleboy api key
-# It seems that key is hard-coded, thus it didn't appear
-# necessary to retrieve its value from the web
-tb_apikey=$(base64 -d <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
-
-# get user id
-URL="http://www.teleboy.ch/tv/player/player.php"
-rawuserdata=$(wget --user-agent "$UAGENT" \
-  --quiet \
-  --load-cookies $TMPPATH/cookie1 \
-  --output-document - \
-  $URL)
-tb_userid=$(llocal=$(echo "$rawuserdata" | grep " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
-tb_locale=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
-tb_plusmember=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
-
-# did we get a valid userid?
-if ! [[ "$tb_userid" =~ ^-?[0-9]+$ ]]
-then 
-  $quiet || echo "Could not extract a valid user id" >&2
-  exit 1
-fi
-
-# get the channel list
-# CHANNELS is an array containing an element per station
-# Each element follows this format:
-# STATIONNAME/STATIONID
-channel_list_file="$TMPPATH/channel_list"
-if [ -f "$channel_list_file" ] && ! $new_session
-then
-  CHANNELS=($(cat $channel_list_file))
-else
-  $quiet || echo -n "receiving channel list..."
-  URL="http://tv.api.teleboy.ch/users/$tb_userid/broadcasts/now?expand=station&stream=true"
-  stationlist_json="$(
-    wget \
-      --quiet \
-      --header "x-teleboy-apikey: $tb_apikey" \
-      --header "x-teleboy-session: $cinergy_s" \
-      --output-document - \
-      "$URL"
-    )"
-  wget_exit=$?
-  if [ "$wget_exit" -ne "0" ]
+# Teleboy Login
+function teleboy_login {
+  # get the session cookie (cinergy_s) and set TELEBOY_SESSION_ID then login to
+  # get auth cookie (cinergy_auth).
+  # this seems to be a two-step process, since we need to already have
+  # a session cookie before we can attempt a login. It is sufficient to
+  # visit any teleboy page to get a session cookie.
+  # ARG1: teleboy user name
+  # ARG2: teleboy password
+  # sets NEW_SESSION, TELEBOY_AUTHENTICATED
+  local USER=$1
+  local PASS=$2
+  if [ -f "$TMPPATH/cookie1" ]
   then
-    $quiet || echo "wget returned error $wget_exit while retreiving channel list" 1>&2
-    exit 1
+    # When does the current session expire (make it artificially a minute early
+    session_expires=$(( $(sed '/cinergy_s/!d;s/^.*\s\(.*\)\s.*\.*\s.*$/\1/' $TMPPATH/cookie1) - 60 ))
+    now=$(date +%s)
+    if [ "$session_expires" -gt "$now" ] && grep -q cinergy_auth $TMPPATH/cookie1
+    then
+      $quiet || echo "Already logged in as $USER"
+      NEW_SESSION=false
+      TELEBOY_AUTHENTICATED=true
+      return 0
+    fi
   fi
-  CHANNELS=($(echo "$stationlist_json" | \
-      jq -M '.data.items[] | {(.station.label): .station.id}' | \
-      grep '^ ' | \
-      sed -e 's|: |/|' -e 's/^  //' -e 's/"//g' \
-    ))
-  # Check if we received something
-  if [ ${#CHANNELS[@]} -gt 0 ]
+  $quiet || echo -n "login (as '$USER')..."
+  local URL="http://www.teleboy.ch/"
+  curl --user-agent "$UAGENT" \
+    --silent \
+    --fail \
+    --cookie-jar $TMPPATH/cookie0 \
+    --output /dev/null \
+    "$URL" || { printerr "error"; return 1; }
+  local POST="login=${USER}&password=${PASS}&keep_login=1"
+  local URL="http://www.teleboy.ch/login_check"
+  curl --user-agent "$UAGENT" \
+    --silent \
+    --fail \
+    --cookie $TMPPATH/cookie0 \
+    --cookie-jar $TMPPATH/cookie1 \
+    --data $POST \
+    --output /dev/null \
+    "$URL" || { printerr "could not login"; return 1; }
+  
+  # Check if login was successfull
+  if grep -q cinergy_auth $TMPPATH/cookie1
   then
-    $quiet || echo "ok (${#CHANNELS[@]} channels)"
-    echo "${CHANNELS[@]}" > "$channel_list_file"
+    $quiet || echo "ok"
+    NEW_SESSION=true
+    TELEBOY_AUTHENTICATED=true
+    return 0
   else
     $quiet || echo "failed"
-     exit 1
+    rm $TMPPATH/cookie1
+    return 1
   fi
-fi
+}
 
-# Convert selected channel to station_id (sid)
+function teleboy_set_session_id {
+  # We need to be logged in for this to work
+  # Store value of session cookie (cinergy_s)
+  # We only need to do that once per session and every stream request
+  $TELEBOY_AUTHENTICATED || { printerr "not logged in yet."; return 1; }
+  TELEBOY_SESSION_ID="$(sed '/cinergy_s/!d;/cinergy_s/s/^.*cinergy_s\s//' $TMPPATH/cookie1)"
+  if [ "$TELEBOY_SESSION_ID" == "" ]
+  then
+    printerr "Could not retrieve session cookie (cinergy_s)"
+    return 1
+  fi
+}
+
+function teleboy_create_user_env {
+  # Set some variables that are required for accessing the teleboy api.
+  # no arguments are taken, but login must have happened (we need the cookie).
+
+  # are we loggin already?
+  $TELEBOY_AUTHENTICATED || { printerr "not logged in yet."; return 1; }
+
+  # It seems that key is hard-coded, thus it didn't appear
+  # necessary to retrieve its value from the web
+  TELEBOY_API_KEY=$(base64 -d <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
+  
+  # get user id, locale, plus member status
+  local url="http://www.teleboy.ch/tv/player/player.php"
+  local rawuserdata
+  rawuserdata=$(curl \
+    --user-agent "$UAGENT" \
+    --silent \
+    --fail \
+    --cookie $TMPPATH/cookie1 \
+    --output - \
+    "$url") || { printerr "could not get page containing user id"; exit 1; }
+  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
+  TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
+  TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+  
+  # did we get a valid userid?
+  if ! [[ "$TELEBOY_USER_ID" =~ ^-?[0-9]+$ ]]
+  then 
+    printerr "Could not extract a valid user id"
+    exit 1
+  fi
+} 
+
+function teleboy_create_channel_list {
+  # get the channel list through the teleboy api
+  # CHANNELS is an array containing an element per station
+  # Each element follows this format:
+  # STATIONNAME/STATIONID
+  # no ARGS, but TELEBOY_USER_ID, TELEBOY_API_KEY, NEW_SESSION
+  # need to be set
+
+  # check if we're ready
+  [ -z "$TELEBOY_USER_ID" ] && { printerr "TELEBOY_USER_ID not set"; return 1; }
+
+  # if we have channel list pre-cached, we use the cache
+  local channel_list_file="$TMPPATH/channel_list"
+  if [ -f "$channel_list_file" ] && ! $NEW_SESSION
+  then
+    CHANNELS=($(cat $channel_list_file))
+    return 0
+  else
+    $quiet || echo -n "receiving channel list..."
+    local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/broadcasts/now?expand=station&stream=true"
+    local stationlist_json
+    stationlist_json="$(curl \
+        --silent \
+        --fail \
+        --header "x-teleboy-apikey: $TELEBOY_API_KEY" \
+        --header "x-teleboy-session: $TELEBOY_SESSION_ID" \
+        --output - \
+        "$url")" || { printerr "could not download channel list"; exit 1; }
+    CHANNELS=($(echo "$stationlist_json" | \
+        jq -M '.data.items[] | {(.station.label): .station.id}' | \
+        sed '/^  /!d;s/^  "//;s/": /\//'))
+    # Check if we received something
+    if [ ${#CHANNELS[@]} -gt 0 ]
+    then
+      $quiet || echo "ok (${#CHANNELS[@]} channels)"
+      # write cache
+      echo "${CHANNELS[@]}" > "$channel_list_file"
+      return 0
+    else
+      $quiet || echo "failed"
+      return 1
+    fi
+  fi
+}
+
 function set_sid_by_channel {
-  # ARGS:
-  # 1: CHANNEL
-  sid=$(
+  # Convert selected channel to station_id (sid)
+  # set global SID
+  # ARG1: channel name
+  # CHANNELS needs to be set
+  SID=$(
     for channel in ${CHANNELS[@]}
     do
       echo $channel | grep -i ^$1/ | cut -d'/' -f2
     done
   )
-  if [[ $sid = *[!0-9]* || "$sid" = "" ]] 
+  if [[ $SID = *[!0-9]* || "$SID" = "" ]]
   then
-    $quiet || echo -e "\nCould not get a valid sid." 1>&2
-    exit 1
+    printerr " Could not get a valid sid."
+    return 1
+  else
+    return 0
   fi
 }
 
-# Get stream-URL from teleboy-api by providing user, session, sid
-function set_stream_data_from_api {
-  # ARGS:
-  # 1: CHANNEL
+function teleboy_set_stream_data {
+  # Get HLS master url of given channel from teleboy api
   # The following variables need to be set
-  # tb_userid  (numeric user id)
-  # tb_apikey
-  # cinergy_s (session cookie)
-  local CHANNEL=$1
-  set_sid_by_channel $CHANNEL
-  URL="http://tv.api.teleboy.ch/users/${tb_userid}/stream/live/${sid}?alternative=false"
-  stream_data_json=$(wget \
-  --header "x-teleboy-apikey: ${tb_apikey}" \
-  --header "x-teleboy-session: ${cinergy_s}" \
-  --output-document - \
-  --quiet \
-   "$URL")
-  stream_data_url="$(echo -e \
-    $(echo "$stream_data_json" | \
-      sed -e 's/{/\n/g' -e 's/}/\n/g' -e 's/,/\n/g' | \
-      grep '^"url"') | \
-      cut -d'"' -f4 | \
-      sed -e 's/\\//g')"
-  stream_data_channelname="$(echo "$stream_data_json" | \
-    sed -e 's/{/\n/g' | \
-    grep '^"has_stream"' | \
-    sed -e 's/,/\n/g' | \
-    grep '^"name":' | \
-    head -n1 | \
-    cut -d'"' -f4)"
+  # TELEBOY_USER_ID  (numeric user id)
+  # TELEBOY_API_KEY
+  # TELEBOY_SESSION_ID
+  # ARG1: channel
+  # sets HLS_MASTER_URL, CHANNEL_LABEL
+  local channel=$1
+  set_sid_by_channel $channel || return 1
+  local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=false"
+  local stream_data_json
+  stream_data_json="$(curl \
+    --silent \
+    --fail \
+    --header "x-teleboy-apikey: ${TELEBOY_API_KEY}" \
+    --header "x-teleboy-session: ${TELEBOY_SESSION_ID}" \
+    --output - \
+    "$url")" || { printerr "API request failed"; return 1; }
+  HLS_MASTER_URL="$(echo "$stream_data_json" | \
+    jq --raw-output '.data.stream.url')"
+  CHANNEL_LABEL="$(echo "$stream_data_json" | \
+    jq --raw-output '.data.epg.current.station.name')"
+  
+  # validate data
+  local regex='http://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+  [[ $HLS_MASTER_URL =~ $regex ]] && return 0 || \
+    { printerr "could not extract master url"; return 1; }
 }
 
-# option -l|--list
 function print_channel_list {
+  # prints channel list
+  # requires: CHANNELS
+  local channel
   for channel in "${CHANNELS[@]}"
   do
     echo $channel | cut -d'/' -f1
   done
+  return 0
 }
-if $list
-then
-  print_channel_list
-  exit
-fi
 
 function dump_hls_stream {
-  # ARGS:
-  # 1: channel
-  # 2: output file
-  [ -d $TMPPATH ] || exit 1
+  # ARG1: channel
+  # ARG2: output file
+  [ -d $TMPPATH ] || return 1
 
-  set_stream_data_from_api $1
+  teleboy_set_stream_data $1 || return 1
   
-  # Ugly: We need to print the canonical channel name _before_
+ # Ugly: We need to print the canonical channel name _before_
   # we start downling in record mode
-  $record && ! $quiet && echo "$stream_data_channelname"
+  $record && ! $quiet && echo "$CHANNEL_LABEL"
 
-  # get highest quality stream
-  selected_streamurl=$(wget --output-document - \
-    --quiet "$stream_data_url" | \
-    grep '^http.*\.m3u8' | \
-    sort -V | \
-    tail -n1)
-  
-  # Use differenct container format depending on whether we record or watch live
-  # flv is designed for live streaming. It supports reading from it while data is
-  # still appended
-  # mkv cannot easily be read from while it is written, but unlike flv it allows
-  # to quickly seek within the file without reading the whole file.
-  # For given reasons, mkv is used for recording and flv for live watching.
-  containerformat=$( $record && echo "matroska" || echo "flv" )
-  # hls dump command
-  avconv -y -v quiet -re -i "$selected_streamurl" -c copy -f $containerformat "$2"  &
+  # create array HLS_VARIANTS with urls and bitrates
+  hls_extract_variants "$HLS_MASTER_URL" || return 1
+
+  # select variant with highest bitrate
+  local variant=${#HLS_VARIANTS[@]}
+  while [ $MAXBITRATE -lt $(hls_select_variant_bitrate $variant) ]
+  do
+    ((variant-=1))
+    if [ $variant -lt 1 ]
+    then
+      printerr "Couldn't find variant with given bitrate limit ($MAXBITRATE)"
+      return 1
+    fi
+  done
+
+  HLS_VARIANT_URL="$(hls_select_variant_url $variant)" || return 1
+  HLS_VARIANT_BITRATE="$(hls_select_variant_bitrate $variant)" || return 1
+
+  # make sure the requested start segment is available
+  hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" > /dev/null || return 1
+
+  # Download selected variant
+  hls_download_variant "$HLS_VARIANT_URL" "$OUTFILE" "$STARTTIME" "$ENDTIME" &
   PID=$!
+  return 0
 }
 
 # Compose player command
-PLAYERCMD="$PLAYER $([ "$PLAYER" == "mpv" ] && echo $MPVOPTS || echo $MPLAYEROPTS) "
+PLAYERCMD="$PLAYER $PLAYEROPTS "
 
 # Compose output filename
 function compose_outfile {
-  # ARGS:
-  # 1: Channel
+  # ARG1: Channel
+  local channel="$1"
   if $record
   then
     if $showname
     then
-      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed -e 's|/|-|g')-$(date +%Y%m%d%H%M).mkv"
+      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed 's|/|-|g').m2t"
     else
-      OUTFILE="${RECORDPATH}/${1}-$(date +%Y%m%d%H%M).mkv"
+      OUTFILE="${RECORDPATH}/${channel}-$(date +%Y%m%d%H%M -d "$STARTTIME").m2t"
     fi
   else
-    OUTFILE="$TMPPATH/${1}_live.flv"
+    OUTFILE="$TMPPATH/${channel}-$(date +%Y%m%d%H%M -d "$STARTTIME").m2t"
   fi
 }
 
@@ -534,86 +613,113 @@ function compose_outfile {
 function player_recorder {
   # ARGS:
   # 1: Channel
-  compose_outfile "$1"
+  local channel="$1"
+  local code
+  compose_outfile "$channel"
   if $record
   then
     $quiet || echo -n "Now recording: "
-    dump_hls_stream "$1" "$OUTFILE" || return 1
+    dump_hls_stream "$channel" "$OUTFILE" || return 1
   else
     # Hide the terminal cursor
-    tput civis -- invisible
-    if $LIVEPAUSE
+    tput civis
+    # Make sure there is an empty OUTFILE
+    > "$OUTFILE"
+    dump_hls_stream "$channel" "$OUTFILE" || return 1
+
+    # calculate buffer size from bitrate of selected stream
+    # so that we get consistent waiting times independent from bitrate
+    BUFFER=$(( HLS_VARIANT_BITRATE * BUFFERSECONDS / 8 ))
+
+    # Only start mplayer after having downloaded BUFFER bytes
+    eval $(resize)
+    PROGRESSBARWIDTH=$(( $COLUMNS - 20 ))
+    OUTFILESIZE=0
+    while [  "$OUTFILESIZE" -lt "$BUFFER" ]
+    do
+      OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
+      if ! $quiet
+      then
+        echo -ne "\r"
+        echo -n "  Buffering: ["
+        progresscount=$(( $OUTFILESIZE * $PROGRESSBARWIDTH / $BUFFER ))
+        progresscount=$((PROGRESSBARWIDTH < progresscount ? PROGRESSBARWIDTH : progresscount))
+        for i in $(seq $progresscount); do echo -n "="; done
+        progressempty=$(( $PROGRESSBARWIDTH - $progresscount ))
+        for i in $(seq $progressempty); do echo -n " "; done
+        echo -n "]"
+      fi
+      sleep 0.1
+      if ! kill -0 $PID 2> /dev/null
+      then
+        code=$(wait $PID; echo $?)
+        printerr "An error during download occured. Error code: $code"
+        return 1
+      fi
+    done
+    echo -ne "\033[2K" # this clears the current line
+    $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
+    $PLAYERCMD "$OUTFILE" &> /dev/null || \
+      {
+        code=$?
+        printerr ""
+        printerr "'$PLAYER' exited with error: $code"
+        return 1
+      }
+    echo -ne "\033[2K" # this clears the current line
+    if ! kill $PID 2> /dev/null
     then
-      # Make sure there is an empty OUTFILE
-      > "$OUTFILE"
-      dump_hls_stream "$1" "$OUTFILE" || return 1
-
-      # calculate buffer size from bitrate of selected stream
-      # so that we get consistent waiting times independent from bitrate
-      BITRATE=$(echo "$selected_streamurl" | cut -d'/' -f9)
-      BUFFER=$(( BITRATE * BUFFERSECONDS / 8 ))
-
-      # Only start mplayer after having downloaded BUFFER bytes
-      eval $(resize)
-      PROGRESSBARWIDTH=$(( $COLUMNS - 20 ))
-      OUTFILESIZE=0
-      while [  "$OUTFILESIZE" -lt "$BUFFER" ]
-      do
-        OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
-        if ! $quiet
-        then
-          echo -ne "\r"
-          echo -n "  Buffering: ["
-          progresscount=$(( $OUTFILESIZE * $PROGRESSBARWIDTH / $BUFFER ))
-          progresscount=$((PROGRESSBARWIDTH < progresscount ? PROGRESSBARWIDTH : progresscount))
-          for i in $(seq $progresscount); do echo -n "="; done
-          progressempty=$(( $PROGRESSBARWIDTH - $progresscount ))
-          for i in $(seq $progressempty); do echo -n " "; done
-          echo -n "]"
-        fi
-        sleep 0.1
-        if ! kill -0 $PID 2> /dev/null
-        then
-          code=$(wait $PID; echo $?)
-          echo "avconv returned an error code: $code" 1>&2
-          sleep 2
-          return 1
-        fi
-      done
-      echo -ne "\033[2K" # this clears the current line
-      $quiet || echo -ne "\rNow playing: $stream_data_channelname"
-      $PLAYERCMD "$OUTFILE" 2> /dev/null
-      echo -ne "\033[2K" # this clears the current line
-      kill $PID
-      rm "$OUTFILE"
-    else
-      echo -ne "\033[2K" # this clears the current line
-      set_stream_data_from_api "$1"
-      $quiet || echo -ne "\rNow playing: $stream_data_channelname"
-      $PLAYERCMD "$stream_data_url" 2> /dev/null
+      code=$(wait $PID; echo $?)
+      if [ $code -ne 0 ]
+      then
+        printerr "An error during download occured."
+        return 1
+      fi
     fi
+    rm "$OUTFILE"
+    return 0
   fi
 }
 
-# Da Keestroke Waitah
-function  wait_s_key {
-  $quiet || echo "Press the 's' key to stop the recording." 
-  keypress=""
-  while [ "$keypress" != "s" ]
-  do
-    read -s -n1  keypress
-  done
+function wait_for_download {
+  # waits for the download to finish
+  # No ARGS
+  # PID of the download process needs to be set
+  wait $PID
+  exitcode=$?
+  if [ "$exitcode" -eq "0" ]
+  then 
+    $quiet || echo "Recording complete."
+    return 0
+  else
+    printerr "Error during download. Code: $exitcode"
+    return 1
+  fi
 }
 
 # Da Time Valeditee Checkah
 function check_time_validity {
-  # ARGS:
-  # 1: datetime string
-  if ! date -d "$1" > /dev/null
+  # ARG1: datetime string
+  local datetimestring="$1"
+  if ! date -d "$datetimestring" &> /dev/null 
   then
-    echo "Could not understand time format." 1>&2
-    exit 1
+    printerr "Could not understand time format: '$datetimestring'"
+    return 1
   fi
+}
+
+# make sure starttime is before endtime
+function check_start_before_end {
+  # ARG1: start time (as understood by date)
+  # ARG2: end time (as understood by date)
+  local starttime="$1"
+  local endtime="$2"
+  if [ "$(date +%s -d "$starttime")" -ge "$(date +%s -d "$endtime")" ]
+  then
+    printerr "Given end time '$endtime' is before start time '$starttime'."
+    return 1
+  fi
+  return 0 
 }
 
 # test channel input validity
@@ -622,18 +728,17 @@ function channel_validity {
   # 1: channel
   if [ -z "$CHANNEL" ]
   then
-    echo "Please specify a channel"
+    printerr "Please specify a channel"
     return 1
   elif print_channel_list | grep -i "^${1}$" > /dev/null
   then
     return 0
   else
-    echo "'$CHANNEL' is not a valid channel." 1>&2
-    echo "Use '--list' to display available channels." 1>&2
+    printerr "'$CHANNEL' is not a valid channel."
+    printerr "Use '--list' to display available channels."
     return 1
   fi
 }
-
 
 # interface appearance
 function set_ui_window_params {
@@ -711,19 +816,7 @@ function starttime_dialog {
     fi
     if date -d "$STARTTIME" > /dev/null 2>&1
     then
-      if [ $(date -d "$STARTTIME" +%s) -lt $(date +%s) ]
-      then
-        if $whiptail 
-        then
-          whiptail --title "$TITLE" --msgbox \
-            " The specified time:\n\n    ${STARTTIME}\n\nis already over." \
-            $BOXWIDTH $BOXHEIGHT
-        else
-          echo -e "The specified time:\n    ${STARTTIME}\nis already over."  
-        fi  
-      else
-        break
-      fi
+      break
     else
       if $whiptail
       then
@@ -780,30 +873,6 @@ function endtime_dialog {
       fi
     fi
   done
-}
-
-function ifschedule_dialog {
-  if $whiptail
-  then
-    set_ui_window_params 2
-    answer=$(whiptail \
-      --title "$TITLE" \
-      --menu "What do you want to do?" \
-      $BOXWIDTH $BOXHEIGHT $CONTENTHEIGHT \
-      "1)" "Start recording immediately" "2)" "Schedule a recording" \
-      3>&2 2>&1 1>&3 )
-    [ "$?" != "0" ] && exit 0;
-    [ "$answer" = "2)" ] && return 0 || return 1
-  else
-    clear
-    echo "What do you want to do?"
-    PS3="Choose action: "
-    select answer in "Start recording immediately" "Schedule a recording"
-    do
-      [ "$answer" != "" ] && break 
-    done 
-    [ "$answer" = "Schedule a recording" ] && return 0 || return 1
-  fi
 }
 
 function showname_dialog {
@@ -904,148 +973,320 @@ function require_r_opt {
   then
     return 0
   else
-    echo "The option '--${1}' requires the '--record' option" 1>&2
+    printerr "The option '--${1}' requires the '--record' option"
     exit 1
   fi
 }
 
-# schedule a recording into crontab
-crontempfile="${TMPPATH}/crontab.tmp"
 function write_to_crontab {
   # when using this function make sure that
   # the necessary vars are set
   # mandatory: CHANNEL, STARTTIME, DURATION
+  local CRONTEMPFILE="${TMPPATH}/crontab.tmp"
   DELETEME=${RANDOM}${RANDOM}
-  crontab -l > /dev/null 2>&1 && crontab -l > $crontempfile || touch $crontempfile
-  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $crontempfile
-  echo -ne "--quiet --channel '${CHANNEL}' --duration ${DURATION} " >> $crontempfile
-  echo -ne "--deleteme ${DELETEME} " >> $crontempfile
-  $showname && echo -ne "--showname '${SHOWNAME}' " >> $crontempfile
-  echo -ne "--path '${RECORDPATH}'\n" >> $crontempfile
-  crontab < $crontempfile
-  rm $crontempfile
+  crontab -l > /dev/null 2>&1 && crontab -l > $CRONTEMPFILE || touch $CRONTEMPFILE
+  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $CRONTEMPFILE
+  echo -ne "--quiet --channel '${CHANNEL}' --starttime 'now' --endtime '${ENDTIME}' " >> $CRONTEMPFILE
+  echo -ne "--deleteme ${DELETEME} " >> $CRONTEMPFILE
+  $showname && echo -ne "--showname '${SHOWNAME}' " >> $CRONTEMPFILE
+  echo -ne "--path '${RECORDPATH}'\n" >> $CRONTEMPFILE
+  crontab < $CRONTEMPFILE
+  rm $CRONTEMPFILE
 }
 
-# option -t|--starttime
-if $starttime
-then
-  require_r_opt "starttime"
-  if $endtime || $duration
+function fetch_url {
+  # download url and print it to stdout, exit on failure
+  # ARG1: URL
+  local url="$1"
+  local errormsg="could not download: $url"
+  curl -fs "$url" \
+    || { printerr "$errormsg"; return 1; }
+  return 0
+}
+
+function hls_get_current_segment {
+  # retrieve current segment of given stream variant.
+  # the provided URL is expexted to be a valid index file
+  # of a stream variant. the index number is printed
+  # to stdout
+  # ARG1: URL of stream variant index
+
+  # get data
+  local indexurl="$1"
+  local raw
+  raw="$(fetch_url "$indexurl")" || return 1;
+
+  # validate data
+  # check EXTM3U tag
+  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
+    || { printerr "not a valid playlist file"; return 1; }
+  # extract current segment
+  local current_segment="$(echo "$raw" | \
+    sed '/#EXT-X-MEDIA-SEQUENCE/!d;
+         /#EXT-X-MEDIA-SEQUENCE/s/#EXT-X-MEDIA-SEQUENCE://')"
+  # validate segment
+  [[ $current_segment =~ ^-?[0-9]+$ ]] \
+    || { printerr "could not extract current segment number"; return 1; }
+
+  # return result
+  echo "$current_segment"
+  return 0
+}
+
+function hls_get_segment_of_time {
+  # find segment from given time
+  # ARG1: url of stream variant
+  # ARG2: time (as understood by 'date')
+  local indexurl="$1"
+  local time_given="$2"
+  local baseurl="$(dirname "$indexurl")"
+  local ext="ts"
+
+  # get current segment
+  local segment_now
+  segment_now=$(hls_get_current_segment "$1") || return 1
+  segment_now=$((segment_now + 3))
+
+  # set time
+  local time_now=$(date +%s)
+  local time_then=$(date +%s -d "$time_given")
+
+  # deltas
+  local time_delta=$((time_now - time_then))
+  local segment_delta=$(((time_delta + 4) / 4))
+  local segment_then=$((segment_now - segment_delta))
+
+  # check if segment_then is available (only if it's from the past)
+  if [ "$time_then" -lt "$time_now" ]
   then
-    check_time_validity "$STARTTIME"
-    starttimeepoch=$(date -d "$STARTTIME" +%s)
-    if [ $starttimeepoch -lt $(date +%s) ]
-    then
-      echo "The specified start time is already over." 1>&2
-      exit 1
-    fi
-    if $endtime
-    then
-      check_time_validity "$ENDTIME"
-      endtimeepoch=$(date -d "$ENDTIME" +%s)
-      if [ $endtimeepoch -lt $starttimeepoch ]
-      then
-        echo "The specified end time is before the start time." 1>&2
-        exit 1
-      fi
-      let DURATION=$endtimeepoch-$starttimeepoch
-    elif $duration
-    then
-      if ! [ "$DURATION" -ge 0 ] 2>&-
-      then
-        echo "The specified duration '$DURATION' is not a number." 1>&2
-        exit 1
-      fi
-    fi
-    if $channel
-    then
-      channel_validity $CHANNEL || exit 1
-    else
-      echo "You need to specify a channel with '--channel'" 1>&2
-      exit 1
-    fi
-    # Now we have validated all required parameters
-    if ! $quiet
-    then
-      echo "Scheduled for recording:"
-      echo -e "Start time:\t$(date -d "$STARTTIME" "+%a, %F %H:%M")"
-      $endtime && echo -e "End time:\t$(date -d "$ENDTIME" "+%a, %F %H:%M")"
-      $duration && echo -e "Duration:\t${DURATION} sec"
-      echo -e "Channel:\t$CHANNEL"
-      echo -e "Directory:\t$RECORDPATH"
-      $showname && echo -e "Show:\t\t$SHOWNAME"
-      read -p "Are those settings correct? (Y/n) "
-      if [ "$REPLY" == "n" ]
-      then
-        echo "Cancelled by user. Quit." 1>&2
-        exit 1
-      fi
-    fi 
-    write_to_crontab
-    $quiet || echo "Done."
-    exit 0
-  else 
-    echo "You must specify either --duration or --endtime" 1>&2
-    exit 1
+    curl -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null \
+      || { printerr "requested time is too far in the past: $time_given"; return 1; }
   fi
+
+  # return result
+  echo "$segment_then"
+  return 0
+}
+
+function hls_extract_variants {
+  # creates an array HLS_VARIANTS with 'bitrate url' values
+  # ARG1: url of master playlist
+  local master_url="$1"
+  unset HLS_VARIANTS
+
+  # get data
+  local raw
+  raw="$(fetch_url "$master_url")" || return 1
+
+  # verify data
+  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
+    || { printerr "not a valid playlist file"; return 1; }
+
+  # create array HLS_VARIANTS
+  eval $(\
+    echo "$raw" | \
+    sed -n '/#EXTM3U/d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' | \
+    sort -n | \
+    sed '=' | \
+    sed -n 'N;s/\n/ /;s/^/HLS_VARIANTS[/;s/ /]="/;s/$/"/;P')
+
+  # verify array
+  if [ "${#HLS_VARIANTS[@]}" -eq "0" ]
+  then
+    printerr "could not extract variants from master playlist"
+    return 1
+  fi
+  return 0
+}
+
+function hls_select_variant_url {
+  # print url of selected variant
+  # ARG1: index of variant
+  local index="$1"
+  local count=${#HLS_VARIANTS[@]}
+
+  # do we have variants?
+  if [ "$count" -eq "0" ]
+  then
+    printerr "no variants found"
+    return 1
+  fi
+
+  # validate given index
+  if [ "$index" -gt "$count" ] || [ "$index" -lt "1" ]
+  then
+    printerr "selected variant not in range 1 to $count"
+    return 1
+  fi
+
+  # return result
+  echo "${HLS_VARIANTS[$index]}" | cut -d" " -f2
+  return 0
+}
+
+function hls_select_variant_bitrate {
+  # print bitrate of selected variant
+  # ARG1: index of variant
+  local index="$1"
+  local count=${#HLS_VARIANTS[@]}
+
+  # do we have variants?
+  if [ "$count" -eq "0" ]
+  then
+    printerr "no variants found"
+    return 1
+  fi
+
+  # validate given index
+  if [ "$index" -gt "$count" ] || [ "$index" -lt "1" ]
+  then
+    printerr "selected variant not in range 1 to $count"
+    return 1
+  fi
+
+  # return result
+  echo "${HLS_VARIANTS[$index]}" | cut -d" " -f1
+  return 0
+}
+
+function hls_download_variant {
+  # download given stream variant to file, starting from given time
+  # ARG1: url of stream variant
+  # ARG2: file to write stream into
+  # ARG3: start time (as understood by 'date') [optional]
+  # ARG4: end time [optional]
+  local url="$1"
+  local url_base="$(dirname "$url")"
+  local file="$2"
+  [ -z "$3" ] && local time_start="now" || local time_start="$3"
+  # if no time_stop is given, default it to 6 hours after time_start
+  local time_stop_default="@$(( $(date +%s -d"$time_start") + 21600))"
+  [ -z "$4" ] && local time_stop="$time_stop_default" || local time_stop="$4"
+  local ext="ts"
+
+  # check if time_stop is after time_start
+  if [ "$(date +%s -d"$time_stop")" -le "$(date +%s -d"$time_start")" ]
+  then
+    printerr "given stop time is before start time"
+    return 1
+  fi
+
+  # get start and stop segment
+  local segment
+  segment=$(hls_get_segment_of_time "$url" "$time_start") || return 1
+  local segment_stop
+  segment_stop=$(hls_get_segment_of_time "$url" "$time_stop") || return 1
+
+  # get ref time and ref segment
+  # to make sure not to download from the future
+  local segment_current=$(hls_get_current_segment "$url")
+  local segment_ref=$((segment_current + 3))
+  local time_ref=$(date +%s)
+
+  # now do it
+  local sleep=0
+  local failcount
+  local missedsegments=0
+  local maxmissedsegments=3
+  local triespersegment=3
+  > "$file" 2> /dev/null \
+    || { printerr "cannot create file: $file"; return 1; }
+  while sleep $sleep
+  do
+    [ "$segment" -lt "$segment_stop" ] || break
+    # try three times to download segment, then continue
+    failcount=0
+    while [ $failcount -lt $triespersegment ]
+    do
+      if curl -fs "${url_base}/${segment}.${ext}" >> "$file"
+      then
+        missedsegments=0
+        break
+      else
+        ((failcount+=1))
+        if [ $failcount -eq $triespersegment ]
+        then
+          printerr "segment $segment not available"
+          ((missedsegments+=1))
+        fi
+      fi
+      sleep 1
+    done
+    if [ $missedsegments -eq $maxmissedsegments ]
+    then
+      printerr "$maxmissedsegments segments in a row couldn't be downloaded"
+      return 1
+    fi
+    local time_current=$(date +%s)
+    local time_delta=$((time_current - time_ref))
+    local segment_delta=$((segment - segment_ref))
+    [ "$segment_delta" -gt "0" ] || segment_delta=0
+    sleep=$(( 4 + (4 * segment_delta) - time_delta))
+    [ "$sleep" -gt "0" ] || sleep=0
+    ((segment+=1))
+  done
+  return 0
+}
+
+######## DO STUFF ##################################################
+# Set TELEBOY_USER and TELEBOY_PASS
+set_credentials || exit 1
+
+# Set TMPPATH
+setup_work_dir || exit 1
+
+# login
+# Set TELEBOY_AUTHENTICATED=true
+if ! teleboy_login $TELEBOY_USER $TELEBOY_PASS
+then
+  printerr "Please check your credentials in the configuration:"
+  printerr "$CONFIG"
+  exit 1
 fi
 
-# option --deleteme
-if $deleteme
+# Set TELEBOY_SESSION_ID
+teleboy_set_session_id || exit 1
+
+# Set TELEBOY_USER_ID, TELEBOY_USER_LOCALE
+teleboy_create_user_env || exit 1
+
+# Set CHANNELS (array) 
+teleboy_create_channel_list || exit 1
+
+# option -l|--list
+if $list
 then
-  crontab -l > $crontempfile
-  sed -i "/$DELETEME/ d" $crontempfile
-  crontab < $crontempfile
-  rm $crontempfile
+  print_channel_list
+  exit
+fi
+
+# Validate given options
+# option -c|--channel
+if $channel
+then
+  channel_validity "$CHANNEL" || exit 1
+fi
+
+# option -t|--starttime
+# if 
+if $starttime
+then
+  check_time_validity "$STARTTIME" || exit 1
 fi
 
 # option -e|--endtime
-if $endtime && ! $duration
+if $endtime
 then
-  require_r_opt "endtime"
-  check_time_validity "$ENDTIME"
-  endtimeepoch=$(date -d "$ENDTIME" +%s)
-  nowepoch=$(date +%s)
-  if [ $endtimeepoch -lt $nowepoch ]
-  then
-    echo "The specified end time is already over." 1>&2
-    exit 1
-  fi
-  let DURATION=${endtimeepoch}-${nowepoch}
-  duration=true
+  check_time_validity "$ENDTIME" || exit 1
 fi
 
 # option -d|--duration
 if $duration
 then
-  require_r_opt "duration"
-  if ! [ "$DURATION" -ge 0 ] 2>&-
+  if ! [[ $DURATION =~ ^[0-9]+$ ]]
   then
-    echo "The specified duration '$DURATION' is not a number." 1>&2
+    printerr "The specified duration '$DURATION' is not a number."
     exit 1
-  fi
-  channel_validity $CHANNEL || exit 1
-  player_recorder $CHANNEL || exit 1
-  sleep $DURATION
-  kill $PID
-  exit 0
-fi
-
-# option -c|--channel
-if $channel
-then
-  if channel_validity $CHANNEL
-  then
-    if $record
-    then
-      player_recorder $CHANNEL || exit 1
-      wait_s_key
-      kill $PID
-      exit 0
-    else
-      player_recorder $CHANNEL || exit 1
-    fi
-    exit 0
   fi
 fi
 
@@ -1054,41 +1295,68 @@ while true
 do
   if $record
   then
-    if ifschedule_dialog
+    # if enough params are given, don't ask, just do it
+    if $starttime && { $endtime || $duration; } && $channel
     then
+      if $duration && ! $endtime
+      then
+        ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
+      fi
+      check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
+      # Schedule for crontab if --starttime is in the future
+      epochnow=$(date +%s)
+      if [ $(date +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
+      then
+        write_to_crontab || exit 1
+        $quiet || echo "Successfully added crontab entry:"
+        $quiet || crontab -l | grep $DELETEME
+        exit 0
+      else
+        player_recorder "$CHANNEL" || exit 1
+        wait_for_download && exit 0 || exit 1
+      fi
+    # If not enough params are supplied, present the dialog:
+    else
       while true
       do
-        channel_dialog
+        channel_dialog || exit 1
         starttime_dialog
         endtime_dialog
         showname_dialog
         recordpath_dialog
         confirm_dialog && break
       done
-      DURATION=$(( $(date -d "$ENDTIME" +%s) - $(date -d "$STARTTIME" +%s) ))
-      write_to_crontab
-      set_ui_window_params 2
-      if $whiptail
+      # Write an entry to crontab, if start time is at least 60s in the future
+      # Otherwise try to record immediately
+      epochnow=$(date +%s)
+      if [ $(date +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
       then
-        whiptail --title "$TITLE" --msgbox \
-          " Successfully added crontab entry:\n\n
+        write_to_crontab
+        set_ui_window_params 2
+        if $whiptail
+        then
+          whiptail --title "$TITLE" --msgbox \
+            " Successfully added crontab entry:\n\n
 $(crontab -l | grep $DELETEME)" \
-          $BOXWIDTH $BOXHEIGHT
+            $BOXWIDTH $BOXHEIGHT
         else
           echo "Successfully added crontab entry:"
           crontab -l | grep $DELETEME
         fi
-      exit 0
-    else
-      channel_dialog
-      player_recorder $CHANNEL || exit 1
-      wait_s_key
-      kill $PID
-      exit 0
+        exit 0
+      else
+        player_recorder "$CHANNEL" || exit 1
+        wait_for_download && exit 0 || exit 1
+      fi
     fi
   else
-    channel_dialog
-    player_recorder $CHANNEL || sleep 2
+    $channel || channel_dialog || exit 0
+    $starttime || STARTTIME="now"
+    $endtime || ENDTIME="@$(( $(date +%s -d "$STARTTIME") + 14400 ))"
+    $duration && ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
+    check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
+    player_recorder $CHANNEL || exit 1
+    $channel && break
   fi
 done
 
