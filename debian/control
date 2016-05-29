@@ -9,9 +9,8 @@ Homepage: http://github.com/reduzent/watchteleboy
 Package: watchteleboy
 Architecture: all
 Depends: jq,
-         mpv | mplayer,
-         libav-tools,
-         wget,
+         omxplayer | mpv | mplayer | vlc,
+         curl,
          ${misc:Depends}
 Suggests: tvbrowser,
          whiptail
@@ -19,4 +18,6 @@ Description: Watch  and record TV streams from teleboy.ch
  Simple program to watch and record teleboy.ch IPTV streams: 
   * No additional ads
   * No flash nor web browser required
-
+  * allows streams to be recorded
+  * supports live pause and seeking (e.g. for skipping commercials)
+  * can watch or record shows up to six hours after air-time. 
