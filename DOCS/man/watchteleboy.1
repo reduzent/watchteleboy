@@ -85,7 +85,23 @@ supported, in recording mode any time from 6 hours in the past to anytime in the
 In recording mode, a start time in the future triggers an entry in the user's crontab.
 .IP "\fB\-v, \-\-version"
 Print the version of this software and exit. 
-.SH OPTIONS FOR RECORDING
+.SH WATCHING OPTIONS
+.IP "\fB\-o, \-\-player-opts OPTIONS"
+Options passed to player software.
+.B watchteleboy
+works with several player softwares. It tries to use
+.I omxplayer
+,
+.I mpv
+,
+.I mplayer
+and
+.I vlc
+(in that order). Player specific options can be defined in the configuration.
+When
+.I --player-opts
+is specified, it overrides any of the matching parameters of the configuration.
+.SH RECORDING OPTIONS
 Those options can only be used in recording mode, which is set with the
 .I --record
 option.
