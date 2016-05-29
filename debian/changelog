@@ -1,9 +1,16 @@
-watchteleboy (1.20~trusty~ppa0) trusty; urgency=low
+watchteleboy (1.21~trusty~ppa0) trusty; urgency=low
 
-  * Use teleboy API for requesting channel list
-  * Works with current teleboy service
+  * avconv not used anymore
+  * replaced wget by curl
+  * HLS implemented in pure bash
+  * Allow playback and recording from the past (up to 6 hours)
+    This is achieved by using HLS in a not-compliant way
+  * New parameter: MAXBITRATE 
+    This allows to stream in different qualities / resolutions
+  * New parameter: CHANNELLISTTYPE
+    Display all channels, or user-defined selection
 
- -- Roman Haefeli <reduzent@gmail.com>  Sat, 02 Apr 2016 22:28:28 +0200
+ -- Roman Haefeli <reduzent@gmail.com>  Sun, 29 May 2016 23:49:32 +0200
 
 watchteleboy (1.19~trusty~ppa0) trusty; urgency=low
 
