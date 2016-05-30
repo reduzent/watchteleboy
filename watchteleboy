@@ -430,6 +430,9 @@ function teleboy_create_user_env {
   # Set some variables that are required for accessing the teleboy api.
   # no arguments are taken, but login must have happened (we need the cookie).
 
+  # cache file
+  local userenvfile="${TMPPATH}/userenv"
+
   # are we loggin already?
   $TELEBOY_AUTHENTICATED || { printerr "not logged in yet."; return 1; }
 
@@ -437,6 +440,13 @@ function teleboy_create_user_env {
   # necessary to retrieve its value from the web
   TELEBOY_API_KEY=$(base64 -d <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
   
+  # read from cache (if there is a cache and we're not in a new session)
+  if ! $NEW_SESSION && [ -f "$userenvfile" ]
+  then
+    . $userenvfile
+    return 0
+  fi
+
   # get user id, locale, plus member status
   local url="http://www.teleboy.ch/tv/player/player.php"
   local rawuserdata
@@ -455,8 +465,14 @@ function teleboy_create_user_env {
   if ! [[ "$TELEBOY_USER_ID" =~ ^-?[0-9]+$ ]]
   then 
     printerr "Could not extract a valid user id"
-    exit 1
+    return 1
   fi
+
+  # cache result
+  echo "TELEBOY_USER_ID='$TELEBOY_USER_ID'" > $userenvfile
+  echo "TELEBOY_USER_LOCALE='$TELEBOY_USER_LOCALE'" >> $userenvfile
+  echo "TELEBOY_USER_PLUS='$TELEBOY_USER_PLUS'" >> $userenvfile
+  return 0
 } 
 
 function teleboy_create_channel_list {
