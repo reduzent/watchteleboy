@@ -608,7 +608,7 @@ function dump_hls_stream {
 
   # make sure the requested start segment is available
   local startsegment
-  startsegment=$(hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME" > /dev/null) || return 1
+  startsegment=$(hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME") || return 1
   if ! curl -sf -I -X HEAD "$(dirname $HLS_VARIANT_URL)/${startsegment}.ts" > /dev/null
   then
     printerr "Segment for given start time '$STARTTIME' not available"
