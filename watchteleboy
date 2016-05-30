@@ -1220,7 +1220,7 @@ function hls_download_variant {
   local failcount
   local missedsegments=0
   local maxmissedsegments=3
-  local triespersegment=3
+  local triespersegment=8
   > "$file" 2> /dev/null \
     || { printerr "cannot create file: $file"; return 1; }
   while sleep $sleep
@@ -1253,7 +1253,7 @@ function hls_download_variant {
     local time_delta=$((time_current - time_ref))
     local segment_delta=$((segment - segment_ref))
     [ "$segment_delta" -gt "0" ] || segment_delta=0
-    sleep=$(( 4 + (4 * segment_delta) - time_delta))
+    sleep=$(( (4 * segment_delta) - time_delta))
     [ "$sleep" -gt "0" ] || sleep=0
     ((segment+=1))
   done
@@ -1383,7 +1383,7 @@ $(crontab -l | grep $DELETEME)" \
     fi
   else
     $channel || channel_dialog || exit 0
-    $starttime || STARTTIME="now"
+    $starttime || STARTTIME="now - 4 seconds"
     $endtime || ENDTIME="@$(( $(date +%s -d "$STARTTIME") + 14400 ))"
     $duration && ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
     check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
