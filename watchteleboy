@@ -1387,6 +1387,12 @@ $(crontab -l | grep $DELETEME)" \
     $endtime || ENDTIME="@$(( $(date +%s -d "$STARTTIME") + 14400 ))"
     $duration && ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
     check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
+    # make sure STARTTIME is not in the future
+    if [ "$(date +%s -d "$STARTTIME")" -gt "$(date +%s)" ]
+    then
+      printerr "Can't watch from the future ($STARTTIME)"
+      exit 1
+    fi
     player_recorder $CHANNEL || exit 1
     $channel && break
   fi
