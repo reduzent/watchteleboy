@@ -330,6 +330,12 @@ function setup_work_dir {
   # and for stream caching
   # no ARGs
   # required vars: TELEBOY_USER
+  if ! [ -d "${TMPDIR}/${SCRIPTNAME}" ]
+  then
+    mkdir "${TMPDIR}/${SCRIPTNAME}"
+    chmod 777 "${TMPDIR}/${SCRIPTNAME}"
+  fi
+
   TMPPATH="${TMPDIR}/${SCRIPTNAME}/${TELEBOY_USER}"
 
   # Create TMPDIR 
@@ -340,8 +346,8 @@ function setup_work_dir {
       printerr "Could not create directory: $TMPPATH"
       return 1
     fi
-    chmod 777 "${TMPDIR}/${SCRIPTNAME}"
   fi
+  return 0
 }
 
 # remove TMPPATH dir on exit
