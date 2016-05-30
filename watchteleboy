@@ -18,9 +18,9 @@ VERSION=1.21
 # Set some default values
 TMPDIR=/tmp
 UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12.0'
+OMXPLAYEROPTS="--blank --live"
 MPLAYEROPTS="-really-quiet"
 MPVOPTS="--really-quiet --keep-open"
-OMXPLAYEROPTS="--blank"
 VLCOPTS=""
 RECORDPATH=$(pwd)
 BUFFERSECONDS=5
