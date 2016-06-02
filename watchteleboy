@@ -18,7 +18,6 @@ VERSION=1.21
 # Set some default values
 TMPDIR=/tmp
 UAGENT='Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:12.0) Gecko/20100101 Firefox/12.0'
-OMXPLAYEROPTS="--blank --live"
 MPLAYEROPTS="-really-quiet"
 MPVOPTS="--really-quiet --keep-open"
 VLCOPTS=""
@@ -183,12 +182,8 @@ do
     fi
 done
 
-# Check player dependency (omxplayer, mpv, mplayer, vlc in that order)
-if which omxplayer > /dev/null
-then
-  PLAYER=omxplayer
-  $playeropts || PLAYEROPTS="$OMXPLAYEROPTS"
-elif which mpv > /dev/null
+# Check player dependency (mpv, mplayer, vlc in that order)
+if which mpv > /dev/null
 then
   PLAYER=mpv
   $playeropts || PLAYEROPTS="$MPVOPTS"
@@ -201,12 +196,11 @@ then
   PLAYER=vlc
   $playeropts || PLAYEROPTS="$VLCOPTS"
 else
-  printerr "No suitable player found: omxplayer, mpv, mplayer"
+  printerr "No suitable player found."
   printerr "Make sure any of the following players is available:"
-  printerr " * omxplayer (recommended on Raspberry Pis)"
   printerr " * mpv (recommended on most systems)"
   printerr " * mplayer"
-  printerr " * vlc (recommended on Mac OS X systems)"
+  printerr " * vlc (not fully tested yet)"
   exit 1
 fi
 
@@ -233,9 +227,6 @@ TMPDIR='$TMPDIR'
 # command line options can specified for each player.
 # NOTE: those options are overriden when $SCRIPTNAME is invoked with
 # --player-opts 'PLAYEROPTS'
-
-# omxplayer flags:
-OMXPLAYEROPTS='$OMXPLAYEROPTS'
 
 # mpv flags:
 MPVOPTS='$MPVOPTS'

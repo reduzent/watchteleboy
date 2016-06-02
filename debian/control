@@ -9,7 +9,7 @@ Homepage: http://github.com/reduzent/watchteleboy
 Package: watchteleboy
 Architecture: all
 Depends: jq,
-         omxplayer | mpv | mplayer | vlc,
+         mpv | mplayer | vlc,
          curl,
          ${misc:Depends}
 Suggests: tvbrowser,
