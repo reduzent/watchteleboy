@@ -123,17 +123,49 @@ EOF
   exit
 fi
 
+# Make sure we use GNU sed
+# and set base64 decode option
+# and use GNU date
+PLATFORM=$(uname)
+case "$PLATFORM" in
+  Linux)
+    SED="sed"
+    B64DECOPT="-d"
+    DATE='date'
+    ;;
+  Darwin)
+    SED="gsed"
+    B64DECOPT="-D"
+    DATE='gdate'
+    ;;
+  *)
+    printerr "Platform not supported: $platform"
+    exit 1
+  ;;
+esac
+
+# Check dependencies
+programlist="crontab curl grep jq $SED $DATE"
+for program in $programlist
+do
+    if ! which $program > /dev/null
+    then
+        printerr "Could not find ${program}. Is it installed?"
+        exit 1
+    fi
+done
+
 # option --delete-cron
 # delete cron entry (used by tvbrowser record plugin)
 if $deletecron
 then
-  if ! date -d "$DELTIME" > /dev/null 2>&1
+  if ! $DATE -d "$DELTIME" > /dev/null 2>&1
   then
     printerr "Could not parse specified time: $DELTIME"
     exit 1
   fi
   crontempfile="/tmp/crontab.tmp"
-  searchstring="$(date -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]'${DELCHAN}'.*"
+  searchstring="$($DATE -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]'${DELCHAN}'.*"
   if ! crontab -l | grep "$searchstring" > /dev/null
   then
     printerr "Could not find specified job in crontab."
@@ -160,35 +192,6 @@ then
     exit 1
   fi
 fi
-
-# Make sure we use GNU sed
-# and set base64 decode option
-PLATFORM=$(uname)
-case "$PLATFORM" in
-  Linux)
-    SED="sed"
-    B64DECOPT="-d"
-    ;;
-  Darwin)
-    SED="gsed"
-    B64DECOPT="-D"
-    ;;
-  *)
-    printerr "Platform not supported: $platform"
-    exit 1
-  ;;
-esac
-
-# Check dependencies
-programlist="crontab curl grep jq $SED"
-for program in $programlist
-do
-    if ! which $program > /dev/null
-    then
-        printerr "Could not find ${program}. Is it installed?"
-        exit 1
-    fi
-done
 
 # Check player dependency (mpv, mplayer, vlc in that order)
 if which mpv > /dev/null
@@ -389,7 +392,7 @@ function teleboy_login {
   then
     # When does the current session expire (make it artificially a minute early
     session_expires=$(( $($SED '/cinergy_s/!d;s/^.*\s\(.*\)\s.*\.*\s.*$/\1/' $TMPPATH/cookie1) - 60 ))
-    now=$(date +%s)
+    now=$($DATE +%s)
     if [ "$session_expires" -gt "$now" ] && grep -q cinergy_auth $TMPPATH/cookie1
     then
       $quiet || echo "Already logged in as $USER"
@@ -665,10 +668,10 @@ function compose_outfile {
     then
       OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | $SED 's|/|-|g').m2t"
     else
-      OUTFILE="${RECORDPATH}/${channel}-$(date +%Y%m%d%H%M -d "$STARTTIME").m2t"
+      OUTFILE="${RECORDPATH}/${channel}-$($DATE +%Y%m%d%H%M -d "$STARTTIME").m2t"
     fi
   else
-    OUTFILE="$TMPPATH/${channel}-$(date +%Y%m%d%H%M -d "$STARTTIME").m2t"
+    OUTFILE="$TMPPATH/${channel}-$($DATE +%Y%m%d%H%M -d "$STARTTIME").m2t"
   fi
 }
 
@@ -763,7 +766,7 @@ function wait_for_download {
 function check_time_validity {
   # ARG1: datetime string
   local datetimestring="$1"
-  if ! date -d "$datetimestring" &> /dev/null 
+  if ! $DATE -d "$datetimestring" &> /dev/null 
   then
     printerr "Could not understand time format: '$datetimestring'"
     return 1
@@ -776,7 +779,7 @@ function check_start_before_end {
   # ARG2: end time (as understood by date)
   local starttime="$1"
   local endtime="$2"
-  if [ "$(date +%s -d "$starttime")" -ge "$(date +%s -d "$endtime")" ]
+  if [ "$($DATE +%s -d "$starttime")" -ge "$($DATE +%s -d "$endtime")" ]
   then
     printerr "Given end time '$endtime' is before start time '$starttime'."
     return 1
@@ -867,14 +870,14 @@ function starttime_dialog {
       STARTTIME=$(whiptail \
         --title "$TITLE" \
         --inputbox "\nStart recording at:" \
-        $BOXWIDTH $BOXHEIGHT "$(date --rfc-3339=date) 20:15" \
+        $BOXWIDTH $BOXHEIGHT "$($DATE --rfc-3339=date) 20:15" \
         3>&2 2>&1 1>&3 )
       [ "$?" != "0" ] && exit 0;
     else
       echo -n "Start recording at: "
       read STARTTIME
     fi
-    if date -d "$STARTTIME" > /dev/null 2>&1
+    if $DATE -d "$STARTTIME" > /dev/null 2>&1
     then
       break
     else
@@ -896,20 +899,20 @@ function endtime_dialog {
     if $whiptail
     then
       set_ui_window_params 2
-      endtimeinit=$(( $(date -d "$STARTTIME" +%s) + 3600 ))
+      endtimeinit=$(( $($DATE -d "$STARTTIME" +%s) + 3600 ))
       ENDTIME=$(whiptail \
 	--title "$TITLE" \
 	--inputbox "\nStop recording at:" \
-	$BOXWIDTH $BOXHEIGHT "$(date -d @${endtimeinit} '+%Y-%m-%d %H:%M')" \
+	$BOXWIDTH $BOXHEIGHT "$($DATE -d @${endtimeinit} '+%Y-%m-%d %H:%M')" \
 	3>&2 2>&1 1>&3 )
       [ "$?" != "0" ] && exit 0;
     else
       echo -n "Stop recording at: "
       read ENDTIME
     fi
-    if date -d "$ENDTIME" > /dev/null 2>&1
+    if $DATE -d "$ENDTIME" > /dev/null 2>&1
     then
-      if [ $(date -d "$ENDTIME" +%s) -lt $(date -d "$STARTTIME" +%s) ]
+      if [ $($DATE -d "$ENDTIME" +%s) -lt $($DATE -d "$STARTTIME" +%s) ]
       then
         if $whiptail
         then
@@ -1005,8 +1008,8 @@ function recordpath_dialog {
 function confirm_dialog {
   summary="Scheduled for recording:
 
-Start time:    $(date -d "${STARTTIME}" "+%a, %F %H:%M")
-End time:      $(date -d "${ENDTIME}" "+%a, %F %H:%M")
+Start time:    $($DATE -d "${STARTTIME}" "+%a, %F %H:%M")
+End time:      $($DATE -d "${ENDTIME}" "+%a, %F %H:%M")
 Channel:       ${CHANNEL}
 Show:          ${SHOWNAME}
 Directory:     ${RECORDPATH}
@@ -1045,7 +1048,7 @@ function write_to_crontab {
   local CRONTEMPFILE="${TMPPATH}/crontab.tmp"
   DELETEME=${RANDOM}${RANDOM}
   crontab -l > /dev/null 2>&1 && crontab -l > $CRONTEMPFILE || touch $CRONTEMPFILE
-  echo -ne "$(date -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $CRONTEMPFILE
+  echo -ne "$($DATE -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $CRONTEMPFILE
   echo -ne "--quiet --channel '${CHANNEL}' --starttime 'now' --endtime '${ENDTIME}' " >> $CRONTEMPFILE
   echo -ne "--deleteme ${DELETEME} " >> $CRONTEMPFILE
   $showname && echo -ne "--showname '${SHOWNAME}' " >> $CRONTEMPFILE
@@ -1108,8 +1111,8 @@ function hls_get_segment_of_time {
   segment_now=$((segment_now + 3))
 
   # set time
-  local time_now=$(date +%s)
-  local time_then=$(date +%s -d "$time_given")
+  local time_now=$($DATE +%s)
+  local time_then=$($DATE +%s -d "$time_given")
 
   # deltas
   local time_delta=$((time_now - time_then))
@@ -1220,12 +1223,12 @@ function hls_download_variant {
   local file="$2"
   [ -z "$3" ] && local time_start="now" || local time_start="$3"
   # if no time_stop is given, default it to 6 hours after time_start
-  local time_stop_default="@$(( $(date +%s -d"$time_start") + 21600))"
+  local time_stop_default="@$(( $($DATE +%s -d"$time_start") + 21600))"
   [ -z "$4" ] && local time_stop="$time_stop_default" || local time_stop="$4"
   local ext="ts"
 
   # check if time_stop is after time_start
-  if [ "$(date +%s -d"$time_stop")" -le "$(date +%s -d"$time_start")" ]
+  if [ "$($DATE +%s -d"$time_stop")" -le "$($DATE +%s -d"$time_start")" ]
   then
     printerr "given stop time is before start time"
     return 1
@@ -1241,7 +1244,7 @@ function hls_download_variant {
   # to make sure not to download from the future
   local segment_current=$(hls_get_current_segment "$url")
   local segment_ref=$((segment_current + 3))
-  local time_ref=$(date +%s)
+  local time_ref=$($DATE +%s)
 
   # now do it
   local sleep=0
@@ -1277,7 +1280,7 @@ function hls_download_variant {
       printerr "$maxmissedsegments segments in a row couldn't be downloaded"
       return 1
     fi
-    local time_current=$(date +%s)
+    local time_current=$($DATE +%s)
     local time_delta=$((time_current - time_ref))
     local segment_delta=$((segment - segment_ref))
     [ "$segment_delta" -gt "0" ] || segment_delta=0
@@ -1360,12 +1363,12 @@ do
     then
       if $duration && ! $endtime
       then
-        ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
+        ENDTIME="@$(( $($DATE +%s -d "$STARTTIME") + $DURATION ))"
       fi
       check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
       # Schedule for crontab if --starttime is in the future
-      epochnow=$(date +%s)
-      if [ $(date +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
+      epochnow=$($DATE +%s)
+      if [ $($DATE +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
       then
         write_to_crontab || exit 1
         $quiet || echo "Successfully added crontab entry:"
@@ -1388,8 +1391,8 @@ do
       done
       # Write an entry to crontab, if start time is at least 60s in the future
       # Otherwise try to record immediately
-      epochnow=$(date +%s)
-      if [ $(date +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
+      epochnow=$($DATE +%s)
+      if [ $($DATE +%s -d "$STARTTIME") -gt $(( $epochnow + 60 )) ]
       then
         write_to_crontab
         set_ui_window_params 2
@@ -1412,11 +1415,11 @@ $(crontab -l | grep $DELETEME)" \
   else
     $channel || channel_dialog || exit 0
     $starttime || STARTTIME="now - 4 seconds"
-    $endtime || ENDTIME="@$(( $(date +%s -d "$STARTTIME") + 14400 ))"
-    $duration && ENDTIME="@$(( $(date +%s -d "$STARTTIME") + $DURATION ))"
+    $endtime || ENDTIME="@$(( $($DATE +%s -d "$STARTTIME") + 14400 ))"
+    $duration && ENDTIME="@$(( $($DATE +%s -d "$STARTTIME") + $DURATION ))"
     check_start_before_end "$STARTTIME" "$ENDTIME" || exit 1
     # make sure STARTTIME is not in the future
-    if [ "$(date +%s -d "$STARTTIME")" -gt "$(date +%s)" ]
+    if [ "$($DATE +%s -d "$STARTTIME")" -gt "$($DATE +%s)" ]
     then
       printerr "Can't watch from the future ($STARTTIME)"
       exit 1
