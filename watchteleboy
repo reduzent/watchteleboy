@@ -686,7 +686,6 @@ function player_recorder {
     BUFFER=$(( HLS_VARIANT_BITRATE * BUFFERSECONDS / 8 ))
 
     # Only start mplayer after having downloaded BUFFER bytes
-    eval $(resize)
     PROGRESSBARWIDTH=$(( $COLUMNS - 20 ))
     OUTFILESIZE=0
     while [  "$OUTFILESIZE" -lt "$BUFFER" ]
@@ -798,7 +797,6 @@ function channel_validity {
 function set_ui_window_params {
   # ARGS:
   # 1: border size
-  eval `resize`
   BOXWIDTH=$(( $LINES - 2 * $1 ))
   BOXHEIGHT=$(( $COLUMNS - 2 * $1 ))
   CONTENTHEIGHT=$(( $LINES - 2 * $1 - 8 ))
@@ -834,7 +832,6 @@ function channel_dialog {
       [ "$?" != "0" ] && exit 0;
     else
       clear
-      eval $(resize)
       repeat=$(( $COLUMNS - 21 ))
       echo -n "= AVAILABLE CHANNELS "
       for ch in $(seq $repeat); do echo -n "="; done
