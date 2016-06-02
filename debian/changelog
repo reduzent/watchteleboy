@@ -6,7 +6,7 @@ watchteleboy (1.21~trusty~ppa0) trusty; urgency=low
   * Allow playback and recording from the past (up to 6 hours)
     This is achieved by using HLS in a not-compliant way
   * New parameter: MAXBITRATE 
-    This allows to stream in different qualities / resolutions
+    This allows one to stream in different qualities / resolutions
   * New parameter: CHANNELLISTTYPE
     Display all channels, or user-defined selection
 
