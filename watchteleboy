@@ -147,16 +147,6 @@ then
   fi
 fi
 
-# option --deleteme
-if $deleteme
-then
-  crontempfile="/tmp/crontab.tmp"
-  crontab -l > $crontempfile
-  sed -i "/$DELETEME/d" $crontempfile
-  crontab < $crontempfile
-  rm $crontempfile
-fi
-
 # Check record path validity
 if $record
 then
@@ -171,8 +161,23 @@ then
   fi
 fi
 
+# Make sure we use GNU sed
+platform=$(uname)
+case "$platform" in
+  Linux)
+    SED="sed"
+    ;;
+  Darwin)
+    SED="gsed"
+    ;;
+  *)
+    printerr "Platform not supported: $platform"
+    exit 1
+  ;;
+esac
+
 # Check dependencies
-programlist="crontab curl grep jq sed"
+programlist="crontab curl grep jq $SED"
 for program in $programlist
 do
     if ! which $program > /dev/null
@@ -206,6 +211,16 @@ fi
 
 # Compose player command
 PLAYERCMD="$PLAYER $PLAYEROPTS "
+
+# option --deleteme
+if $deleteme
+then
+  crontempfile="/tmp/crontab.tmp"
+  crontab -l > $crontempfile
+  $SED -i "/$DELETEME/d" $crontempfile
+  crontab < $crontempfile
+  rm $crontempfile
+fi
 
 # whiptail dialog boxes are optional (fallback to tradition shell dialogs)
 whiptail=$(which whiptail > /dev/null && echo true || echo false)
@@ -370,7 +385,7 @@ function teleboy_login {
   if [ -f "$TMPPATH/cookie1" ]
   then
     # When does the current session expire (make it artificially a minute early
-    session_expires=$(( $(sed '/cinergy_s/!d;s/^.*\s\(.*\)\s.*\.*\s.*$/\1/' $TMPPATH/cookie1) - 60 ))
+    session_expires=$(( $($SED '/cinergy_s/!d;s/^.*\s\(.*\)\s.*\.*\s.*$/\1/' $TMPPATH/cookie1) - 60 ))
     now=$(date +%s)
     if [ "$session_expires" -gt "$now" ] && grep -q cinergy_auth $TMPPATH/cookie1
     then
@@ -418,7 +433,7 @@ function teleboy_set_session_id {
   # Store value of session cookie (cinergy_s)
   # We only need to do that once per session and every stream request
   $TELEBOY_AUTHENTICATED || { printerr "not logged in yet."; return 1; }
-  TELEBOY_SESSION_ID="$(sed '/cinergy_s/!d;/cinergy_s/s/^.*cinergy_s\s//' $TMPPATH/cookie1)"
+  TELEBOY_SESSION_ID="$($SED '/cinergy_s/!d;/cinergy_s/s/^.*cinergy_s\s//' $TMPPATH/cookie1)"
   if [ "$TELEBOY_SESSION_ID" == "" ]
   then
     printerr "Could not retrieve session cookie (cinergy_s)"
@@ -517,7 +532,7 @@ function teleboy_create_channel_list {
         "$url")" || { printerr "could not download channel list"; exit 1; }
     CHANNELS=($(echo "$stationlist_json" | \
         jq -M '.data.items[] | {(.station.label): .station.id}' | \
-        sed '/^  /!d;s/^  "//;s/": /\//'))
+        $SED '/^  /!d;s/^  "//;s/": /\//'))
     # Check if we received something
     if [ ${#CHANNELS[@]} -gt 0 ]
     then
@@ -645,7 +660,7 @@ function compose_outfile {
   then
     if $showname
     then
-      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | sed 's|/|-|g').m2t"
+      OUTFILE="${RECORDPATH}/$(echo ${SHOWNAME} | $SED 's|/|-|g').m2t"
     else
       OUTFILE="${RECORDPATH}/${channel}-$(date +%Y%m%d%H%M -d "$STARTTIME").m2t"
     fi
@@ -1064,7 +1079,7 @@ function hls_get_current_segment {
     || { printerr "not a valid playlist file"; return 1; }
   # extract current segment
   local current_segment="$(echo "$raw" | \
-    sed '/#EXT-X-MEDIA-SEQUENCE/!d;
+    $SED '/#EXT-X-MEDIA-SEQUENCE/!d;
          /#EXT-X-MEDIA-SEQUENCE/s/#EXT-X-MEDIA-SEQUENCE://')"
   # validate segment
   [[ $current_segment =~ ^-?[0-9]+$ ]] \
@@ -1127,10 +1142,10 @@ function hls_extract_variants {
   # create array HLS_VARIANTS
   eval $(\
     echo "$raw" | \
-    sed -n '/#EXTM3U/d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' | \
+    $SED -n '/#EXTM3U/d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' | \
     sort -n | \
-    sed '=' | \
-    sed -n 'N;s/\n/ /;s/^/HLS_VARIANTS[/;s/ /]="/;s/$/"/;P')
+    $SED '=' | \
+    $SED -n 'N;s/\n/ /;s/^/HLS_VARIANTS[/;s/ /]="/;s/$/"/;P')
 
   # verify array
   if [ "${#HLS_VARIANTS[@]}" -eq "0" ]
