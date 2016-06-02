@@ -703,7 +703,7 @@ function player_recorder {
     done
     echo -ne "\033[2K" # this clears the current line
     $quiet || echo -ne "\rNow playing: $CHANNEL_LABEL"
-    $PLAYERCMD "$OUTFILE" &> /dev/null || \
+    $PLAYERCMD "$OUTFILE" 2> /dev/null || \
       {
         code=$?
         printerr ""
