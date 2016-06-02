@@ -162,13 +162,16 @@ then
 fi
 
 # Make sure we use GNU sed
-platform=$(uname)
-case "$platform" in
+# and set base64 decode option
+PLATFORM=$(uname)
+case "$PLATFORM" in
   Linux)
     SED="sed"
+    B64DECOPT="-d"
     ;;
   Darwin)
     SED="gsed"
+    B64DECOPT="-D"
     ;;
   *)
     printerr "Platform not supported: $platform"
@@ -453,7 +456,7 @@ function teleboy_create_user_env {
 
   # It seems that key is hard-coded, thus it didn't appear
   # necessary to retrieve its value from the web
-  TELEBOY_API_KEY=$(base64 -d <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
+  TELEBOY_API_KEY=$(base64 $B64DECOPT <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
   
   # read from cache (if there is a cache and we're not in a new session)
   if ! $NEW_SESSION && [ -f "$userenvfile" ]
