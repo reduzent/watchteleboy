@@ -799,7 +799,7 @@ function set_ui_window_params {
 function channel_dialog {
   while true
   do
-    chanlist="$(print_channel_list) $( uname | grep "Darwin" > /dev/null && echo QUIT)"
+    chanlist="$(print_channel_list) $($whiptail || echo QUIT)"
     if $whiptail
     then
       wpsetdefault=""
