@@ -1,3 +1,16 @@
+watchteleboy (1.22~trusty~ppa0) trusty; urgency=low
+
+  * support OS X (by using gdate, gsed, and proper option for base64)
+    from  homebrew you need:
+      - mpv
+      - coreutils
+      - jq
+      - gnu-sed
+  * restore player control from terminal
+  * do not use omxplayer, use hand-crafted mpv with rpi support
+
+ -- Roman Haefeli <reduzent@gmail.com>  Thu, 02 Jun 2016 23:00:12 +0200
+
 watchteleboy (1.21~trusty~ppa0) trusty; urgency=low
 
   * avconv not used anymore
