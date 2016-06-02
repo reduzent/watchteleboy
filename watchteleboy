@@ -204,6 +204,9 @@ else
   exit 1
 fi
 
+# Compose player command
+PLAYERCMD="$PLAYER $PLAYEROPTS "
+
 # whiptail dialog boxes are optional (fallback to tradition shell dialogs)
 whiptail=$(which whiptail > /dev/null && echo true || echo false)
 
@@ -633,9 +636,6 @@ function dump_hls_stream {
   PID=$!
   return 0
 }
-
-# Compose player command
-PLAYERCMD="$PLAYER $PLAYEROPTS "
 
 # Compose output filename
 function compose_outfile {
