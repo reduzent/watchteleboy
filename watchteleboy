@@ -1048,7 +1048,7 @@ function write_to_crontab {
   local CRONTEMPFILE="${TMPPATH}/crontab.tmp"
   DELETEME=${RANDOM}${RANDOM}
   crontab -l > /dev/null 2>&1 && crontab -l > $CRONTEMPFILE || touch $CRONTEMPFILE
-  echo -ne "$($DATE -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} || basename ${0}) --record " >> $CRONTEMPFILE
+  echo -ne "$($DATE -d "$STARTTIME" +"%M %H %d %m") *\t$(readlink -f ${0} 2> /dev/null || basename ${0}) --record " >> $CRONTEMPFILE
   echo -ne "--quiet --channel '${CHANNEL}' --starttime 'now' --endtime '${ENDTIME}' " >> $CRONTEMPFILE
   echo -ne "--deleteme ${DELETEME} " >> $CRONTEMPFILE
   $showname && echo -ne "--showname '${SHOWNAME}' " >> $CRONTEMPFILE
