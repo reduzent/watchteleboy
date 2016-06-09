@@ -35,6 +35,77 @@ function printerr {
   return 0
 }
 
+# Read config (overrides default values) or create it
+CONFIG="$HOME/.${SCRIPTNAME}rc"
+if [ -f $CONFIG ]
+then
+  . $CONFIG
+else
+  cat << EOF > $CONFIG
+##########################################################################
+# CONFIGURATION FILE FOR $SCRIPTNAME                                     #
+# Feel free to adapt to your needs                                       #
+##########################################################################
+
+# Set directory where played streams are cached:
+
+TMPDIR='$TMPDIR'
+
+# $SCRIPTNAME supports a few players for displaying the stream. Separate
+# command line options can specified for each player.
+# NOTE: those options are overriden when $SCRIPTNAME is invoked with
+# --player-opts 'PLAYEROPTS'
+
+# mpv flags:
+MPVOPTS='$MPVOPTS'
+
+# mplayer flags:
+MPLAYEROPTS='$MPLAYEROPTS'
+
+# vlc flags:
+VLCOPTS='$VLCOPTS'
+
+# Where should stream recordings be saved?
+# This can be overridden by the -p/--path flag:
+
+#RECORDPATH='~/mytvshows'
+
+# How much data should be downloaded before starting playback?
+# The value is given in seconds. The playback begins after
+# BUFFERSECONDS * BITRATE data has been downloaded.
+
+BUFFERSECONDS='$BUFFERSECONDS'
+
+# Sometimes several variants of a stream are available. The
+# variants come with different bitrates and different video
+# resolutions.
+# Bitrate:    |   Resolution
+# ------------+--------------
+#    64000    |   audio only
+#   394000    |   320x180
+#   540000    |   400x224
+#  1368000    |   720x404
+#  2290000    |   720x404
+#  3305000    |   1280x720
+#  4240000    |   1280x720
+# Per default $SCRIPTNAME automatically selects the variant
+# with the highest quality. When MAXBITRATE is set, the variant
+# that still fits the constraint is selected.
+
+#MAXBITRATE=$MAXBITRATE
+
+# Teleboy users may customize the channel selection and the channel
+# ordering. You may chose whether you want $SCRIPTNAME to display
+# all available channels (in default order) or use a customized
+# channel list in user-defined order. You may visit
+# http://www.teleboy.ch/en/sender to customize your personal
+# channel selection. Allowed values: 'all', 'customized'
+
+CHANNELLISTTYPE='$CHANNELLISTTYPE'
+EOF
+  echo "created config file '$CONFIG'"
+fi
+
 # Comandline argument parsing
 channel=false
 deletecron=false
@@ -230,77 +301,6 @@ fi
 
 # whiptail dialog boxes are optional (fallback to tradition shell dialogs)
 whiptail=$(which whiptail > /dev/null && echo true || echo false)
-
-# Read config (overrides default values) or create it
-CONFIG="$HOME/.${SCRIPTNAME}rc"
-if [ -f $CONFIG ]
-then
-  . $CONFIG
-else
-  cat << EOF > $CONFIG
-##########################################################################
-# CONFIGURATION FILE FOR $SCRIPTNAME                                     #
-# Feel free to adapt to your needs                                       #
-##########################################################################
-
-# Set directory where played streams are cached:
-
-TMPDIR='$TMPDIR'
-
-# $SCRIPTNAME supports a few players for displaying the stream. Separate
-# command line options can specified for each player.
-# NOTE: those options are overriden when $SCRIPTNAME is invoked with
-# --player-opts 'PLAYEROPTS'
-
-# mpv flags:
-MPVOPTS='$MPVOPTS'
-
-# mplayer flags:
-MPLAYEROPTS='$MPLAYEROPTS'
-
-# vlc flags:
-VLCOPTS='$VLCOPTS'
-
-# Where should stream recordings be saved?
-# This can be overridden by the -p/--path flag:
-
-#RECORDPATH='~/mytvshows'
-
-# How much data should be downloaded before starting playback?
-# The value is given in seconds. The playback begins after
-# BUFFERSECONDS * BITRATE data has been downloaded.
-
-BUFFERSECONDS='$BUFFERSECONDS'
-
-# Sometimes several variants of a stream are available. The
-# variants come with different bitrates and different video
-# resolutions.
-# Bitrate:    |   Resolution
-# ------------+--------------
-#    64000    |   audio only
-#   394000    |   320x180
-#   540000    |   400x224
-#  1368000    |   720x404
-#  2290000    |   720x404
-#  3305000    |   1280x720
-#  4240000    |   1280x720
-# Per default $SCRIPTNAME automatically selects the variant
-# with the highest quality. When MAXBITRATE is set, the variant
-# that still fits the constraint is selected.
-
-#MAXBITRATE=$MAXBITRATE
-
-# Teleboy users may customize the channel selection and the channel
-# ordering. You may chose whether you want $SCRIPTNAME to display
-# all available channels (in default order) or use a customized
-# channel list in user-defined order. You may visit
-# http://www.teleboy.ch/en/sender to customize your personal
-# channel selection. Allowed values: 'all', 'customized'
-
-CHANNELLISTTYPE='$CHANNELLISTTYPE'
-EOF
-  echo "created config file '$CONFIG'"
-fi
 
 #### FUNCTIONS ###################################################
 function set_credentials {
