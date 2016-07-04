@@ -529,7 +529,7 @@ function teleboy_create_channel_list {
       esac
     $quiet || echo -n "receiving channel list..."
     local stationlist_json
-    stationlist_json="$(curl \
+    stationlist_json="$(curl --user-agent "$UAGENT" \
         --silent \
         --fail \
         --header "x-teleboy-apikey: $TELEBOY_API_KEY" \
@@ -585,7 +585,7 @@ function teleboy_set_stream_data {
   set_sid_by_channel $channel || return 1
   local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=false"
   local stream_data_json
-  stream_data_json="$(curl \
+  stream_data_json="$(curl --user-agent "$UAGENT" \
     --silent \
     --fail \
     --header "x-teleboy-apikey: ${TELEBOY_API_KEY}" \
@@ -646,7 +646,7 @@ function dump_hls_stream {
   # make sure the requested start segment is available
   local startsegment
   startsegment=$(hls_get_segment_of_time "$HLS_VARIANT_URL" "$STARTTIME") || return 1
-  if ! curl -sf -I -X HEAD "$(dirname $HLS_VARIANT_URL)/${startsegment}.ts" > /dev/null
+  if ! curl --user-agent "$UAGENT" -sf -I -X HEAD "$(dirname $HLS_VARIANT_URL)/${startsegment}.ts" > /dev/null
   then
     printerr "Segment for given start time '$STARTTIME' not available"
     return 1
@@ -1062,7 +1062,7 @@ function fetch_url {
   # ARG1: URL
   local url="$1"
   local errormsg="could not download: $url"
-  curl -fs "$url" \
+  curl --user-agent "$UAGENT" -fs "$url" \
     || { printerr "$errormsg"; return 1; }
   return 0
 }
@@ -1122,7 +1122,7 @@ function hls_get_segment_of_time {
   # check if segment_then is available (only if it's from the past)
   if [ "$time_then" -lt "$time_now" ]
   then
-    curl -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null \
+    curl --user-agent "$UAGENT" -sf -I -X HEAD "${baseurl}/${segment_then}.${ext}" > /dev/null \
       || { printerr "requested time is too far in the past: $time_given"; return 1; }
   fi
 
@@ -1261,7 +1261,7 @@ function hls_download_variant {
     failcount=0
     while [ $failcount -lt $triespersegment ]
     do
-      if curl -fs "${url_base}/${segment}.${ext}" >> "$file"
+      if curl --user-agent "$UAGENT" -fs "${url_base}/${segment}.${ext}" >> "$file"
       then
         missedsegments=0
         break
