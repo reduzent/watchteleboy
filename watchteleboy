@@ -1148,7 +1148,7 @@ function hls_extract_variants {
   # create array HLS_VARIANTS
   eval $(\
     echo "$raw" | \
-    $SED -n '/#EXTM3U/d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' | \
+    $SED -n '/^#EXT-X-STREAM-INF/!d;/^#EXT-X-STREAM-INF/{s/.*,BANDWIDTH=//};N;s/\n/ /;P' | \
     sort -n | \
     $SED '=' | \
     $SED -n 'N;s/\n/ /;s/^/HLS_VARIANTS[/;s/ /]="/;s/$/"/;P')
