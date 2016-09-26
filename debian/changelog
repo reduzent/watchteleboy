@@ -1,3 +1,9 @@
+watchteleboy (1.22~xenial~ppa0) xenial; urgency=low
+
+  * updated URL for user env data retrieval
+
+ -- Roman Haefeli <reduzent@gmail.com>  Mon, 26 Sep 2016 11:03:38 +0200
+
 watchteleboy (1.22~trusty~ppa0) trusty; urgency=low
 
   * support OS X (by using gdate, gsed, and proper option for base64)
