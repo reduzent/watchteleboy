@@ -469,7 +469,7 @@ function teleboy_create_user_env {
   fi
 
   # get user id, locale, plus member status
-  local url="http://www.teleboy.ch/tv/player/player.php"
+  local url="http://www.teleboy.ch/player/live"
   local rawuserdata
   rawuserdata=$(curl \
     --user-agent "$UAGENT" \
