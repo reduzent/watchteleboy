@@ -402,7 +402,7 @@ function teleboy_login {
     fi
   fi
   $quiet || echo -n "login (as '$USER')..."
-  local URL="http://www.teleboy.ch/"
+  local URL="http://www.teleboy.ch/en/login"
   curl --user-agent "$UAGENT" \
     --silent \
     --fail \
