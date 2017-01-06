@@ -1,3 +1,10 @@
+watchteleboy (1.24~xenial~ppa0) xenial; urgency=low
+
+  * Adapt to service changes: 
+      - visit login page in order to get cinergy_s cookie
+
+ -- Roman Haefeli <reduzent@gmail.com>  Fri, 06 Jan 2017 21:39:01 +0100
+
 watchteleboy (1.23~xenial~ppa0) xenial; urgency=low
 
   * updated URL for user env data retrieval
