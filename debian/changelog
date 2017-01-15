@@ -1,3 +1,9 @@
+watchteleboy (1.25~xenial~ppa0) xenial; urgency=low
+
+  * New flag -a|--alternative: play/record alternative audio stream
+
+ -- Roman Haefeli <reduzent@gmail.com>  Sun, 15 Jan 2017 20:47:37 +0100
+
 watchteleboy (1.24~xenial~ppa0) xenial; urgency=low
 
   * Adapt to service changes: 
