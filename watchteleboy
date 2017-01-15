@@ -107,6 +107,7 @@ EOF
 fi
 
 # Comandline argument parsing
+alternative=0
 channel=false
 deletecron=false
 deleteme=false
@@ -124,6 +125,7 @@ playeropts=false
 while [ $# -gt 0 ]
 do
   case "$1" in
+    -a|--alternative) alternative=1; shift;;
     -c|--channel) channel=true; CHANNEL="$2"; shift;;
     -d|--duration) duration=true; DURATION="$2"; shift;;
     -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
@@ -583,7 +585,7 @@ function teleboy_set_stream_data {
   # sets HLS_MASTER_URL, CHANNEL_LABEL
   local channel=$1
   set_sid_by_channel $channel || return 1
-  local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=false"
+  local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=${alternative}"
   local stream_data_json
   stream_data_json="$(curl --user-agent "$UAGENT" \
     --silent \
@@ -596,7 +598,7 @@ function teleboy_set_stream_data {
     jq --raw-output '.data.stream.url')"
   CHANNEL_LABEL="$(echo "$stream_data_json" | \
     jq --raw-output '.data.epg.current.station.name')"
-  
+
   # validate data
   local regex='http://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
   [[ $HLS_MASTER_URL =~ $regex ]] && return 0 || \
