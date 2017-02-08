@@ -404,7 +404,7 @@ function teleboy_login {
     fi
   fi
   $quiet || echo -n "login (as '$USER')..."
-  local URL="http://www.teleboy.ch/en/login"
+  local URL="https://www.teleboy.ch/en/login"
   curl --user-agent "$UAGENT" \
     --silent \
     --fail \
@@ -412,7 +412,7 @@ function teleboy_login {
     --output /dev/null \
     "$URL" || { printerr "error"; return 1; }
   local POST="login=${USER}&password=${PASS}&keep_login=1"
-  local URL="http://www.teleboy.ch/login_check"
+  local URL="https://www.teleboy.ch/login_check"
   curl --user-agent "$UAGENT" \
     --silent \
     --fail \
@@ -518,15 +518,15 @@ function teleboy_create_channel_list {
   else
     case "$CHANNELLISTTYPE" in
       "all")
-        local url="http://tv.api.teleboy.ch/epg/broadcasts/now?expand=flags,station,logos,previewImage&language=en&stream=true"
+        local url="https://tv.api.teleboy.ch/epg/broadcasts/now?expand=flags,station,logos,previewImage&language=en&stream=true"
         ;;
       "customized")
-        local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/broadcasts/now?expand=station&stream=true"
+        local url="https://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/broadcasts/now?expand=station&stream=true"
         ;;
       *)
         printerr "Unrecognized value for CHANNELLISTTYPE: $CHANNELLISTTYPE"
         printerr "Allowed values: 'all', 'customized'. Using 'all' now..."
-        local url="http://tv.api.teleboy.ch/epg/broadcasts/now?expand=flags,station,logos,previewImage&language=en&stream=true"
+        local url="https://tv.api.teleboy.ch/epg/broadcasts/now?expand=flags,station,logos,previewImage&language=en&stream=true"
         ;;
       esac
     $quiet || echo -n "receiving channel list..."
@@ -585,7 +585,7 @@ function teleboy_set_stream_data {
   # sets HLS_MASTER_URL, CHANNEL_LABEL
   local channel=$1
   set_sid_by_channel $channel || return 1
-  local url="http://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=${alternative}"
+  local url="https://tv.api.teleboy.ch/users/${TELEBOY_USER_ID}/stream/live/${SID}?alternative=${alternative}"
   local stream_data_json
   stream_data_json="$(curl --user-agent "$UAGENT" \
     --silent \
