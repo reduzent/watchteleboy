@@ -1,3 +1,10 @@
+watchteleboy (1.26~xenial~ppa0) xenial; urgency=low
+
+  * Adapt to service changes:
+      - Some resources have been moved to https://
+
+ -- Roman Haefeli <reduzent@gmail.com>  Wed, 08 Feb 2017 15:37:33 +0100
+
 watchteleboy (1.25~xenial~ppa0) xenial; urgency=low
 
   * New flag -a|--alternative: play/record alternative audio stream
