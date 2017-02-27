@@ -480,7 +480,7 @@ function teleboy_create_user_env {
     --cookie $TMPPATH/cookie1 \
     --output - \
     "$url") || { printerr "could not get page containing user id"; exit 1; }
-  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep " id: " | head -n1); printf "%s\n" "${llocal//[![:digit:]]/}")
+  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep -E " id: [0-9][0-9]*"); printf "%s\n" "${llocal//[![:digit:]]/}")
   TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
   TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
   
