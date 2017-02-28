@@ -1,3 +1,10 @@
+watchteleboy (1.27~xenial~ppa0) xenial; urgency=low
+
+  * Adapt to service changes:
+      - Code to extract user id suddenly failed and had to be adjusted
+
+ -- Roman Haefeli <reduzent@gmail.com>  Tue, 28 Feb 2017 09:31:55 +0100
+
 watchteleboy (1.26~xenial~ppa0) xenial; urgency=low
 
   * Adapt to service changes:
