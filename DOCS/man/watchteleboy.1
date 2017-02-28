@@ -36,13 +36,23 @@ plays and records live HDTV streams.
 .PP
 When launched without any options, 
 .B watchteleboy
-goes into interactive mode and presents a list of available channels.
-.PP
-When launched for the first time, 
+asks you to select a channel to watch. When launched with
+.B --record
+, it presents a dialog to let you schedule a recording. Future recordings
+are scheduled by an entry in the user's crontab, recordings from the past
+(yes,
 .B watchteleboy
-wants to create a configuration file in $HOME/.watchteleboyrc.
+let's you record from the past, up to six hours back!) are immediately started.
+.PP
+The first time
+.B watchteleboy
+is started, it creates a configuration file in $HOME/.watchteleboyrc. It
+then asks you for a valid Teleboy login.
 .br
 .SH GENERAL OPTIONS
+.IP "\fB\-a, \-\-alternative"
+Play or record alternative audio stream (if one is available), sometimes
+containing the original language of a movie.
 .IP "\fB\-c, \-\-channel CHANNEL"
 Specify the channel to be played or recorded. Without any other options
 .B watchteleboy
@@ -51,6 +61,15 @@ will immediately start (or record) the specified channel.
 Use the option
 .I --list
 to get a list of available channels.
+.IP "\fB\-d, \-\-duration SECONDS"
+Specify the duration (in seconds) of the show to be watched or recorded. Alternatively,
+you can define
+.I --endtime.
+.IP "\fB\-e, \-\-endtime ENDTIME"
+Specify an end time for a show to be watched or recorded. This might help you
+avoid downloading unnecessary data when watching shows from the past. TIME can
+be anything understood by the command
+.B date
 .IP "\fB\-\-delete-cron CHANNEL TIME"
 Delete a previously scheduled job from crontab. To match exactly a 
 specific job you need to specify the CHANNEL and its start time TIME.
@@ -59,37 +78,47 @@ Print a summary of available options and exit.
 .IP "\fB\-l, \-\-list"
 Print a list of available channels and exit. 
 .IP "\fB\-q, \-\-quiet"
-Try to suppress any output to stderr and also do not ask for confirmation.
+Do not print any messages or errors, whatsoever.
+.IP "\fB\-t, \-\-starttime TIME"
+Specify the start time of the show to be watched or recorded. Any time understood
+by the command
+.B date
+might be used. In watching mode, any time from 6 hours in the past until now is
+supported, in recording mode any time from 6 hours in the past to anytime in the future.
+In recording mode, a start time in the future triggers an entry in the user's crontab.
 .IP "\fB\-v, \-\-version"
 Print the version of this software and exit. 
-.SH OPTIONS FOR RECORDING
+.SH WATCHING OPTIONS
+.IP "\fB\-o, \-\-player-opts OPTIONS"
+Options passed to player software.
+.B watchteleboy
+works with several player softwares. It tries to use
+.I omxplayer
+,
+.I mpv
+,
+.I mplayer
+and
+.I vlc
+(in that order). Player specific options can be defined in the configuration.
+When
+.I --player-opts
+is specified, it overrides any of the matching parameters of the configuration.
+.SH RECORDING OPTIONS
 Those options can only be used in recording mode, which is set with the
 .I --record
 option.
 In recording mode,
 .B watchteleboy
 writes the received stream to a local file. The name of the resulting 
-file is composed of the channel name and the current date and time, following
+file is composed of the channel name and the current date and time, by following
 this template:
 .PP
-\fBCHANNEL\fR-\fBYYYYMMDDhhmm\fR.mkv
+\fBCHANNEL\fR-\fBYYYYMMDDhhmm\fR.m2t
 .PP
-The format is matroska (.mkv), containing a H.264 video and an AAC encoded
-audio stream. The video resolution usually is 1280x720px.
-.IP "\fB\-e, \-\-endtime TIME"
-Schedule the end time of the recording. If used without the
-.I --starttime
-option, recording starts immediately and stops at specified time.
-.br
-Accepts
-anything that is understood by the
-.B date
-command. Check 
-.BR date (1)
-for more details. 
-.IP "\fB\-d, \-\-duration SECONDS"
-Specify the duration of the recording. The recording starts immediately
-and ends after SECONDS seconds.
+The resulting file has the MPEG-2 transport stream file format (.m2t) and contains
+a H.264 video and an AAC encoded audio stream. The video resolution is dependent on the
+selected stream variant, but is usually 1280x720 pixels.
 .IP "\fB\-n, \-\-showname NAME"
 Specify a filename prefix that is used instead of the channel name.
 .IP "\fB\-p, \-\-path DIRECTORY"
@@ -97,27 +126,6 @@ Specify directory where recorded shows are saved. The
 default is the current directory.
 .IP "\fB\-r, \-\-record"
 Record a stream instead of watching it.
-.IP "\fB\-t, \-\-starttime TIME"
-Schedule the start time for a recording. Using this option doesn't start a
-recording directly, but writes an appropriate entry to the current user's
-crontab file. This entry is automatically removed as soon as the recording
-has started.
-.br
-Accepts
-anything that is understood by the
-.B date
-command. Check 
-.BR date (1)
-for more details. 
-.br
-.I NOTE:
-For using this option either one of the options
-.I --endtime
-or
-.I --duration
-and the option 
-.I --channel
-are mandatory.
 .SH CONFIGURATION FILE
 If it exists, 
 .B watchteleboy
@@ -133,23 +141,23 @@ Directory where recordings are saved (overriden by
 .I --path
 ).
 .RE
-CHANNEL
+OMXPLAYEROPTS
 .RS
-Default channel to be used (overriden by
-.I --channel
-).
+Options passed to omxplayer. omxplayer is the recommended player on Raspberry Pis.
+This parameter has no effect in record mode.
 .RE
 MPVOPTS
 .RS
-Options passed to mpv. This option applies only to playback mode (when 
-.I --record
-is not used).
+Options passed to mpv. mpv is the recommended player on most systems. This parameter
+has no effect in record mode
 .RE
 MPLAYEROPTS
 .RS
-Options passed to mplayer. This option applies only to playback mode (when 
-.I --record
-is not used). Either MPVOPTS or MPLAYEROPTS is used, depending on which player is used or available.
+Options passed to mplayer. This parameter has no effect in record mode.
+.RE
+VLCOPTS
+.RS
+Options passed to vlc. This parameter has no effect in record mode.
 .RE
 BUFFERSECONDS
 .RS
@@ -158,7 +166,20 @@ defines how much data is downloaded before playback starts.
 will wait to play the stream until 
 .I BUFFERSECONDS * BITRATE / 8
 bytes have been downloaded. If you often experience premature player exits, it is advised
-to increase that value. The default is 2.
+to increase that value. The default is 8 (which means two stream segments).
+.RE
+MAXBITRATE
+.RS
+Sets a limit on the bitrate used by the stream and the variant with the highest bitrate
+that still respect the limit is used. This has an impact on the resulting file size and
+the video resolution of the file.
+.RE
+CHANNELLISTTYPE
+.RS
+Sets the type of channel list to be used. Allowed values are 'all', 'customized'. 'all'
+shows all available channels in default order, 'customized' shows user-selected channels
+in user selected order. The selection and order can be configured by visiting:
+http://www.teleboy.ch/en/sender
 .RE
 TELEBOY_USER
 .RS
@@ -166,7 +187,7 @@ Teleboy account the script uses to login to the service.
 .RE
 TELEBOY_PASS
 .RS
-Password for the given Teleboy acconut. 
+Password for the given Teleboy account. 
 .RE
 .SH EXAMPLES
 .B Schedule a recording using interactive dialogs:
@@ -178,29 +199,33 @@ watchteleboy --record
 .B Schedule a recording:
 .RS
 .PP
-watchteleboy --record --channel "arte (de) HD" --starttime "20:15" --endtime "22:00"
+watchteleboy --record --channel "ARTEHD" --starttime "20:15" --endtime "22:00"
 .PP
 .RE
 .B Record for an hour from now:
 .RS
 .PP
-watchteleboy --record --channel "arte (de) HD" --duration 3600
+watchteleboy --record --channel "ARTEHD" --duration 3600
 .PP
 .RE
 .B Record from now until tonight at 23:15:
 .RS
 .PP
-watchteleboy --record --channel "arte (de) HD" --endtime "23:15"
+watchteleboy --record --channel "ARTEHD" --endtime "23:15"
+.PP
+.RE
+.B Watch 'Tatort' when the children finally are asleep:
+.RS
+.PP
+watchteleboy -c "ARDHD" -t "20:15" -e "21:50"
 .PP
 .RE
 .SH "REPORTING BUGS"
-Report bugs and suggestions to reduzent@gmail.com
+Report bugs and feature requests to https://github.com/reduzent/watchteleboy
 .SH AUTHOR
 Roman Haefeli <reduzent@gmail.com>
 .SH SEE ALSO
 .BR mpv (1),
-.BR mplayer (1),
-.BR avconv (1),
 .BR crontab (1),
 .BR date (1)
 
