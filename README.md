@@ -53,7 +53,7 @@ Installation
 3. `sudo apt install watchteleboy`
 
 ### Debian
-1. Download latest [release](https://github.com/reduzent/watchteleboy/releases) as .deb-file
+1. Download latest [release](https://github.com/reduzent/watchteleboy/releases/latest) as .deb-file
 2. Install it by doing:
 
    `gdebi watchteleboy_<version>_all.deb`
