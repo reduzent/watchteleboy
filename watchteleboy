@@ -205,11 +205,13 @@ case "$PLATFORM" in
     SED="sed"
     B64DECOPT="-d"
     DATE='date'
+    DU='du'
     ;;
   Darwin)
     SED="gsed"
     B64DECOPT="-D"
     DATE='gdate'
+    DU='gdu'
     ;;
   *)
     printerr "Platform not supported: $platform"
@@ -704,7 +706,7 @@ function player_recorder {
     OUTFILESIZE=0
     while [  "$OUTFILESIZE" -lt "$BUFFER" ]
     do
-      OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
+      OUTFILESIZE=$($DU -b "$OUTFILE" | cut -f1)
       if ! $quiet
       then
         echo -ne "\r"
