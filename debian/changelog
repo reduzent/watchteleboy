@@ -1,3 +1,9 @@
+watchteleboy (1.28~xenial~ppa0) xenial; urgency=low
+
+  * added support for macOS / homebrew
+    
+ -- Roman Haefeli <reduzent@gmail.com>  Wed, 26 Apr 2017 08:07:15 -0700
+
 watchteleboy (1.27~xenial~ppa0) xenial; urgency=low
 
   * Adapt to service changes:
