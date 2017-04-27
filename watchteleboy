@@ -319,7 +319,7 @@ function set_credentials {
     read -s -p "Please enter your password:  " TELEBOY_PASS
     echo
     setup_work_dir || return 1
-    while ! teleboy_login $TELEBOY_USER $TELEBOY_PASS 
+    while ! teleboy_login "$TELEBOY_USER" "$TELEBOY_PASS"
     do
       read -p    "Please re-enter your user name: " TELEBOY_USER
       read -s -p "Please re-enter your password:  " TELEBOY_PASS
@@ -390,8 +390,8 @@ function teleboy_login {
   # ARG1: teleboy user name
   # ARG2: teleboy password
   # sets NEW_SESSION, TELEBOY_AUTHENTICATED
-  local USER=$1
-  local PASS=$2
+  local USER="$1"
+  local PASS="$2"
   if [ -f "$TMPPATH/cookie1" ]
   then
     # When does the current session expire (make it artificially a minute early
@@ -413,14 +413,15 @@ function teleboy_login {
     --cookie-jar $TMPPATH/cookie0 \
     --output /dev/null \
     "$URL" || { printerr "error"; return 1; }
-  local POST="login=${USER}&password=${PASS}&keep_login=1"
   local URL="https://www.teleboy.ch/login_check"
   curl --user-agent "$UAGENT" \
     --silent \
     --fail \
     --cookie $TMPPATH/cookie0 \
     --cookie-jar $TMPPATH/cookie1 \
-    --data $POST \
+    --data-urlencode "login=${USER}" \
+    --data-urlencode "password=${PASS}" \
+    --data-urlencode "keep_login=1" \
     --output /dev/null \
     "$URL" || { printerr "could not login"; return 1; }
   
@@ -1305,7 +1306,7 @@ setup_work_dir || exit 1
 
 # login
 # Set TELEBOY_AUTHENTICATED=true
-if ! teleboy_login $TELEBOY_USER $TELEBOY_PASS
+if ! teleboy_login "$TELEBOY_USER" "$TELEBOY_PASS"
 then
   printerr "Please check your credentials in the configuration:"
   printerr "$CONFIG"
