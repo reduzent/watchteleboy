@@ -266,32 +266,32 @@ then
     printerr "You don't have permission to write to $RECORDPATH"
     exit 1
   fi
-fi
 
-# Check player dependency (mpv, mplayer, vlc in that order)
-if which mpv > /dev/null
-then
-  PLAYER=mpv
-  $playeropts || PLAYEROPTS="$MPVOPTS"
-elif which mplayer > /dev/null
-then
-  PLAYER=mplayer
-  $playeropts || PLAYEROPTS="$MPLAYEROPTS"
-elif which vlc > /dev/null
-then
-  PLAYER=vlc
-  $playeropts || PLAYEROPTS="$VLCOPTS"
-else
-  printerr "No suitable player found."
-  printerr "Make sure any of the following players is available:"
-  printerr " * mpv (recommended on most systems)"
-  printerr " * mplayer"
-  printerr " * vlc (not fully tested yet)"
-  exit 1
-fi
 
-# Compose player command
-PLAYERCMD="$PLAYER $PLAYEROPTS "
+  # Check player dependency (mpv, mplayer, vlc in that order)
+  if which mpv > /dev/null
+  then
+    PLAYER=mpv
+    $playeropts || PLAYEROPTS="$MPVOPTS"
+  elif which mplayer > /dev/null
+  then
+    PLAYER=mplayer
+    $playeropts || PLAYEROPTS="$MPLAYEROPTS"
+  elif which vlc > /dev/null
+  then
+    PLAYER=vlc
+    $playeropts || PLAYEROPTS="$VLCOPTS"
+  else
+    printerr "No suitable player found."
+    printerr "Make sure any of the following players is available:"
+    printerr " * mpv (recommended on most systems)"
+    printerr " * mplayer"
+    printerr " * vlc (not fully tested yet)"
+    exit 1
+
+  # Compose player command
+  PLAYERCMD="$PLAYER $PLAYEROPTS "
+fi
 
 # option --deleteme
 if $deleteme
