@@ -1,15 +1,15 @@
 #!/bin/bash -i
 ################################################
-# Bash script for watching/recording online TV 
-# streams from teleboy.ch without browser and 
+# Bash script for watching/recording online TV
+# streams from teleboy.ch without browser and
 # =no adobe flashplayer=.
 #
 # License:  GnuGPL v2
-# Authors:   
+# Authors:
 #   2011-2016   Roman Haefeli
 #   2012        Doma Smoljo
-#   2011        Alexander Tuchaček 
-# 
+#   2011        Alexander Tuchaček
+#
 # program version: (check below)
 ################################################
 
@@ -152,7 +152,7 @@ done
 if $version
 then
   echo "$SCRIPTNAME $VERSION"
-  echo "Authors:   
+  echo "Authors:
   2011-2016   Roman Haefeli
   2012        Doma Smoljo
   2011        Alexander Tuchaček"
@@ -246,7 +246,7 @@ then
     printerr "Could not find specified job in crontab."
     exit 1
   else
-    crontab -l | grep -v "$searchstring" > $crontempfile 
+    crontab -l | grep -v "$searchstring" > $crontempfile
     crontab < $crontempfile
     rm $crontempfile
     $quiet || echo "Successfully deleted crontab entry."
@@ -324,7 +324,7 @@ function set_credentials {
       read -p    "Please re-enter your user name: " TELEBOY_USER
       read -s -p "Please re-enter your password:  " TELEBOY_PASS
       echo
-    done  
+    done
     echo "CAUTION: writing plain text password to the config file!"
     read -p "Proceed? y/N " -n 1 install_configuration
     echo
@@ -357,7 +357,7 @@ function setup_work_dir {
 
   TMPPATH="${TMPDIR}/${SCRIPTNAME}/${TELEBOY_USER}"
 
-  # Create TMPDIR 
+  # Create TMPDIR
   if  [ ! -d $TMPPATH ]
   then
     if ! mkdir -p $TMPPATH
@@ -424,7 +424,7 @@ function teleboy_login {
     --data-urlencode "keep_login=1" \
     --output /dev/null \
     "$URL" || { printerr "could not login"; return 1; }
-  
+
   # Check if login was successfull
   if grep -q cinergy_auth $TMPPATH/cookie1
   then
@@ -465,7 +465,7 @@ function teleboy_create_user_env {
   # It seems that key is hard-coded, thus it didn't appear
   # necessary to retrieve its value from the web
   TELEBOY_API_KEY=$(base64 $B64DECOPT <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
-  
+
   # read from cache (if there is a cache and we're not in a new session)
   if ! $NEW_SESSION && [ -f "$userenvfile" ]
   then
@@ -486,10 +486,10 @@ function teleboy_create_user_env {
   TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep -E " id: [0-9][0-9]*"); printf "%s\n" "${llocal//[![:digit:]]/}")
   TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
   TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
-  
+
   # did we get a valid userid?
   if ! [[ "$TELEBOY_USER_ID" =~ ^-?[0-9]+$ ]]
-  then 
+  then
     printerr "Could not extract a valid user id"
     return 1
   fi
@@ -499,7 +499,7 @@ function teleboy_create_user_env {
   echo "TELEBOY_USER_LOCALE='$TELEBOY_USER_LOCALE'" >> $userenvfile
   echo "TELEBOY_USER_PLUS='$TELEBOY_USER_PLUS'" >> $userenvfile
   return 0
-} 
+}
 
 function teleboy_create_channel_list {
   # get the channel list through the teleboy api
@@ -625,7 +625,7 @@ function dump_hls_stream {
   [ -d $TMPPATH ] || return 1
 
   teleboy_set_stream_data $1 || return 1
-  
+
  # Ugly: We need to print the canonical channel name _before_
   # we start downling in record mode
   $record && ! $quiet && echo "$CHANNEL_LABEL"
@@ -758,7 +758,7 @@ function wait_for_download {
   wait $PID
   exitcode=$?
   if [ "$exitcode" -eq "0" ]
-  then 
+  then
     $quiet || echo "Recording complete."
     return 0
   else
@@ -771,7 +771,7 @@ function wait_for_download {
 function check_time_validity {
   # ARG1: datetime string
   local datetimestring="$1"
-  if ! $DATE -d "$datetimestring" &> /dev/null 
+  if ! $DATE -d "$datetimestring" &> /dev/null
   then
     printerr "Could not understand time format: '$datetimestring'"
     return 1
@@ -789,7 +789,7 @@ function check_start_before_end {
     printerr "Given end time '$endtime' is before start time '$starttime'."
     return 1
   fi
-  return 0 
+  return 0
 }
 
 # test channel input validity
@@ -833,8 +833,8 @@ function channel_dialog {
         && wpsetdefault="--default-item $CHANNEL" \
         || wpsetdefault=""
       unset whiptail_opts; i=0
-      for i in $(echo $chanlist); 
-      do 
+      for i in $(echo $chanlist);
+      do
         whiptail_opts+=("$i")
         whiptail_opts+=("Play channel $i")
       done
@@ -853,17 +853,17 @@ function channel_dialog {
       echo -n "= AVAILABLE CHANNELS "
       for ch in $(seq $repeat); do echo -n "="; done
       echo -ne "\n"
-      echo "" 
+      echo ""
       PS3="
 Choose a channel: "
       select CHANNEL in $chanlist
-      do 
+      do
         [ "$CHANNEL" == "QUIT" ] && exit 0
         [ "$CHANNEL" != "" ] && break
       done
-    fi  
+    fi
     break
-  done 
+  done
 }
 
 function starttime_dialog {
@@ -984,7 +984,7 @@ function recordpath_dialog {
       read RECORDPATHINPUT
       [ "$RECORDPATHINPUT" != "" ] && RECORDPATH=$RECORDPATHINPUT
     fi
-    if [ ! -d "$RECORDPATH" ] 
+    if [ ! -d "$RECORDPATH" ]
     then
       if $whiptail
       then
@@ -1319,7 +1319,7 @@ teleboy_set_session_id || exit 1
 # Set TELEBOY_USER_ID, TELEBOY_USER_LOCALE
 teleboy_create_user_env || exit 1
 
-# Set CHANNELS (array) 
+# Set CHANNELS (array)
 teleboy_create_channel_list || exit 1
 
 # option -l|--list
@@ -1337,7 +1337,7 @@ then
 fi
 
 # option -t|--starttime
-# if 
+# if
 if $starttime
 then
   check_time_validity "$STARTTIME" || exit 1
