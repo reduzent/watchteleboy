@@ -175,6 +175,7 @@ GENERAL OPTIONS:
   -c|--channel CHANNEL        specify a channel
   --delete-cron CHANNEL TIME  delete a previously scheduled job
   -d|--duration SECONDS	      specify the duration
+  --deleteme                  delete session cookies / logout
   -e|--endtime TIME           schedule the end time
   -h|--help                   show this help and exit
   -l|--list                   print a list of all channels and exit
