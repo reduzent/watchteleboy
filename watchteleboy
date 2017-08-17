@@ -241,12 +241,12 @@ then
   fi
   crontempfile="/tmp/crontab.tmp"
   searchstring="$($DATE -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]'${DELCHAN}'.*"
-  if ! crontab -l | grep "$searchstring" > /dev/null
+  if ! crontab -l | grep -a "$searchstring" > /dev/null
   then
     printerr "Could not find specified job in crontab."
     exit 1
   else
-    crontab -l | grep -v "$searchstring" > $crontempfile
+    crontab -l | grep -a -v "$searchstring" > $crontempfile
     crontab < $crontempfile
     rm $crontempfile
     $quiet || echo "Successfully deleted crontab entry."
@@ -400,7 +400,7 @@ function teleboy_login {
     # When does the current session expire (make it artificially a minute early
     session_expires=$(( $($SED '/cinergy_s/!d;s/^.*\s\(.*\)\s.*\.*\s.*$/\1/' $TMPPATH/cookie1) - 60 ))
     now=$($DATE +%s)
-    if [ "$session_expires" -gt "$now" ] && grep -q cinergy_auth $TMPPATH/cookie1
+    if [ "$session_expires" -gt "$now" ] && grep -a -q cinergy_auth $TMPPATH/cookie1
     then
       $quiet || echo "Already logged in as $USER"
       NEW_SESSION=false
@@ -429,7 +429,7 @@ function teleboy_login {
     "$URL" || { printerr "could not login"; return 1; }
 
   # Check if login was successfull
-  if grep -q cinergy_auth $TMPPATH/cookie1
+  if grep -a -q cinergy_auth $TMPPATH/cookie1
   then
     $quiet || echo "ok"
     NEW_SESSION=true
@@ -486,9 +486,9 @@ function teleboy_create_user_env {
     --cookie $TMPPATH/cookie1 \
     --output - \
     "$url") || { printerr "could not get page containing user id"; exit 1; }
-  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep -E " id: [0-9][0-9]*"); printf "%s\n" "${llocal//[![:digit:]]/}")
-  TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
-  TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep -a -E " id: [0-9][0-9]*"); printf "%s\n" "${llocal//[![:digit:]]/}")
+  TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep -a " locale: "| cut -d"'" -f2)
+  TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep -a " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
 
   # did we get a valid userid?
   if ! [[ "$TELEBOY_USER_ID" =~ ^-?[0-9]+$ ]]
@@ -569,7 +569,7 @@ function set_sid_by_channel {
   SID=$(
     for channel in ${CHANNELS[@]}
     do
-      echo $channel | grep -i ^$1/ | cut -d'/' -f2
+      echo $channel | grep -a -i ^$1/ | cut -d'/' -f2
     done
   )
   if [[ $SID = *[!0-9]* || "$SID" = "" ]]
@@ -803,7 +803,7 @@ function channel_validity {
   then
     printerr "Please specify a channel"
     return 1
-  elif print_channel_list | grep -i "^${1}$" > /dev/null
+  elif print_channel_list | grep -a -i "^${1}$" > /dev/null
   then
     return 0
   else
@@ -1090,7 +1090,7 @@ function hls_get_current_segment {
 
   # validate data
   # check EXTM3U tag
-  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
+  echo "$raw" | head -n1 | grep -a '^#EXTM3U$' > /dev/null \
     || { printerr "not a valid playlist file"; return 1; }
   # extract current segment
   local current_segment="$(echo "$raw" | \
@@ -1151,7 +1151,7 @@ function hls_extract_variants {
   raw="$(fetch_url "$master_url")" || return 1
 
   # verify data
-  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
+  echo "$raw" | head -n1 | grep -a '^#EXTM3U$' > /dev/null \
     || { printerr "not a valid playlist file"; return 1; }
 
   # create array HLS_VARIANTS
@@ -1381,7 +1381,7 @@ do
       then
         write_to_crontab || exit 1
         $quiet || echo "Successfully added crontab entry:"
-        $quiet || crontab -l | grep $DELETEME
+        $quiet || crontab -l | grep -a $DELETEME
         exit 0
       else
         player_recorder "$CHANNEL" || exit 1
@@ -1409,11 +1409,11 @@ do
         then
           whiptail --title "$TITLE" --msgbox \
             " Successfully added crontab entry:\n\n
-$(crontab -l | grep $DELETEME)" \
+$(crontab -l | grep -a $DELETEME)" \
             $BOXWIDTH $BOXHEIGHT
         else
           echo "Successfully added crontab entry:"
-          crontab -l | grep $DELETEME
+          crontab -l | grep -a $DELETEME
         fi
         exit 0
       else
