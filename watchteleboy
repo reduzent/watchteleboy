@@ -477,7 +477,7 @@ function teleboy_create_user_env {
   fi
 
   # get user id, locale, plus member status
-  local url="http://www.teleboy.ch/player/live"
+  local url="https://www.teleboy.ch/live"
   local rawuserdata
   rawuserdata=$(curl \
     --user-agent "$UAGENT" \
@@ -486,14 +486,14 @@ function teleboy_create_user_env {
     --cookie $TMPPATH/cookie1 \
     --output - \
     "$url") || { printerr "could not get page containing user id"; exit 1; }
-  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep -a -E " id: [0-9][0-9]*"); printf "%s\n" "${llocal//[![:digit:]]/}")
-  TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep -a " locale: "| cut -d"'" -f2)
-  TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep -a " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
+  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep -a -E " .setId\([0-9][0-9]*\)"); printf "%s\n" "${llocal//[![:digit:]]/}")
+  TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep -a -E " .setLocale\('[a-z][a-z]'\)" | cut -d"'" -f2)
+  TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep -a -E " .setIsPlusMember\([0-1]\)"); printf "%s\n" "${llocal//[![:digit:]]/}")
 
   # did we get a valid userid?
   if ! [[ "$TELEBOY_USER_ID" =~ ^-?[0-9]+$ ]]
   then
-    printerr "Could not extract a valid user id"
+    printerr "Could not extract user ID"
     return 1
   fi
 
