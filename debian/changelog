@@ -1,7 +1,15 @@
+watchteleboy (1.29~xenial~ppa0) xenial; urgency=low
+
+  * fix extraction of user ID (broke again due to website changes)
+  * do not check for available player when recording (allows to use
+    watchteleboy on headless systems)
+
+ -- Roman Haefeli <reduzent@gmail.com>  Mon, 21 Aug 2017 10:15:32 +0200
+
 watchteleboy (1.28~xenial~ppa0) xenial; urgency=low
 
   * added support for macOS / homebrew
-    
+
  -- Roman Haefeli <reduzent@gmail.com>  Wed, 26 Apr 2017 08:07:15 -0700
 
 watchteleboy (1.27~xenial~ppa0) xenial; urgency=low
