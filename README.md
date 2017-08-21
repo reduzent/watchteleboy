@@ -1,7 +1,7 @@
 watchteleboy
 ============
 
-is a script to watch and record live TV streams from 
+is a script to watch and record live TV streams from
 http://www.teleboy.ch without browser nor flash.
 
 THIS MOST LIKELY WORKS ONLY FROM SWITZERLAND, SINCE THE IPTV SERVICE
@@ -11,13 +11,13 @@ see: http://github.com/reduzent/watchteleboy
 
 Copyright: Roman Haefeli, 2011 - 2017
 
-License:   GPL-2 
+License:   GPL-2
 
 
 News
 ----
 
-Since version 1.21 there is no need to have avconv installed anymore. Instead, the 
+Since version 1.21 there is no need to have avconv installed anymore. Instead, the
 HLS stream receiver is implemented in bash with curl. By not sticking strictly to
 the HLS protocol, `watchteleboy` now is able to watch shows up to 6 hours after their
 air time. Just use the option --starttime when you want to watch a missed show.
@@ -45,10 +45,10 @@ you have them installed):
 Installation
 ------------
 ### Ubuntu
-1. Install reduzent's ppa: 
+1. Install reduzent's ppa:
 
    `sudo apt-add-repository ppa:reduzierer/reduzent`
-  
+
 2. `sudo apt update`
 3. `sudo apt install watchteleboy`
 
@@ -65,9 +65,9 @@ Usage
 -----
 
 Do `watchteleboy --help` in order to get a quick summary of the available
-options. When invoked without options it starts in interactive mode. 
+options. When invoked without options it starts in interactive mode.
 `man watchteleboy` shows the full documentation of all commandline flags
-and configuration file options. 
+and configuration file options.
 
 
 Bugs
@@ -75,6 +75,6 @@ Bugs
 
 Please report bugs and feature requests to GitHub by opening
 an issue on https://www.github.com/reduzent/watchteleboy .
-  
+
 #### HAVE FUN!
 
