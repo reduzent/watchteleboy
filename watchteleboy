@@ -417,11 +417,13 @@ function teleboy_login {
     --output /dev/null \
     "$URL" || { printerr "error"; return 1; }
   local URL="https://www.teleboy.ch/login_check"
+  local ref="https://www.teleboy.ch/login?target=https%3A//www.teleboy.ch/"
   curl --user-agent "$UAGENT" \
     --silent \
     --fail \
     --cookie $TMPPATH/cookie0 \
     --cookie-jar $TMPPATH/cookie1 \
+    --referer "$ref" \
     --data-urlencode "login=${USER}" \
     --data-urlencode "password=${PASS}" \
     --data-urlencode "keep_login=1" \
