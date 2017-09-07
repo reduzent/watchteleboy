@@ -1,3 +1,9 @@
+watchteleboy (1.30~xenial~ppa0) xenial; urgency=low
+
+  * fix login by adding referer to POST request
+
+ -- Roman Haefeli <reduzent@gmail.com>  Thu, 07 Sep 2017 16:33:46 +0200
+
 watchteleboy (1.29~xenial~ppa0) xenial; urgency=low
 
   * fix extraction of user ID (broke again due to website changes)
