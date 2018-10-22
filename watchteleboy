@@ -1,4 +1,4 @@
-#!/bin/bash -i
+#!/bin/bash
 ################################################
 # Bash script for watching/recording online TV
 # streams from teleboy.ch without browser and
@@ -27,6 +27,10 @@ MAXBITRATE=10000000
 CHANNELLISTTYPE='all'
 TELEBOY_AUTHENTICATED=false
 SCRIPTNAME=$(basename $0)
+
+# We need that to make LINES and COLUMNS vars evaluate also in
+# an non-interactive shell
+shopt -s checkwinsize; (:)
 
 function printerr {
   # print error message to stderr
