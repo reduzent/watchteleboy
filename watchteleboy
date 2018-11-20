@@ -473,7 +473,7 @@ function teleboy_create_user_env {
 
   # It seems that key is hard-coded, thus it didn't appear
   # necessary to retrieve its value from the web
-  TELEBOY_API_KEY=$(base64 $B64DECOPT <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
+  TELEBOY_API_KEY=$(base64 $B64DECOPT <(echo "NmNhOTlkZGIzZTY1OWU1N2JiYjliMTg3NDA1NWE3MTFiMjU0NDI1ODE1OTA1YWJhYWNmMjYyYjY0ZjAyZWIzZA=="))
 
   # read from cache (if there is a cache and we're not in a new session)
   if ! $NEW_SESSION && [ -f "$userenvfile" ]
