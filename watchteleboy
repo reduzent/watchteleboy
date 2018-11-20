@@ -1,19 +1,16 @@
 #!/bin/bash
 ################################################
 # Bash script for watching/recording online TV
-# streams from teleboy.ch without browser and
-# =no adobe flashplayer=.
+# streams from teleboy.ch
 #
 # License:  GnuGPL v2
 # Authors:
 #   2011-2016   Roman Haefeli
-#   2012        Doma Smoljo
-#   2011        Alexander Tuchaček
 #
 # program version: (check below)
 ################################################
 
-VERSION=1.30
+VERSION=1.31
 
 # Set some default values
 TMPDIR=/tmp
