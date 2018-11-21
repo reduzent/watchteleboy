@@ -1,19 +1,16 @@
-#!/bin/bash -i
+#!/bin/bash
 ################################################
-# Bash script for watching/recording online TV 
-# streams from teleboy.ch without browser and 
-# =no adobe flashplayer=.
+# Bash script for watching/recording online TV
+# streams from teleboy.ch
 #
 # License:  GnuGPL v2
-# Authors:   
+# Authors:
 #   2011-2016   Roman Haefeli
-#   2012        Doma Smoljo
-#   2011        Alexander Tuchaček 
-# 
+#
 # program version: (check below)
 ################################################
 
-VERSION=1.27
+VERSION=1.31
 
 # Set some default values
 TMPDIR=/tmp
@@ -27,6 +24,10 @@ MAXBITRATE=10000000
 CHANNELLISTTYPE='all'
 TELEBOY_AUTHENTICATED=false
 SCRIPTNAME=$(basename $0)
+
+# We need that to make LINES and COLUMNS vars evaluate also in
+# an non-interactive shell
+shopt -s checkwinsize; (:)
 
 function printerr {
   # print error message to stderr
@@ -152,7 +153,7 @@ done
 if $version
 then
   echo "$SCRIPTNAME $VERSION"
-  echo "Authors:   
+  echo "Authors:
   2011-2016   Roman Haefeli
   2012        Doma Smoljo
   2011        Alexander Tuchaček"
@@ -205,11 +206,13 @@ case "$PLATFORM" in
     SED="sed"
     B64DECOPT="-d"
     DATE='date'
+    DU='du'
     ;;
   Darwin)
     SED="gsed"
     B64DECOPT="-D"
     DATE='gdate'
+    DU='gdu'
     ;;
   *)
     printerr "Platform not supported: $platform"
@@ -239,12 +242,12 @@ then
   fi
   crontempfile="/tmp/crontab.tmp"
   searchstring="$($DATE -d "$DELTIME" +"^%M[[:space:]]%H[[:space:]]%d[[:space:]]%m").*${SCRIPTNAME}.*channel[[:space:]]'${DELCHAN}'.*"
-  if ! crontab -l | grep "$searchstring" > /dev/null
+  if ! crontab -l | grep -a "$searchstring" > /dev/null
   then
     printerr "Could not find specified job in crontab."
     exit 1
   else
-    crontab -l | grep -v "$searchstring" > $crontempfile 
+    crontab -l | grep -a -v "$searchstring" > $crontempfile
     crontab < $crontempfile
     rm $crontempfile
     $quiet || echo "Successfully deleted crontab entry."
@@ -267,25 +270,28 @@ then
 fi
 
 # Check player dependency (mpv, mplayer, vlc in that order)
-if which mpv > /dev/null
+if ! $record
 then
-  PLAYER=mpv
-  $playeropts || PLAYEROPTS="$MPVOPTS"
-elif which mplayer > /dev/null
-then
-  PLAYER=mplayer
-  $playeropts || PLAYEROPTS="$MPLAYEROPTS"
-elif which vlc > /dev/null
-then
-  PLAYER=vlc
-  $playeropts || PLAYEROPTS="$VLCOPTS"
-else
-  printerr "No suitable player found."
-  printerr "Make sure any of the following players is available:"
-  printerr " * mpv (recommended on most systems)"
-  printerr " * mplayer"
-  printerr " * vlc (not fully tested yet)"
-  exit 1
+  if which mpv > /dev/null
+  then
+    PLAYER=mpv
+    $playeropts || PLAYEROPTS="$MPVOPTS"
+  elif which mplayer > /dev/null
+  then
+    PLAYER=mplayer
+    $playeropts || PLAYEROPTS="$MPLAYEROPTS"
+  elif which vlc > /dev/null
+  then
+    PLAYER=vlc
+    $playeropts || PLAYEROPTS="$VLCOPTS"
+  else
+    printerr "No suitable player found."
+    printerr "Make sure any of the following players is available:"
+    printerr " * mpv (recommended on most systems)"
+    printerr " * mplayer"
+    printerr " * vlc (not fully tested yet)"
+    exit 1
+  fi
 fi
 
 # Compose player command
@@ -317,12 +323,12 @@ function set_credentials {
     read -s -p "Please enter your password:  " TELEBOY_PASS
     echo
     setup_work_dir || return 1
-    while ! teleboy_login $TELEBOY_USER $TELEBOY_PASS 
+    while ! teleboy_login "$TELEBOY_USER" "$TELEBOY_PASS"
     do
       read -p    "Please re-enter your user name: " TELEBOY_USER
       read -s -p "Please re-enter your password:  " TELEBOY_PASS
       echo
-    done  
+    done
     echo "CAUTION: writing plain text password to the config file!"
     read -p "Proceed? y/N " -n 1 install_configuration
     echo
@@ -355,7 +361,7 @@ function setup_work_dir {
 
   TMPPATH="${TMPDIR}/${SCRIPTNAME}/${TELEBOY_USER}"
 
-  # Create TMPDIR 
+  # Create TMPDIR
   if  [ ! -d $TMPPATH ]
   then
     if ! mkdir -p $TMPPATH
@@ -388,14 +394,14 @@ function teleboy_login {
   # ARG1: teleboy user name
   # ARG2: teleboy password
   # sets NEW_SESSION, TELEBOY_AUTHENTICATED
-  local USER=$1
-  local PASS=$2
+  local USER="$1"
+  local PASS="$2"
   if [ -f "$TMPPATH/cookie1" ]
   then
     # When does the current session expire (make it artificially a minute early
     session_expires=$(( $($SED '/cinergy_s/!d;s/^.*\s\(.*\)\s.*\.*\s.*$/\1/' $TMPPATH/cookie1) - 60 ))
     now=$($DATE +%s)
-    if [ "$session_expires" -gt "$now" ] && grep -q cinergy_auth $TMPPATH/cookie1
+    if [ "$session_expires" -gt "$now" ] && grep -a -q cinergy_auth $TMPPATH/cookie1
     then
       $quiet || echo "Already logged in as $USER"
       NEW_SESSION=false
@@ -411,19 +417,22 @@ function teleboy_login {
     --cookie-jar $TMPPATH/cookie0 \
     --output /dev/null \
     "$URL" || { printerr "error"; return 1; }
-  local POST="login=${USER}&password=${PASS}&keep_login=1"
   local URL="https://www.teleboy.ch/login_check"
+  local ref="https://www.teleboy.ch/login?target=https%3A//www.teleboy.ch/"
   curl --user-agent "$UAGENT" \
     --silent \
     --fail \
     --cookie $TMPPATH/cookie0 \
     --cookie-jar $TMPPATH/cookie1 \
-    --data $POST \
+    --referer "$ref" \
+    --data-urlencode "login=${USER}" \
+    --data-urlencode "password=${PASS}" \
+    --data-urlencode "keep_login=1" \
     --output /dev/null \
     "$URL" || { printerr "could not login"; return 1; }
-  
+
   # Check if login was successfull
-  if grep -q cinergy_auth $TMPPATH/cookie1
+  if grep -a -q cinergy_auth $TMPPATH/cookie1
   then
     $quiet || echo "ok"
     NEW_SESSION=true
@@ -461,8 +470,8 @@ function teleboy_create_user_env {
 
   # It seems that key is hard-coded, thus it didn't appear
   # necessary to retrieve its value from the web
-  TELEBOY_API_KEY=$(base64 $B64DECOPT <(echo "ZjBlN2JkZmI4MjJmYTg4YzBjN2ExM2Y3NTJhN2U4ZDVjMzc1N2ExM2Y3NTdhMTNmOWMwYzdhMTNmN2RmYjgyMg=="))
-  
+  TELEBOY_API_KEY=$(base64 $B64DECOPT <(echo "NmNhOTlkZGIzZTY1OWU1N2JiYjliMTg3NDA1NWE3MTFiMjU0NDI1ODE1OTA1YWJhYWNmMjYyYjY0ZjAyZWIzZA=="))
+
   # read from cache (if there is a cache and we're not in a new session)
   if ! $NEW_SESSION && [ -f "$userenvfile" ]
   then
@@ -471,7 +480,7 @@ function teleboy_create_user_env {
   fi
 
   # get user id, locale, plus member status
-  local url="http://www.teleboy.ch/player/live"
+  local url="https://www.teleboy.ch/live"
   local rawuserdata
   rawuserdata=$(curl \
     --user-agent "$UAGENT" \
@@ -480,14 +489,14 @@ function teleboy_create_user_env {
     --cookie $TMPPATH/cookie1 \
     --output - \
     "$url") || { printerr "could not get page containing user id"; exit 1; }
-  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep -E " id: [0-9][0-9]*"); printf "%s\n" "${llocal//[![:digit:]]/}")
-  TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep " locale: "| cut -d"'" -f2)
-  TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep " plusMember: "); printf "%s\n" "${llocal//[![:digit:]]/}")
-  
+  TELEBOY_USER_ID=$(llocal=$(echo "$rawuserdata" | grep -a -E " .setId\([0-9][0-9]*\)"); printf "%s\n" "${llocal//[![:digit:]]/}")
+  TELEBOY_USER_LOCALE=$(echo "$rawuserdata" | grep -a -E " .setLocale\('[a-z][a-z]'\)" | cut -d"'" -f2)
+  TELEBOY_USER_PLUS=$(llocal=$(echo "$rawuserdata" | grep -a -E " .setIsPlusMember\([0-1]\)"); printf "%s\n" "${llocal//[![:digit:]]/}")
+
   # did we get a valid userid?
   if ! [[ "$TELEBOY_USER_ID" =~ ^-?[0-9]+$ ]]
-  then 
-    printerr "Could not extract a valid user id"
+  then
+    printerr "Could not extract user ID"
     return 1
   fi
 
@@ -496,7 +505,7 @@ function teleboy_create_user_env {
   echo "TELEBOY_USER_LOCALE='$TELEBOY_USER_LOCALE'" >> $userenvfile
   echo "TELEBOY_USER_PLUS='$TELEBOY_USER_PLUS'" >> $userenvfile
   return 0
-} 
+}
 
 function teleboy_create_channel_list {
   # get the channel list through the teleboy api
@@ -563,7 +572,7 @@ function set_sid_by_channel {
   SID=$(
     for channel in ${CHANNELS[@]}
     do
-      echo $channel | grep -i ^$1/ | cut -d'/' -f2
+      echo $channel | grep -a -i ^$1/ | cut -d'/' -f2
     done
   )
   if [[ $SID = *[!0-9]* || "$SID" = "" ]]
@@ -622,7 +631,7 @@ function dump_hls_stream {
   [ -d $TMPPATH ] || return 1
 
   teleboy_set_stream_data $1 || return 1
-  
+
  # Ugly: We need to print the canonical channel name _before_
   # we start downling in record mode
   $record && ! $quiet && echo "$CHANNEL_LABEL"
@@ -704,7 +713,7 @@ function player_recorder {
     OUTFILESIZE=0
     while [  "$OUTFILESIZE" -lt "$BUFFER" ]
     do
-      OUTFILESIZE=$(du -b "$OUTFILE" | cut -f1)
+      OUTFILESIZE=$($DU -b "$OUTFILE" | cut -f1)
       if ! $quiet
       then
         echo -ne "\r"
@@ -755,7 +764,7 @@ function wait_for_download {
   wait $PID
   exitcode=$?
   if [ "$exitcode" -eq "0" ]
-  then 
+  then
     $quiet || echo "Recording complete."
     return 0
   else
@@ -768,7 +777,7 @@ function wait_for_download {
 function check_time_validity {
   # ARG1: datetime string
   local datetimestring="$1"
-  if ! $DATE -d "$datetimestring" &> /dev/null 
+  if ! $DATE -d "$datetimestring" &> /dev/null
   then
     printerr "Could not understand time format: '$datetimestring'"
     return 1
@@ -786,7 +795,7 @@ function check_start_before_end {
     printerr "Given end time '$endtime' is before start time '$starttime'."
     return 1
   fi
-  return 0 
+  return 0
 }
 
 # test channel input validity
@@ -797,7 +806,7 @@ function channel_validity {
   then
     printerr "Please specify a channel"
     return 1
-  elif print_channel_list | grep -i "^${1}$" > /dev/null
+  elif print_channel_list | grep -a -i "^${1}$" > /dev/null
   then
     return 0
   else
@@ -830,8 +839,8 @@ function channel_dialog {
         && wpsetdefault="--default-item $CHANNEL" \
         || wpsetdefault=""
       unset whiptail_opts; i=0
-      for i in $(echo $chanlist); 
-      do 
+      for i in $(echo $chanlist);
+      do
         whiptail_opts+=("$i")
         whiptail_opts+=("Play channel $i")
       done
@@ -850,17 +859,17 @@ function channel_dialog {
       echo -n "= AVAILABLE CHANNELS "
       for ch in $(seq $repeat); do echo -n "="; done
       echo -ne "\n"
-      echo "" 
+      echo ""
       PS3="
 Choose a channel: "
       select CHANNEL in $chanlist
-      do 
+      do
         [ "$CHANNEL" == "QUIT" ] && exit 0
         [ "$CHANNEL" != "" ] && break
       done
-    fi  
+    fi
     break
-  done 
+  done
 }
 
 function starttime_dialog {
@@ -981,7 +990,7 @@ function recordpath_dialog {
       read RECORDPATHINPUT
       [ "$RECORDPATHINPUT" != "" ] && RECORDPATH=$RECORDPATHINPUT
     fi
-    if [ ! -d "$RECORDPATH" ] 
+    if [ ! -d "$RECORDPATH" ]
     then
       if $whiptail
       then
@@ -1084,7 +1093,7 @@ function hls_get_current_segment {
 
   # validate data
   # check EXTM3U tag
-  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
+  echo "$raw" | head -n1 | grep -a '^#EXTM3U$' > /dev/null \
     || { printerr "not a valid playlist file"; return 1; }
   # extract current segment
   local current_segment="$(echo "$raw" | \
@@ -1145,7 +1154,7 @@ function hls_extract_variants {
   raw="$(fetch_url "$master_url")" || return 1
 
   # verify data
-  echo "$raw" | head -n1 | grep '^#EXTM3U$' > /dev/null \
+  echo "$raw" | head -n1 | grep -a '^#EXTM3U$' > /dev/null \
     || { printerr "not a valid playlist file"; return 1; }
 
   # create array HLS_VARIANTS
@@ -1303,7 +1312,7 @@ setup_work_dir || exit 1
 
 # login
 # Set TELEBOY_AUTHENTICATED=true
-if ! teleboy_login $TELEBOY_USER $TELEBOY_PASS
+if ! teleboy_login "$TELEBOY_USER" "$TELEBOY_PASS"
 then
   printerr "Please check your credentials in the configuration:"
   printerr "$CONFIG"
@@ -1316,7 +1325,7 @@ teleboy_set_session_id || exit 1
 # Set TELEBOY_USER_ID, TELEBOY_USER_LOCALE
 teleboy_create_user_env || exit 1
 
-# Set CHANNELS (array) 
+# Set CHANNELS (array)
 teleboy_create_channel_list || exit 1
 
 # option -l|--list
@@ -1334,7 +1343,7 @@ then
 fi
 
 # option -t|--starttime
-# if 
+# if
 if $starttime
 then
   check_time_validity "$STARTTIME" || exit 1
@@ -1375,7 +1384,7 @@ do
       then
         write_to_crontab || exit 1
         $quiet || echo "Successfully added crontab entry:"
-        $quiet || crontab -l | grep $DELETEME
+        $quiet || crontab -l | grep -a $DELETEME
         exit 0
       else
         player_recorder "$CHANNEL" || exit 1
@@ -1403,11 +1412,11 @@ do
         then
           whiptail --title "$TITLE" --msgbox \
             " Successfully added crontab entry:\n\n
-$(crontab -l | grep $DELETEME)" \
+$(crontab -l | grep -a $DELETEME)" \
             $BOXWIDTH $BOXHEIGHT
         else
           echo "Successfully added crontab entry:"
-          crontab -l | grep $DELETEME
+          crontab -l | grep -a $DELETEME
         fi
         exit 0
       else

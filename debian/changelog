@@ -1,3 +1,29 @@
+watchteleboy (1.31~bionic~ppa0) bionic; urgency=low
+
+  * update key of the teleboy API
+
+ -- Roman Haefeli <reduzent@gmail.com>  Tue, 20 Nov 2018 23:34:24 +0100
+
+watchteleboy (1.30~xenial~ppa0) xenial; urgency=low
+
+  * fix login by adding referer to POST request
+
+ -- Roman Haefeli <reduzent@gmail.com>  Thu, 07 Sep 2017 16:33:46 +0200
+
+watchteleboy (1.29~xenial~ppa0) xenial; urgency=low
+
+  * fix extraction of user ID (broke again due to website changes)
+  * do not check for available player when recording (allows to use
+    watchteleboy on headless systems)
+
+ -- Roman Haefeli <reduzent@gmail.com>  Mon, 21 Aug 2017 10:15:32 +0200
+
+watchteleboy (1.28~xenial~ppa0) xenial; urgency=low
+
+  * added support for macOS / homebrew
+
+ -- Roman Haefeli <reduzent@gmail.com>  Wed, 26 Apr 2017 08:07:15 -0700
+
 watchteleboy (1.27~xenial~ppa0) xenial; urgency=low
 
   * Adapt to service changes:
