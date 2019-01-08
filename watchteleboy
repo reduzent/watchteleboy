@@ -126,7 +126,7 @@ playeropts=false
 while [ $# -gt 0 ]
 do
   case "$1" in
-    -a|--alternative) alternative=1; shift;;
+    -a|--alternative) alternative=1;;
     -c|--channel) channel=true; CHANNEL="$2"; shift;;
     -d|--duration) duration=true; DURATION="$2"; shift;;
     -e|--endtime) endtime=true; ENDTIME="$2"; shift;;
