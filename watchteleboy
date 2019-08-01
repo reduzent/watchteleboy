@@ -609,7 +609,7 @@ function teleboy_set_stream_data {
     jq --raw-output '.data.epg.current.station.name')"
 
   # validate data
-  local regex='http://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+  local regex='^(http|https)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
   [[ $HLS_MASTER_URL =~ $regex ]] && return 0 || \
     { printerr "could not extract master url"; return 1; }
 }
