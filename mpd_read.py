@@ -9,11 +9,11 @@ import re
 import time
 import sys
 
-MPD_URL = sys.argv[1]
-#MPD_URL = 'wt.mpd'
-VIDEO_OUTPUT_FILE = '/tmp/wt.mp4'
-
-class WatchTeleboyStream:
+class WatchTeleboyStreamHandler:
+    """
+    Parses the given AdaptationSet, selects a representation, and downloads a single
+    media stream onto local disk in a non-blocking way.
+    """
 
     def __init__(self, adaptationset, base_url):
         self.adaptationset = adaptationset
@@ -70,6 +70,10 @@ class WatchTeleboyStream:
                 if try_count <= 0:
                     raise
 
+    def nb_download_stream(self, outfile):
+        self.download_thread = Thread(target=self.download_stream, args=(outfile,))
+        self.download_thread.start()
+
     def initialize_outfile(self, outfile):
         bw_pattern = r'\$Bandwidth\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
@@ -88,12 +92,16 @@ class WatchTeleboyStream:
             outfd.write(urlopen(stream_segment_url).read())
     
 class WatchTeleboyStreamContainer:
+    """
+    This class parses an MPD file from given URL (supposedly from a Teleboy streaming server)
+    and extracts the necessary information to create individual streams for
+    video, audio, and text. It creates the Handler classes that perform the actual download.
+    """
 
     def __init__(self, url):
         self.base_url = urljoin(url, '.')
         self.data = urlopen(url).read()
         self.root = minidom.parseString(self.data)
-        #self.root = minidom.parse(url)
         self.mpd_element = self.root.getElementsByTagName('MPD')[0]
         self.period_element = self.mpd_element.getElementsByTagName('Period')[0]
         self.adaptationset_elements = self.period_element.getElementsByTagName('AdaptationSet')
@@ -102,11 +110,11 @@ class WatchTeleboyStreamContainer:
         for adaptationset in self.adaptationset_elements:
             if lang is None:
                 if adaptationset.attributes.get('contentType').value == content:
-                    return WatchTeleboyStream(adaptationset, self.base_url)
+                    return WatchTeleboyStreamHandler(adaptationset, self.base_url)
             else:
                 if adaptationset.attributes.get('contentType').value == content and \
                     adaptationset.attributes.get('lang').value == lang:
-                    return WatchTeleboyStream(adaptationset, self.base_url)
+                    return WatchTeleboyStreamHandler(adaptationset, self.base_url)
         return None
                 
     def extract_video_stream(self):
@@ -126,10 +134,20 @@ class WatchTeleboyStreamContainer:
         return languages
 
 def main():
+    MPD_URL = sys.argv[1]
+    VIDEO_OUTPUT_FILE = '/tmp/wt.mp4'
+    AUDIO_OUTPUT_FILE = '/tmp/wt.mp4a'
+
     wt_container = WatchTeleboyStreamContainer(MPD_URL)
     wt_video = wt_container.extract_video_stream()
     wt_audio = wt_container.extract_audio_stream()
-    wt_video.download_stream(VIDEO_OUTPUT_FILE)
+    wt_video.nb_download_stream(VIDEO_OUTPUT_FILE)
+    wt_audio.nb_download_stream(AUDIO_OUTPUT_FILE)
+
+    while True:
+        print('audio thread is alive: ' + str(wt_audio.download_thread.is_alive()))
+        print('video thread is alive: ' + str(wt_video.download_thread.is_alive()))
+        time.sleep(2)
 
 if __name__ == '__main__':
     main()
