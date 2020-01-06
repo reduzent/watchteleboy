@@ -78,6 +78,7 @@ class WatchTeleboyStreamHandler:
         bw_pattern = r'\$Bandwidth\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
         stream_header_url = self.base_url + re.sub(bw_pattern, str(bandwidth), self.segment_header_template)
+        print(str(self.segment_start_timestamp) + ' ' + self.content_type)
         with open(outfile, 'wb') as outfd:
             outfd.write(urlopen(stream_header_url).read())
 
@@ -147,7 +148,7 @@ def main():
     while True:
         print('audio thread is alive: ' + str(wt_audio.download_thread.is_alive()))
         print('video thread is alive: ' + str(wt_video.download_thread.is_alive()))
-        time.sleep(2)
+        time.sleep(60)
 
 if __name__ == '__main__':
     main()
