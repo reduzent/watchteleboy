@@ -1,157 +1,59 @@
 #!/usr/bin/env python3
 
-import json
-import pickle
-import re
-import requests
-import sys
+import argparse
+import os
+import subprocess
+from wt import *
 
 TELEBOY_LOGIN = 'reduzent'
 TELEBOY_PASS = 'GrossePalme'
-
-class WatchTeleboySession:
-
-    user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:71.0) Gecko/20100101 Firefox/71.0'
-    login_url = 'https://www.teleboy.ch/login_check'
-    userenv_url = 'https://www.teleboy.ch/live'
-    headers = {
-        'User-Agent': user_agent
-    }
-    api_key = '6ca99ddb3e659e57bbb9b1874055a711b254425815905abaacf262b64f02eb3d'
-
-    def __init__(self, cachefile=None):
-        self.cache_file = cachefile
-        try:
-            assert self.cache_file is not None
-            self.__restore_session()
-        except (AssertionError, FileNotFoundError):
-            # create new session
-            self.s = requests.Session()
-            self.s.headers.update(self.headers)
-
-    def get_stream_url(self, channel=None, station_id=None):
-        try:
-            self.channel_ids
-        except AttributeError:
-            self.__retrieve_channel_ids(selection='all')
-        if station_id is None:
-            station_id = self.channel_ids[channel]
-        api_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/stream/live/{station_id}'
-        r = self.api.get(api_url)
-        try:
-            assert r.status_code == 200
-        except AssertionError:
-            print('failed to retrieve channel data')
-            raise
-        channel_data = json.loads(r.content.decode())
-        return channel_data['data']['stream']['url']
-
-    def list_channels(self):
-        """
-        print all available channels
-        """
-        try:
-            self.channel_ids
-        except AttributeError:
-            self.__retrieve_channel_ids(selection='all')
-        for ch in self.channel_ids:
-            if ch[0:2] != '__':
-                print(ch)
-
-    def login(self, user=None, password=None):
-        """
-        log in to www.teleboy.ch
-        """
-        try:
-            assert user is not None and password is not None
-            data = {
-                'login': user,
-                'password': password,
-                'keep_login': '1'
-                }
-            r = self.s.post(self.login_url, data=data)
-            assert r.status_code == 200
-            if self.cache_file:
-                self.__dump_session()
-            return True
-        except AssertionError:
-            print('Login was not successfull with given credentials')
-            return False
-
-    def logged_in(self):
-        """
-        return True when session is authenticated, False if not
-        """
-        try:
-            self.s.cookies.clear_expired_cookies()
-            self.s.cookies['cinergy_auth']
-            return True
-        except KeyError:
-            return False
-
-    def __retrieve_channel_ids(self, selection='all'):
-        assert selection in ['all', 'custom']
-        try:
-            assert self.__set_api_env()
-        except AssertionError:
-            print('Setting environment failed...')
-            raise
-        if selection == 'all':
-            api_channellist_url = 'https://tv.api.teleboy.ch/epg/broadcasts/now?expand=station&stream=true'
-        elif selection == 'custom':
-            api_channellist_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/broadcasts/now?expand=station&stream=true'
-        self.api = requests.Session()
-        headers = {
-            'x-teleboy-apikey': self.api_key,
-            'x-teleboy-session': self.session_id
-        }
-        self.api.headers.update(headers)
-        self.api.headers.update(self.headers)
-        r = self.api.get(api_channellist_url)
-        try:
-            assert r.status_code == 200
-        except AssertionError:
-            print('failed to retrieve channel ids')
-            return False
-        channels = json.loads(r.content.decode())
-        self.channel_ids = {channel['station_label']: channel['station_id'] for channel in channels['data']['items']}
-        self.channel_ids['__selection__'] = selection
-        return True
+VIDEO_OUTPUT_FILE = 'v'
+AUDIO_OUTPUT_FILE = 'a'
+SESSION_CACHE = 'wt_session_reduzent'
+MPV_COMMAND = '/usr/bin/mpv'
+MPV_ARGS = ['--keep-open', '--force-seekable=yes', '--cache=yes', '--audio-file=a', 'v']
 
 
-    def __restore_session(self):
-        with open(self.cache_file, 'rb') as fd:
-            self.s = pickle.load(fd)
-        assert isinstance(self.s, requests.sessions.Session)
-        assert self.logged_in()
+parser = argparse.ArgumentParser()
+parser.add_argument("-l", "--list", help="list available channels", action="store_true")
+parser.add_argument("-c", "--channel", help="play channel")
+args = parser.parse_args()
 
-    def __dump_session(self):
-        with open(self.cache_file, 'wb') as fd:
-            pickle.dump(self.s, fd)
 
-    def __set_api_env(self):
-        try:
-            assert self.logged_in()
-            r = self.s.get(self.userenv_url)
-            assert r.status_code == 200
-            c = r.content.decode()
-            uid_raw = re.findall(r'\s+\.setId\(\d+\)', c, re.MULTILINE)[0]
-            self.user_id = uid_raw[uid_raw.find('(')+1:uid_raw.find(')')]
-            self.session_id = self.s.cookies['cinergy_s']
-            return True
-        except AssertionError:
-            return False
-
-def main():
-    wts = WatchTeleboySession('wt_session_reduzent')
+def main(args):
+    wts = WatchTeleboySession(SESSION_CACHE)
     if not wts.logged_in():
         try:
             assert wts.login(user=TELEBOY_LOGIN, password=TELEBOY_PASS)
         except AssertionError:
             sys.exit(1)
-    print(wts.get_stream_url('SRF1'))
 
+    if args.list:
+        wts.list_channels()
+        sys.exit(0)
+
+    ch = args.channel if args.channel else 'SRF1'
+
+    MPD_URL = wts.get_stream_url(ch)
+
+    os.mkfifo(VIDEO_OUTPUT_FILE)
+    os.mkfifo(AUDIO_OUTPUT_FILE)
+    MPV_ARGS.insert(0, MPV_COMMAND)
+    mpv = subprocess.Popen(MPV_ARGS, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    wt_container = WatchTeleboyStreamContainer(MPD_URL)
+    wt_video = wt_container.extract_video_stream()
+    wt_audio = wt_container.extract_audio_stream()
+
+    wt_video.nb_download_stream(VIDEO_OUTPUT_FILE)
+    wt_audio.nb_download_stream(AUDIO_OUTPUT_FILE)
+
+    mpv.wait()
+    wt_video.stop()
+    wt_audio.stop()
+    os.unlink(VIDEO_OUTPUT_FILE)
+    os.unlink(AUDIO_OUTPUT_FILE)
+    sys.exit()
 
 if __name__ == '__main__':
-    main()
+    main(args)
 
