@@ -63,18 +63,22 @@ class WatchTeleboySession:
         """
         try:
             assert user is not None and password is not None
-            data = {
-                'login': user,
-                'password': password,
-                'keep_login': '1'
-                }
-            r = self.s.post(self.login_url, data=data)
-            assert r.status_code == 200
+        except AssertionError:
+            print("Please provide both user and password")
+            return False
+        data = {
+            'login': user,
+            'password': password,
+            'keep_login': '1'
+            }
+        r = self.s.post(self.login_url, data=data)
+        try:
+            self.s.cookies['cinergy_auth']
             if self.cache_file:
                 self.__dump_session()
             return True
-        except AssertionError:
-            print('Login was not successfull with given credentials')
+        except KeyError:
+            print('Login failed')
             return False
 
     def logged_in(self):
