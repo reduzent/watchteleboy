@@ -5,11 +5,11 @@ import os
 import subprocess
 from wt import *
 
-TELEBOY_LOGIN = 'reduzent'
-TELEBOY_PASS = 'GrossePalme'
+TELEBOY_LOGIN = 'username'
+TELEBOY_PASS = 'password'
 VIDEO_OUTPUT_FILE = 'v'
 AUDIO_OUTPUT_FILE = 'a'
-SESSION_CACHE = 'wt_session_reduzent'
+SESSION_CACHE = 'wt_session'
 MPV_COMMAND = '/usr/bin/mpv'
 MPV_ARGS = ['--keep-open', '--force-seekable=yes', '--cache=yes', '--audio-file=a', 'v']
 
