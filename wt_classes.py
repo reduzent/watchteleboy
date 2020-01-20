@@ -8,6 +8,10 @@ from threading import Thread
 import time
 import os
 
+##################################################################################
+# SOME CLASSES
+##################################################################################
+
 class WatchTeleboySession:
 
     user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:71.0) Gecko/20100101 Firefox/71.0'
@@ -217,6 +221,12 @@ class WatchTeleboyStreamHandler:
 
     def stop(self):
         self._stop = True
+
+    def set_start_time(self, st_obj):
+        # st_obj is expected to be a datetime.datetime object
+        start_time = st_obj.timestamp() * self.segment_timescale
+        start_time = start_time - (start_time % self.segment_duration)
+        self.segment_current_timestamp = start_time
 
     def nb_download_stream(self, outfile):
         self.download_thread = Thread(target=self.download_stream, args=(outfile,))
