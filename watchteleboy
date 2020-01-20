@@ -3,7 +3,8 @@
 import argparse
 import os
 import subprocess
-from wt import *
+from wt_classes import *
+from wt_helpers import *
 
 TELEBOY_LOGIN = 'username'
 TELEBOY_PASS = 'password'
