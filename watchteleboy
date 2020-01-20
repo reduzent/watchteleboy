@@ -17,8 +17,9 @@ MPV_ARGS = ['--keep-open', '--force-seekable=yes', '--cache=yes', '--audio-file=
 parser = argparse.ArgumentParser()
 parser.add_argument("-l", "--list", help="list available channels", action="store_true")
 parser.add_argument("-c", "--channel", help="play channel")
+parser.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
+parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
 args = parser.parse_args()
-
 
 def main(args):
     wts = WatchTeleboySession(SESSION_CACHE)
@@ -33,8 +34,11 @@ def main(args):
         sys.exit(0)
 
     ch = args.channel if args.channel else 'SRF1'
-
     MPD_URL = wts.get_stream_url(ch)
+
+    if args.print_url:
+        print(MPD_URL)
+        sys.exit(0)
 
     os.mkfifo(VIDEO_OUTPUT_FILE)
     os.mkfifo(AUDIO_OUTPUT_FILE)
@@ -43,6 +47,11 @@ def main(args):
     wt_container = WatchTeleboyStreamContainer(MPD_URL)
     wt_video = wt_container.extract_video_stream()
     wt_audio = wt_container.extract_audio_stream()
+
+    if args.starttime:
+        stobj = parse_time_string(args.starttime)
+        wt_video.set_start_time(stobj)
+        wt_audio.set_start_time(stobj)
 
     wt_video.nb_download_stream(VIDEO_OUTPUT_FILE)
     wt_audio.nb_download_stream(AUDIO_OUTPUT_FILE)
