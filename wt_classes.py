@@ -31,12 +31,13 @@ class WatchTeleboySession:
             # create new session
             self.s = requests.Session()
             self.s.headers.update(self.headers)
+        self.channel_selection = 'all'
 
     def get_stream_url(self, channel=None, station_id=None):
         try:
             self.channel_ids
         except AttributeError:
-            self.__retrieve_channel_ids(selection='all')
+            self.__retrieve_channel_ids()
         if station_id is None:
             station_id = self.channel_ids[channel]
         api_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/stream/live/{station_id}'
@@ -56,7 +57,7 @@ class WatchTeleboySession:
         try:
             self.channel_ids
         except AttributeError:
-            self.__retrieve_channel_ids(selection='all')
+            self.__retrieve_channel_ids()
         for ch in self.channel_ids:
             if ch[0:2] != '__':
                 print(ch)
@@ -96,17 +97,25 @@ class WatchTeleboySession:
         except KeyError:
             return False
 
-    def __retrieve_channel_ids(self, selection='all'):
-        assert selection in ['all', 'custom']
+    def set_channel_selection(self, channel_selection):
+        try:
+            assert channel_selection in ['all', 'custom']
+        except AssertionError:
+            print(f'Invalid channel_selection: {channel_selection}')
+            print('Falling back to default')
+        else:
+            self.channel_selection = channel_selection
+
+    def __retrieve_channel_ids(self):
         try:
             assert self.__set_api_env()
         except AssertionError:
             print('Setting environment failed...')
             raise
-        if selection == 'all':
-            api_channellist_url = 'https://tv.api.teleboy.ch/epg/broadcasts/now?expand=station&stream=true'
-        elif selection == 'custom':
+        if self.channel_selection == 'custom':
             api_channellist_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/broadcasts/now?expand=station&stream=true'
+        else:
+            api_channellist_url = 'https://tv.api.teleboy.ch/epg/broadcasts/now?expand=station&stream=true'
         self.api = requests.Session()
         headers = {
             'x-teleboy-apikey': self.api_key,
@@ -122,7 +131,7 @@ class WatchTeleboySession:
             return False
         channels = json.loads(r.content.decode())
         self.channel_ids = {channel['station_label']: channel['station_id'] for channel in channels['data']['items']}
-        self.channel_ids['__selection__'] = selection
+        self.channel_ids['__selection__'] = self.channel_selection
         return True
 
     def __restore_session(self):

@@ -7,38 +7,40 @@ import sys
 from wt_classes import *
 from wt_helpers import *
 
-defaults = {
-    'wt_dir': '{home_dir}/.watchteleboy',
-    'configfile': '{wt_dir}/config',
-    'session_cache': '{wt_dir}/session_cache',
-    'mpv_opts': '--keep-open',
-    'channel_selection': 'all',
-    'record_dir': '{wt_dir}',
-    'max_bitrate': '4800000',
-    'fifo': '{wt_dir}/{wt_instance}_{content_type}_{id}'
-}
 
-env = create_env(defaults)
+def main():
+    defaults = {
+        'wt_dir': '{home_dir}/.watchteleboy',
+        'configfile': '{wt_dir}/config',
+        'session_cache': '{wt_dir}/session_cache',
+        'mpv_opts': '--keep-open',
+        'channel_selection': 'all',
+        'record_dir': '{wt_dir}',
+        'max_bitrate': '4800000',
+        'fifo': '{wt_dir}/{wt_instance}_{content_type}_{id}'
+    }
 
-VIDEO_OUTPUT_FILE = 'v'
-AUDIO_OUTPUT_FILE = 'a'
-MPV_COMMAND = '/usr/bin/mpv'
-MPV_ARGS = ['--keep-open', '--force-seekable=yes', '--cache=yes', f'--audio-file={AUDIO_OUTPUT_FILE}', VIDEO_OUTPUT_FILE]
+    env = create_env(defaults)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-l", "--list", help="list available channels", action="store_true")
-parser.add_argument("-c", "--channel", help="play channel")
-parser.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
-parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
-args = parser.parse_args()
+    VIDEO_OUTPUT_FILE = 'v'
+    AUDIO_OUTPUT_FILE = 'a'
+    MPV_COMMAND = '/usr/bin/mpv'
+    MPV_ARGS = ['--keep-open', '--force-seekable=yes', '--cache=yes', f'--audio-file={AUDIO_OUTPUT_FILE}', VIDEO_OUTPUT_FILE]
 
-def main(args):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--list", help="list available channels", action="store_true")
+    parser.add_argument("-c", "--channel", help="play channel")
+    parser.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
+    parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
+    args = parser.parse_args()
+
     wts = WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
         try:
             assert wts.login(user=env['teleboy_user'], password=env['teleboy_pass'])
         except AssertionError:
             sys.exit(1)
+    wts.set_channel_selection(env['channel_selection'])
 
     if args.list:
         wts.list_channels()
@@ -76,5 +78,5 @@ def main(args):
     sys.exit()
 
 if __name__ == '__main__':
-    main(args)
+    main()
 
