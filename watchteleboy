@@ -3,17 +3,27 @@
 import argparse
 import os
 import subprocess
+import sys
 from wt_classes import *
 from wt_helpers import *
 
-TELEBOY_LOGIN = 'username'
-TELEBOY_PASS = 'password'
+defaults = {
+    'wt_dir': '{home_dir}/.watchteleboy',
+    'configfile': '{wt_dir}/config',
+    'session_cache': '{wt_dir}/session_cache',
+    'mpv_opts': '--keep-open',
+    'channel_selection': 'all',
+    'record_dir': '{wt_dir}',
+    'max_bitrate': '4800000',
+    'fifo': '{wt_dir}/{wt_instance}_{content_type}_{id}'
+}
+
+env = create_env(defaults)
+
 VIDEO_OUTPUT_FILE = 'v'
 AUDIO_OUTPUT_FILE = 'a'
-SESSION_CACHE = 'wt_session'
 MPV_COMMAND = '/usr/bin/mpv'
-MPV_ARGS = ['--keep-open', '--force-seekable=yes', '--cache=yes', '--audio-file=a', 'v']
-
+MPV_ARGS = ['--keep-open', '--force-seekable=yes', '--cache=yes', f'--audio-file={AUDIO_OUTPUT_FILE}', VIDEO_OUTPUT_FILE]
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-l", "--list", help="list available channels", action="store_true")
@@ -23,10 +33,10 @@ parser.add_argument("-t", "--starttime", help="specify a start time other than '
 args = parser.parse_args()
 
 def main(args):
-    wts = WatchTeleboySession(SESSION_CACHE)
+    wts = WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
         try:
-            assert wts.login(user=TELEBOY_LOGIN, password=TELEBOY_PASS)
+            assert wts.login(user=env['teleboy_user'], password=env['teleboy_pass'])
         except AssertionError:
             sys.exit(1)
 
@@ -35,24 +45,25 @@ def main(args):
         sys.exit(0)
 
     ch = args.channel if args.channel else 'SRF1'
-    MPD_URL = wts.get_stream_url(ch)
+    mpd_url = wts.get_stream_url(ch)
 
     if args.print_url:
-        print(MPD_URL)
+        print(mpd_url)
         sys.exit(0)
 
-    os.mkfifo(VIDEO_OUTPUT_FILE)
-    os.mkfifo(AUDIO_OUTPUT_FILE)
-    MPV_ARGS.insert(0, MPV_COMMAND)
-    mpv = subprocess.Popen(MPV_ARGS, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    wt_container = WatchTeleboyStreamContainer(MPD_URL)
+    wt_container = WatchTeleboyStreamContainer(mpd_url)
     wt_video = wt_container.extract_video_stream()
     wt_audio = wt_container.extract_audio_stream()
+    os.mkfifo(VIDEO_OUTPUT_FILE)
+    os.mkfifo(AUDIO_OUTPUT_FILE)
 
     if args.starttime:
         stobj = parse_time_string(args.starttime)
         wt_video.set_start_time(stobj)
         wt_audio.set_start_time(stobj)
+
+    MPV_ARGS.insert(0, MPV_COMMAND)
+    mpv = subprocess.Popen(MPV_ARGS, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
     wt_video.nb_download_stream(VIDEO_OUTPUT_FILE)
     wt_audio.nb_download_stream(AUDIO_OUTPUT_FILE)
