@@ -25,7 +25,16 @@ def main():
     VIDEO_OUTPUT_FILE = 'v'
     AUDIO_OUTPUT_FILE = 'a'
     MPV_COMMAND = '/usr/bin/mpv'
-    MPV_ARGS = ['--keep-open', '--force-seekable=yes', '--cache=yes', f'--audio-file={AUDIO_OUTPUT_FILE}', VIDEO_OUTPUT_FILE]
+    MPV_ARGS = [
+        '--keep-open',
+        '--force-seekable=yes',
+        '--cache=yes',
+        '--cache-secs=600',
+        '--stream-buffer-size=128MiB',
+        '--demuxer-max-bytes=1GiB',
+        f'--audio-file={AUDIO_OUTPUT_FILE}',
+        VIDEO_OUTPUT_FILE
+    ]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--list", help="list available channels", action="store_true")
