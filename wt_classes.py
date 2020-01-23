@@ -1,12 +1,12 @@
 import json
+import os
 import pickle
 import re
 import requests
 import sys
-from xml.dom import minidom
-from threading import Thread
+import threading
 import time
-import os
+from xml.dom import minidom
 
 ##################################################################################
 # SOME CLASSES
@@ -203,7 +203,7 @@ class WatchTeleboyStreamHandler:
         self.segment_current_timestamp += self.segment_duration
         return self.segment_current_timestamp
 
-    def download_stream(self, outfile):
+    def _download_thread(self, outfile):
         max_tries = 5
         self._stop = False
         fd = os.open(outfile, os.O_WRONLY)
@@ -214,22 +214,23 @@ class WatchTeleboyStreamHandler:
                 os.close(fd)
                 return False
         try_count = max_tries
-        while not self._stop:
+        while not self.download_stop_event.is_set():
             try:
-                assert self.append_media_segment(fd)
+                r = self.append_media_segment(fd)
+                assert r.status_code == 200
                 self.bump_timestamp()
                 try_count = max_tries
             except AssertionError:
-                time.sleep(self.segment_duration/self.segment_timescale)
-                try_count -= 1
-                if try_count <= 0:
-                    os.close(fd)
-                    return False
+                if not self.download_stop_event.wait(timeout=self.segment_duration/self.segment_timescale):
+                    try_count -= 1
+                    if try_count <= 0:
+                        os.close(fd)
+                        return False
         os.close(fd)
         return True
 
     def stop(self):
-        self._stop = True
+        self.download_stop_event.set()
 
     def set_start_time(self, st_obj):
         # st_obj is expected to be a datetime.datetime object
@@ -237,8 +238,9 @@ class WatchTeleboyStreamHandler:
         start_time = start_time - (start_time % self.segment_duration)
         self.segment_current_timestamp = start_time
 
-    def nb_download_stream(self, outfile):
-        self.download_thread = Thread(target=self.download_stream, args=(outfile,))
+    def start_download(self, outfile):
+        self.download_stop_event = threading.Event()
+        self.download_thread = threading.Thread(target=self._download_thread, args=(outfile))
         self.download_thread.start()
 
     def initialize_outfile(self, fd):
@@ -258,7 +260,7 @@ class WatchTeleboyStreamHandler:
         stream_segment_url = re.sub(ts_pattern, str(time), stream_segment_url)
         r = requests.get(stream_segment_url)
         os.write(fd, r.content)
-        return r.ok
+        return r
 
 class WatchTeleboyStreamContainer:
     """

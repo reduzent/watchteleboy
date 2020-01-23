@@ -72,11 +72,12 @@ def main():
         wt_video.set_start_time(stobj)
         wt_audio.set_start_time(stobj)
 
+
+    wt_video.start_download(VIDEO_OUTPUT_FILE)
+    wt_audio.start_download(AUDIO_OUTPUT_FILE)
+
     MPV_ARGS.insert(0, MPV_COMMAND)
     mpv = subprocess.Popen(MPV_ARGS, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-
-    wt_video.nb_download_stream(VIDEO_OUTPUT_FILE)
-    wt_audio.nb_download_stream(AUDIO_OUTPUT_FILE)
 
     mpv.wait()
     wt_video.stop()
