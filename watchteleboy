@@ -48,35 +48,15 @@ def main():
         wts.list_channels()
         sys.exit(0)
     ch = args.channel if args.channel else 'SRF1'
-    ch, mpd_url = wts.get_stream_url(ch)
+    ch, mpd_url = wts.get_stream_url(ch) # also returns canonical channel name
     if not mpd_url:
         sys.exit()
     if args.print_url:
         print(mpd_url)
         sys.exit(0)
-    wt_container = WatchTeleboyStreamContainer(mpd_url)
-    wt_video = wt_container.extract_video_stream()
-    wt_audio = wt_container.extract_audio_stream()
-    audio_fifo = env['fifo'].format(content_type=wt_audio.content_type, id=wt_audio.id)
-    video_fifo = env['fifo'].format(content_type=wt_video.content_type, id=wt_video.id)
-    os.mkfifo(audio_fifo)
-    os.mkfifo(video_fifo)
-    if args.starttime:
-        stobj = parse_time_string(args.starttime)
-        wt_audio.set_start_time(stobj)
-        wt_video.set_start_time(stobj)
-    wt_audio.start_download(audio_fifo)
-    wt_video.start_download(video_fifo)
-    mpv_command = [env['mpv'], *env['mpv_args'], f'--title={ch}', f'--audio-file={audio_fifo}', video_fifo]
-    mpv = subprocess.Popen(mpv_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    try:
-        mpv.wait()
-    except KeyboardInterrupt:
-        pass
-    wt_video.stop()
-    wt_audio.stop()
-    os.unlink(audio_fifo)
-    os.unlink(video_fifo)
+    player = WatchTeleboyPlayer(env)
+    player.set_mpd_url(mpd_url, ch)
+    player.play()
     sys.exit()
 
 if __name__ == '__main__':
