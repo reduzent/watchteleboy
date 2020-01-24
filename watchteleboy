@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
-import subprocess
 import sys
 from wt_classes import *
 from wt_helpers import *
@@ -56,7 +54,7 @@ def main():
         sys.exit(0)
     player = WatchTeleboyPlayer(env)
     player.set_mpd_url(mpd_url, ch)
-    player.play()
+    player.play(args.starttime)
     sys.exit()
 
 if __name__ == '__main__':

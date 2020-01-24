@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 from xml.dom import minidom
+from wt_helpers import *
 
 ##################################################################################
 # SOME CLASSES
@@ -325,7 +326,7 @@ class WatchTeleboyPlayer:
 
     def set_mpd_url(self, mpd_url, channel=None):
         self.manifest = WatchTeleboyStreamContainer(mpd_url)
-        self.channel = channel if not None else '-'
+        self.channel = channel if not None else '-' # channel is used in Window Title
 
     def play(self, start_time=None):
         audio = self.manifest.extract_audio_stream()
@@ -335,9 +336,9 @@ class WatchTeleboyPlayer:
         os.mkfifo(audio_fifo)
         os.mkfifo(video_fifo)
         if start_time is not None:
-            stobj = parse_time_string(args.starttime)
-            wt_audio.set_start_time(stobj)
-            wt_video.set_start_time(stobj)
+            stobj = parse_time_string(start_time)
+            audio.set_start_time(stobj)
+            video.set_start_time(stobj)
         audio.start_download(audio_fifo)
         video.start_download(video_fifo)
         mpv_command = [self.env['mpv'], *self.env['mpv_args'], f'--title={self.channel}', f'--audio-file={audio_fifo}', video_fifo]
