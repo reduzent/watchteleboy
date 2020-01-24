@@ -3,6 +3,7 @@ import os
 import pickle
 import re
 import requests
+import subprocess
 import sys
 import threading
 import time
@@ -314,4 +315,43 @@ class WatchTeleboyStreamContainer:
             if adaptationset.attributes.get('contentType').value == 'audio':
                 languages.append(adaptationset.attributes.get('lang').value)
         return languages
+
+class WatchTeleboyPlayer:
+    """
+    Player for MPD URLs. Controls stream download and playback with mpv.
+    """
+    def __init__(self, env):
+        self.env = env
+
+    def set_mpd_url(self, mpd_url, channel=None):
+        self.manifest = WatchTeleboyStreamContainer(mpd_url)
+        self.channel = channel if not None else '-'
+
+    def play(self, start_time=None):
+        audio = self.manifest.extract_audio_stream()
+        video = self.manifest.extract_video_stream()
+        audio_fifo = self.env['fifo'].format(content_type=audio.content_type, id=audio.id)
+        video_fifo = self.env['fifo'].format(content_type=video.content_type, id=video.id)
+        os.mkfifo(audio_fifo)
+        os.mkfifo(video_fifo)
+        if start_time is not None:
+            stobj = parse_time_string(args.starttime)
+            wt_audio.set_start_time(stobj)
+            wt_video.set_start_time(stobj)
+        audio.start_download(audio_fifo)
+        video.start_download(video_fifo)
+        mpv_command = [self.env['mpv'], *self.env['mpv_args'], f'--title={self.channel}', f'--audio-file={audio_fifo}', video_fifo]
+        mpv = subprocess.Popen(mpv_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        try:
+            mpv.wait()
+        except KeyboardInterrupt:
+            pass
+        video.stop()
+        audio.stop()
+        os.unlink(audio_fifo)
+        os.unlink(video_fifo)
+
+
+    def stop(self):
+        pass
 
