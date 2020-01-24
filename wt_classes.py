@@ -44,7 +44,7 @@ class WatchTeleboySession:
                     channel = ch
                     break
             else:
-                print(f'No such channel found: {channel}')
+                print(f'No such channel: {channel}')
                 return None
             station_id = self.channel_ids[channel]
         api_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/stream/live/{station_id}'
@@ -55,7 +55,7 @@ class WatchTeleboySession:
             print('failed to retrieve channel data')
             raise
         channel_data = json.loads(r.content.decode())
-        return channel_data['data']['stream']['url']
+        return (channel, channel_data['data']['stream']['url'])
 
     def list_channels(self):
         """
