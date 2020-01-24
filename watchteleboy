@@ -17,23 +17,16 @@ def main():
         'channel_selection': 'all',
         'record_dir': '{wt_dir}',
         'max_bitrate': '4800000',
-        'fifo': '{wt_dir}/{wt_instance}_{content_type}_{id}'
+        'fifo': '{wt_dir}/{wt_instance}_{content_type}_{id}',
+        'mpv': '/usr/bin/mpv',
+        'mpv_args': [
+            '--keep-open',
+            '--force-seekable=yes',
+            '--cache=yes',
+            '--cache-secs=600',
+            '--demuxer-max-bytes=1GiB',
+        ]
     }
-
-    env = create_env(defaults)
-
-    VIDEO_OUTPUT_FILE = 'v'
-    AUDIO_OUTPUT_FILE = 'a'
-    MPV_COMMAND = '/usr/bin/mpv'
-    MPV_ARGS = [
-        '--keep-open',
-        '--force-seekable=yes',
-        '--cache=yes',
-        '--cache-secs=600',
-        '--demuxer-max-bytes=1GiB',
-        f'--audio-file={AUDIO_OUTPUT_FILE}',
-        VIDEO_OUTPUT_FILE
-    ]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--list", help="list available channels", action="store_true")
@@ -42,6 +35,8 @@ def main():
     parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
     args = parser.parse_args()
 
+    env = create_env(defaults)
+
     wts = WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
         try:
@@ -49,41 +44,37 @@ def main():
         except AssertionError:
             sys.exit(1)
     wts.set_channel_selection(env['channel_selection'])
-
     if args.list:
         wts.list_channels()
         sys.exit(0)
-
     ch = args.channel if args.channel else 'SRF1'
     mpd_url = wts.get_stream_url(ch)
-
     if args.print_url:
         print(mpd_url)
         sys.exit(0)
-
     wt_container = WatchTeleboyStreamContainer(mpd_url)
     wt_video = wt_container.extract_video_stream()
     wt_audio = wt_container.extract_audio_stream()
-    os.mkfifo(VIDEO_OUTPUT_FILE)
-    os.mkfifo(AUDIO_OUTPUT_FILE)
-
+    audio_fifo = env['fifo'].format(content_type=wt_audio.content_type, id=wt_audio.id)
+    video_fifo = env['fifo'].format(content_type=wt_video.content_type, id=wt_video.id)
+    os.mkfifo(audio_fifo)
+    os.mkfifo(video_fifo)
     if args.starttime:
         stobj = parse_time_string(args.starttime)
-        wt_video.set_start_time(stobj)
         wt_audio.set_start_time(stobj)
-
-
-    wt_video.start_download(VIDEO_OUTPUT_FILE)
-    wt_audio.start_download(AUDIO_OUTPUT_FILE)
-
-    MPV_ARGS.insert(0, MPV_COMMAND)
-    mpv = subprocess.Popen(MPV_ARGS, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-
-    mpv.wait()
+        wt_video.set_start_time(stobj)
+    wt_audio.start_download(audio_fifo)
+    wt_video.start_download(video_fifo)
+    mpv_command = [env['mpv'], *env['mpv_args'], f'--title={ch}', f'--audio-file={audio_fifo}', video_fifo]
+    mpv = subprocess.Popen(mpv_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    try:
+        mpv.wait()
+    except KeyboardInterrupt:
+        pass
     wt_video.stop()
     wt_audio.stop()
-    os.unlink(VIDEO_OUTPUT_FILE)
-    os.unlink(AUDIO_OUTPUT_FILE)
+    os.unlink(audio_fifo)
+    os.unlink(video_fifo)
     sys.exit()
 
 if __name__ == '__main__':
