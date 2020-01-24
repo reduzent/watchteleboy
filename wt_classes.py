@@ -168,6 +168,7 @@ class WatchTeleboyStreamHandler:
         self.base_url = base_url
         assert isinstance(self.adaptationset, minidom.Element)
         self.content_type = self.adaptationset.attributes.get('contentType').value
+        self.id = self.adaptationset.attributes.get('id').value
         try:
             self.language = self.adaptationset.attributes.get('lang').value
         except AttributeError:
@@ -240,7 +241,7 @@ class WatchTeleboyStreamHandler:
 
     def start_download(self, outfile):
         self.download_stop_event = threading.Event()
-        self.download_thread = threading.Thread(target=self._download_thread, args=(outfile))
+        self.download_thread = threading.Thread(target=self._download_thread, args=(outfile,))
         self.download_thread.start()
 
     def initialize_outfile(self, fd):
@@ -256,10 +257,13 @@ class WatchTeleboyStreamHandler:
         ts_pattern = r'\$Time\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
         time = self.segment_current_timestamp
-        stream_segment_url = self.base_url + re.sub(bw_pattern, str(bandwidth), self.segment_media_template)
-        stream_segment_url = re.sub(ts_pattern, str(time), stream_segment_url)
-        r = requests.get(stream_segment_url)
-        os.write(fd, r.content)
+        segment_url = self.base_url + re.sub(bw_pattern, str(bandwidth), self.segment_media_template)
+        segment_url = re.sub(ts_pattern, str(time), segment_url)
+        r = requests.get(segment_url)
+        try:
+            os.write(fd, r.content)
+        except BrokenPipeError:
+            self.download_stop_event.set() # this happens only when mpv stopped reading from fifo
         return r
 
 class WatchTeleboyStreamContainer:
