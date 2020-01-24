@@ -49,6 +49,8 @@ def main():
         sys.exit(0)
     ch = args.channel if args.channel else 'SRF1'
     mpd_url = wts.get_stream_url(ch)
+    if not mpd_url:
+        sys.exit()
     if args.print_url:
         print(mpd_url)
         sys.exit(0)

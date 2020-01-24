@@ -43,6 +43,9 @@ class WatchTeleboySession:
                 if ch.lower() == channel.lower():
                     channel = ch
                     break
+            else:
+                print(f'No such channel found: {channel}')
+                return None
             station_id = self.channel_ids[channel]
         api_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/stream/live/{station_id}'
         r = self.api.get(api_url)
