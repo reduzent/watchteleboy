@@ -39,6 +39,10 @@ class WatchTeleboySession:
         except AttributeError:
             self.__retrieve_channel_ids()
         if station_id is None:
+            for ch in self.channel_ids.keys():
+                if ch.lower() == channel.lower():
+                    channel = ch
+                    break
             station_id = self.channel_ids[channel]
         api_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/stream/live/{station_id}'
         r = self.api.get(api_url)
