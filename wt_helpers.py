@@ -2,7 +2,7 @@ import configparser
 import datetime
 import os
 import random
-from wt_classes import *
+import sys
 
 config_template = """[watchteleboy]
 # watchteleboy configuration
@@ -110,28 +110,31 @@ def create_env(defaults):
         os.mkdir(defaults['wt_dir'])
     except FileExistsError:
         pass
-    else:
+    try:
+        env = read_config(defaults)
+    except KeyError:
         create_config(defaults)
-    env = read_config(defaults)
+        env = read_config(defaults)
     return {**defaults, **env}
 
 def create_config(defaults):
-    wts = WatchTeleboySession()
+    from wt_classes import WatchTeleboySession
+    wts = WatchTeleboySession(defaults['session_cache'])
     while not wts.logged_in():
-        user = input("Please enter your teleboy username: ")
-        password = input("Please enter your teleboy password: ")
+        try:
+            user = input("Please enter your teleboy username: ")
+            password = input("Please enter your teleboy password: ")
+        except KeyboardInterrupt:
+            sys.exit()
         wts.login(user=user, password=password)
-        if wts.logged_in():
-            consent = input("Password is written in plain text to config. OK? [y/n] ")
-            if consent == 'n':
-                return False
-        else:
-            print("Could not successfully log in with given credentials.")
+    consent = input("Password is written in plain text to config. OK? [y/n] ")
+    if consent == 'n':
+        sys.exit()
     config_content = config_template.format(
         teleboy_user=user,
         teleboy_pass=password,
         mpv_opts=defaults['mpv_opts'],
-        record_path=defaults['record_path'],
+        record_dir=defaults['record_dir'],
         channel_selection=defaults['channel_selection'],
         max_bitrate=defaults['max_bitrate'])
     with open(defaults['configfile'], 'w') as configfile:

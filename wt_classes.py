@@ -87,13 +87,20 @@ class WatchTeleboySession:
             }
         r = self.s.post(self.login_url, data=data)
         try:
+            assert r.status_code != 429
+        except AssertionError:
+            print("Your login is blocked. Please login via browser and answer captcha.")
+            print("Visit https://www.teleboy.ch/ and try again.")
+            return False
+        try:
             self.s.cookies['cinergy_auth']
-            if self.cache_file:
-                self.__dump_session()
-            return True
         except KeyError:
             print('Login failed')
             return False
+        else:
+            if self.cache_file:
+                self.__dump_session()
+            return True
 
     def logged_in(self):
         """

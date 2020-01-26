@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from wt_classes import *
+from wt_classes import WatchTeleboySession, WatchTeleboyPlayer
 from wt_helpers import *
 
 
@@ -34,7 +34,6 @@ def main():
     args = parser.parse_args()
 
     env = create_env(defaults)
-
     wts = WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
         try:
