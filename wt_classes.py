@@ -276,10 +276,13 @@ class WatchTeleboyStreamHandler:
         segment_url = self.base_url + re.sub(bw_pattern, str(bandwidth), self.segment_media_template)
         segment_url = re.sub(ts_pattern, str(time), segment_url)
         r = requests.get(segment_url)
+        if r.status_code == 404 and self.segment_current_timestamp < self.segment_start_timestamp:
+            print("Segment not available. Maybe too old?")
+            self.stop()
         try:
             os.write(fd, r.content)
         except BrokenPipeError:
-            self.download_stop_event.set() # this happens only when mpv stopped reading from fifo
+            self.stop() # this happens only when mpv stopped reading from fifo
         return r
 
 class WatchTeleboyStreamContainer:
