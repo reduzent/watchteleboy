@@ -63,7 +63,7 @@ def parse_time_string(rawstring):
         dt2 = datetime.combine(today, time(0, 0)) - timedelta(hours=extend_old_day_hours)
         past_midnight = dt1.time()
         before_midnight = dt2.time()
-        if now.time() < past_midnight and start.time() > before_midnight:
+        if now.time() < past_midnight and start > before_midnight:
             return today - timedelta(days=1)
         return today
 
@@ -96,7 +96,7 @@ def parse_time_string(rawstring):
     else:
         print('Cannot parse given time: ' + tstr)
         raise ValueError
-    return datetime.datetime.combine(datepart, timepart)
+    return datetime.combine(datepart, timepart)
 
 def create_env(defaults):
     home_dir = os.path.expanduser('~')
