@@ -15,7 +15,7 @@ def main():
         'channel_selection': 'all',
         'record_dir': '{wt_dir}',
         'max_bitrate': '4800000',
-        'fifo': '{wt_dir}/{wt_instance}_{content_type}_{id}',
+        'fifo': '{wt_dir}/fifo_{wt_instance}_{content_type}_{id}',
         'mpv': '/usr/bin/mpv',
         'mpv_args': [
             '--keep-open',

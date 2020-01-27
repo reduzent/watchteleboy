@@ -1,5 +1,5 @@
 import configparser
-import datetime
+from datetime import date, datetime, time, timedelta
 import os
 import random
 import sys
@@ -57,18 +57,19 @@ def parse_time_string(rawstring):
         # if midnight is not long ago, assume evening times to be
         # from yesterday
         extend_old_day_hours = 4
-        now = datetime.datetime.now()
+        now = datetime.now()
         today = now.date()
-        delta_past_midnight = now - datetime.datetime.combine(today, datetime.time(0, 0))
-        if delta_past_midnight.seconds < (extend_old_day_hours * 60 * 60):
-            delta_start_now =  datetime.datetime.combine(today, start) - now
-            if delta_start_now.seconds > ((24 - extend_old_day_hours) * 60 * 60):
-                return today - datetime.timedelta(days=1)
+        dt1 = datetime.combine(today, time(0, 0)) + timedelta(hours=extend_old_day_hours)
+        dt2 = datetime.combine(today, time(0, 0)) - timedelta(hours=extend_old_day_hours)
+        past_midnight = dt1.time()
+        before_midnight = dt2.time()
+        if now.time() < past_midnight and start.time() > before_midnight:
+            return today - timedelta(days=1)
         return today
 
     def evaluate_time(tstr):
         try:
-            return datetime.time(*list(map(int, tstr.split(':'))))
+            return time(*list(map(int, tstr.split(':'))))
         except ValueError:
             print('Cannot parse given time: ' + tstr)
             raise
@@ -76,11 +77,11 @@ def parse_time_string(rawstring):
     def evaluate_date(dstr):
         try:
             if dstr == 'tomorrow':
-                return datetime.date.today() + datetime.timedelta(days=1)
+                return date.today() + timedelta(days=1)
             elif dstr == 'yesterday':
-                return datetime.date.today() + datetime.timedelta(days=-1)
+                return date.today() + timedelta(days=-1)
             else:
-                return datetime.date(*list(map(int, dstr.split('-'))))
+                return date(*list(map(int, dstr.split('-'))))
         except ValueError:
             print('Cannot parse given date: '  + dstr)
             raise
@@ -103,7 +104,7 @@ def create_env(defaults):
     defaults['record_dir'] = defaults['record_dir'].format(wt_dir=defaults['wt_dir'])
     defaults['configfile'] = defaults['configfile'].format(wt_dir=defaults['wt_dir'])
     defaults['session_cache'] = defaults['session_cache'].format(wt_dir=defaults['wt_dir'])
-    defaults['wt_instance'] = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for i in range(12))
+    defaults['wt_instance'] = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for i in range(8))
     defaults['fifo'] = defaults['fifo'].format(wt_dir=defaults['wt_dir'],
         wt_instance=defaults['wt_instance'], content_type='{content_type}', id='{id}')
     try:

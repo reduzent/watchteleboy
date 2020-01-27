@@ -278,7 +278,7 @@ class WatchTeleboyStreamHandler:
         r = requests.get(segment_url)
         if r.status_code == 404 and self.segment_current_timestamp < self.segment_start_timestamp:
             print("Segment not available. Maybe too old?")
-            self.stop()
+            self.stop() # 404 on segment from the past means caches on server expired
         try:
             os.write(fd, r.content)
         except BrokenPipeError:
