@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from wt_classes import WatchTeleboySession, WatchTeleboyPlayer
+from wt_classes import WatchTeleboyError, WatchTeleboySession, WatchTeleboyPlayer
 from wt_helpers import *
 
 
@@ -46,15 +46,17 @@ def main():
         sys.exit(0)
     ch = args.channel if args.channel else 'SRF1'
     ch, mpd_url = wts.get_stream_url(ch) # also returns canonical channel name
-    if not mpd_url:
-        sys.exit()
     if args.print_url:
         print(mpd_url)
         sys.exit(0)
-    player = WatchTeleboyPlayer(env)
-    player.set_mpd_url(mpd_url, ch)
-    player.play(args.starttime)
-    sys.exit()
+    try:
+        player = WatchTeleboyPlayer(env)
+        player.set_mpd_url(mpd_url, ch)
+        player.play(args.starttime)
+    except WatchTeleboyError:
+        sys.exit(1)
+    else:
+        sys.exit()
 
 if __name__ == '__main__':
     main()

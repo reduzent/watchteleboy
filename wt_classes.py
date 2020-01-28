@@ -14,6 +14,9 @@ from wt_helpers import *
 # SOME CLASSES
 ##################################################################################
 
+class WatchTeleboyError(BaseException):
+    pass
+
 class WatchTeleboySession:
 
     user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:71.0) Gecko/20100101 Firefox/71.0'
@@ -252,6 +255,9 @@ class WatchTeleboyStreamHandler:
         # st_obj is expected to be a datetime.datetime object
         start_time = st_obj.timestamp() * self.segment_timescale
         start_time = start_time - (start_time % self.segment_duration)
+        if start_time > self.segment_start_timestamp:
+            print('Cannot watch content from the future')
+            raise WatchTeleboyError()
         self.segment_current_timestamp = start_time
 
     def start_download(self, outfile, stop_event):
@@ -296,8 +302,17 @@ class WatchTeleboyStreamContainer:
 
     def __init__(self, url):
         self.base_url = '/'.join(url.split('/')[:-1]) + '/'
-        self.data = requests.get(url).content
-        self.root = minidom.parseString(self.data)
+        r = requests.get(url)
+        try:
+            assert r.status_code == 200
+        except AssertionError:
+            print('Failed to download manifest')
+            raise WatchTeleboyError()
+        try:
+            self.root = minidom.parseString(r.content)
+        except xml.parsers.expat.ExpatError:
+            print('Failed to parse manifest')
+            raise WatchTeleboyError()
         self.mpd_element = self.root.getElementsByTagName('MPD')[0]
         self.period_element = self.mpd_element.getElementsByTagName('Period')[0]
         self.adaptationset_elements = self.period_element.getElementsByTagName('AdaptationSet')
@@ -346,12 +361,12 @@ class WatchTeleboyPlayer:
         video = self.manifest.extract_video_stream()
         self.audio_fifo = self.env['fifo'].format(content_type=audio.content_type, id=audio.id)
         self.video_fifo = self.env['fifo'].format(content_type=video.content_type, id=video.id)
-        os.mkfifo(self.audio_fifo)
-        os.mkfifo(self.video_fifo)
         if start_time is not None:
             stobj = parse_time_string(start_time)
             audio.set_start_time(stobj)
             video.set_start_time(stobj)
+        os.mkfifo(self.audio_fifo)
+        os.mkfifo(self.video_fifo)
         audio.start_download(self.audio_fifo, self.stop_event)
         video.start_download(self.video_fifo, self.stop_event)
         try:
