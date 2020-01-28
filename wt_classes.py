@@ -6,7 +6,7 @@ import requests
 import subprocess
 import sys
 import threading
-import time
+from time import sleep
 from xml.dom import minidom
 from wt_helpers import *
 
@@ -222,7 +222,6 @@ class WatchTeleboyStreamHandler:
 
     def _download_thread(self, outfile):
         max_tries = 5
-        self._stop = False
         fd = os.open(outfile, os.O_WRONLY)
         try_count = max_tries
         while not self.initialize_outfile(fd):
@@ -255,8 +254,8 @@ class WatchTeleboyStreamHandler:
         start_time = start_time - (start_time % self.segment_duration)
         self.segment_current_timestamp = start_time
 
-    def start_download(self, outfile):
-        self.download_stop_event = threading.Event()
+    def start_download(self, outfile, stop_event):
+        self.download_stop_event = stop_event
         self.download_thread = threading.Thread(target=self._download_thread, args=(outfile,))
         self.download_thread.start()
 
@@ -265,7 +264,10 @@ class WatchTeleboyStreamHandler:
         bandwidth = dict(self.selected_representation)['bandwidth']
         stream_header_url = self.base_url + re.sub(bw_pattern, str(bandwidth), self.segment_header_template)
         r = requests.get(stream_header_url)
-        os.write(fd, r.content)
+        try:
+            os.write(fd, r.content)
+        except BrokenPipeError:
+            self.stop()
         return r.ok
 
     def append_media_segment(self, fd):
@@ -333,6 +335,7 @@ class WatchTeleboyPlayer:
     """
     def __init__(self, env):
         self.env = env
+        self.stop_event = threading.Event()
 
     def set_mpd_url(self, mpd_url, channel=None):
         self.manifest = WatchTeleboyStreamContainer(mpd_url)
@@ -341,27 +344,38 @@ class WatchTeleboyPlayer:
     def play(self, start_time=None):
         audio = self.manifest.extract_audio_stream()
         video = self.manifest.extract_video_stream()
-        audio_fifo = self.env['fifo'].format(content_type=audio.content_type, id=audio.id)
-        video_fifo = self.env['fifo'].format(content_type=video.content_type, id=video.id)
-        os.mkfifo(audio_fifo)
-        os.mkfifo(video_fifo)
+        self.audio_fifo = self.env['fifo'].format(content_type=audio.content_type, id=audio.id)
+        self.video_fifo = self.env['fifo'].format(content_type=video.content_type, id=video.id)
+        os.mkfifo(self.audio_fifo)
+        os.mkfifo(self.video_fifo)
         if start_time is not None:
             stobj = parse_time_string(start_time)
             audio.set_start_time(stobj)
             video.set_start_time(stobj)
-        audio.start_download(audio_fifo)
-        video.start_download(video_fifo)
-        mpv_command = [self.env['mpv'], *self.env['mpv_args'], f'--title={self.channel}', f'--audio-file={audio_fifo}', video_fifo]
-        mpv = subprocess.Popen(mpv_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        audio.start_download(self.audio_fifo, self.stop_event)
+        video.start_download(self.video_fifo, self.stop_event)
         try:
-            mpv.wait()
+            self._run_player()
         except KeyboardInterrupt:
-            pass
-        video.stop()
-        audio.stop()
-        os.unlink(audio_fifo)
-        os.unlink(video_fifo)
+            self.stop_event.set()
+        os.unlink(self.audio_fifo)
+        os.unlink(self.video_fifo)
 
+    def _run_player(self):
+        mpv_command = [
+            self.env['mpv'],
+            *self.env['mpv_args'],
+            f'--title={self.channel}',
+            f'--audio-file={self.audio_fifo}',
+            self.video_fifo
+        ]
+        mpv = subprocess.Popen(mpv_command, stdout=subprocess.PIPE)
+        while mpv.poll() is None:
+            if self.stop_event.wait(timeout=0.1):
+                mpv.terminate()
+                break
+            sleep(0.1)
+        self.stop_event.set()
 
     def stop(self):
         pass
