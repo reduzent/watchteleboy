@@ -357,6 +357,10 @@ class WatchTeleboyPlayer:
         self.channel = channel if not None else '-' # channel is used in Window Title
 
     def play(self, start_time=None):
+        player = threading.Thread(target=self._player_thread, kwargs={'start_time': start_time})
+        player.start()
+
+    def _player_thread(self, start_time=None):
         audio = self.manifest.extract_audio_stream()
         video = self.manifest.extract_video_stream()
         self.audio_fifo = self.env['fifo'].format(content_type=audio.content_type, id=audio.id)
@@ -373,8 +377,6 @@ class WatchTeleboyPlayer:
             self._run_player()
         except KeyboardInterrupt:
             self.stop_event.set()
-        os.unlink(self.audio_fifo)
-        os.unlink(self.video_fifo)
 
     def _run_player(self):
         mpv_command = [
@@ -385,6 +387,9 @@ class WatchTeleboyPlayer:
             self.video_fifo
         ]
         mpv = subprocess.Popen(mpv_command, stdout=subprocess.PIPE)
+        sleep(2)
+        os.unlink(self.audio_fifo)
+        os.unlink(self.video_fifo)
         while mpv.poll() is None:
             if self.stop_event.wait(timeout=0.1):
                 mpv.terminate()
@@ -393,5 +398,8 @@ class WatchTeleboyPlayer:
         self.stop_event.set()
 
     def stop(self):
-        pass
+        self.stop_event.set()
+
+    def wait(self, timeout=None):
+        self.stop_event.wait(timeout=timeout)
 

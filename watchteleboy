@@ -53,6 +53,7 @@ def main():
         player = WatchTeleboyPlayer(env)
         player.set_mpd_url(mpd_url, ch)
         player.play(args.starttime)
+        player.wait()
     except WatchTeleboyError:
         sys.exit(1)
     else:
