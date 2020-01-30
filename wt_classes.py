@@ -198,6 +198,7 @@ class WatchTeleboyStreamHandler:
         self.segment_timeline_s = self.segment_timeline.getElementsByTagName('S')[0]
         self.segment_start_timestamp = int(self.segment_timeline_s.attributes.get('t').value)
         self.segment_current_timestamp = self.segment_start_timestamp
+        self.segment_last_timestamp = sys.maxsize
         self.segment_duration = int(self.segment_timeline_s.attributes.get('d').value)
         self.segment_timescale = int(self.segment_template.attributes.get('timescale').value)
         self.segment_header_template = self.segment_template.attributes.get('initialization').value
@@ -234,6 +235,8 @@ class WatchTeleboyStreamHandler:
                 return False
         try_count = max_tries
         while not self.download_stop_event.is_set():
+            if self.segment_current_timestamp >= self.segment_last_timestamp:
+                break
             try:
                 r = self.append_media_segment(fd)
                 assert r.status_code == 200
@@ -254,11 +257,20 @@ class WatchTeleboyStreamHandler:
     def set_start_time(self, st_obj):
         # st_obj is expected to be a datetime.datetime object
         start_time = st_obj.timestamp() * self.segment_timescale
-        start_time = start_time - (start_time % self.segment_duration)
+        start_time = start_time - (start_time % self.segment_duration) # quantize to segment duration
         if start_time > self.segment_start_timestamp:
             print('Cannot watch content from the future')
             raise WatchTeleboyError()
         self.segment_current_timestamp = start_time
+
+    def set_stop_time(self, st_obj):
+        # st_obj is expected to be a datetime.datetime object
+        stop_time = st_obj.timestamp() * self.segment_timescale
+        stop_time = stop_time - (stop_time % self.segment_duration) # quantize to segment duration
+        if stop_time <= self.segment_current_timestamp:
+            print('--endtime must be after --starttime')
+            raise WatchTeleboyError()
+        self.segment_last_timestamp = stop_time
 
     def start_download(self, outfile, stop_event):
         self.download_stop_event = stop_event
@@ -356,11 +368,11 @@ class WatchTeleboyPlayer:
         self.manifest = WatchTeleboyStreamContainer(mpd_url)
         self.channel = channel if not None else '-' # channel is used in Window Title
 
-    def play(self, start_time=None):
-        player = threading.Thread(target=self._player_thread, kwargs={'start_time': start_time})
+    def play(self, start_time=None, end_time=None):
+        player = threading.Thread(target=self._player_thread, kwargs={'start_time': start_time, 'end_time': end_time})
         player.start()
 
-    def _player_thread(self, start_time=None):
+    def _player_thread(self, start_time=None, end_time=None):
         audio = self.manifest.extract_audio_stream()
         video = self.manifest.extract_video_stream()
         self.audio_fifo = self.env['fifo'].format(content_type=audio.content_type, id=audio.id)
@@ -369,6 +381,10 @@ class WatchTeleboyPlayer:
             stobj = parse_time_string(start_time)
             audio.set_start_time(stobj)
             video.set_start_time(stobj)
+        if end_time is not None:
+            etobj = parse_time_string(end_time)
+            audio.set_stop_time(etobj)
+            video.set_stop_time(etobj)
         os.mkfifo(self.audio_fifo)
         os.mkfifo(self.video_fifo)
         audio.start_download(self.audio_fifo, self.stop_event)
@@ -377,6 +393,8 @@ class WatchTeleboyPlayer:
             self._run_player()
         except KeyboardInterrupt:
             self.stop_event.set()
+        os.unlink(self.audio_fifo)
+        os.unlink(self.video_fifo)
 
     def _run_player(self):
         mpv_command = [
@@ -386,10 +404,7 @@ class WatchTeleboyPlayer:
             f'--audio-file={self.audio_fifo}',
             self.video_fifo
         ]
-        mpv = subprocess.Popen(mpv_command, stdout=subprocess.PIPE)
-        sleep(2)
-        os.unlink(self.audio_fifo)
-        os.unlink(self.video_fifo)
+        mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         while mpv.poll() is None:
             if self.stop_event.wait(timeout=0.1):
                 mpv.terminate()

@@ -31,6 +31,7 @@ def main():
     parser.add_argument("-c", "--channel", help="play channel")
     parser.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
     parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
+    parser.add_argument("-e", "--endtime", help="specify an end time")
     args = parser.parse_args()
 
     env = create_env(defaults)
@@ -52,7 +53,7 @@ def main():
     try:
         player = WatchTeleboyPlayer(env)
         player.set_mpd_url(mpd_url, ch)
-        player.play(args.starttime)
+        player.play(start_time=args.starttime, end_time=args.endtime)
         player.wait()
     except WatchTeleboyError:
         sys.exit(1)
