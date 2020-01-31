@@ -394,7 +394,7 @@ class WatchTeleboyPlayer:
         self.audio.start_download(audio_fifo, self.stop_event)
         self.video.start_download(video_fifo, self.stop_event)
         try:
-            self._run_player()
+            self._run_player(audio_file=audio_fifo, video_file=video_fifo)
         except KeyboardInterrupt:
             self.stop_event.set()
         os.unlink(audio_fifo)
@@ -421,13 +421,13 @@ class WatchTeleboyPlayer:
             pass
         self.stop_event.set()
 
-    def _run_player(self):
+    def _run_player(self, audio_file=None, video_file=None):
         mpv_command = [
             self.env['mpv'],
             *self.env['mpv_args'],
             f'--title={self.channel}',
-            f'--audio-file={self.audio_fifo}',
-            self.video_fifo
+            f'--audio-file={audio_file}',
+            video_file
         ]
         mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         while mpv.poll() is None:
