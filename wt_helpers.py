@@ -48,14 +48,17 @@ max_bitrate = {max_bitrate}
 ##################################################################################
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Watch IPTV from teleboy")
-    parser.add_argument("-l", "--list", help="list available channels", action="store_true")
+    parser = argparse.ArgumentParser(description="Watch and record IPTV from Teleboy")
+    oneshots = parser.add_mutually_exclusive_group()
+    oneshots.add_argument("-l", "--list", help="list available channels", action="store_true")
+    oneshots.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
+    oneshots.add_argument("-v", "--version", help="print version", action="store_true")
     parser.add_argument("-c", "--channel", help="play channel")
-    parser.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
     parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
     parser.add_argument("-e", "--endtime", help="specify an end time")
+    parser.add_argument("-q", "--quiet", help="suppress any output", action="store_true")
     rec = parser.add_argument_group()
-    rec.add_argument("-r", "--record", help="record a stream instead of watching it", action="store_true")
+    rec.add_argument("-r", "--record", help="record a stream to a file", action="store_true")
     rec.add_argument("-p", "--path", help="specify target directory for recordings")
     rec.add_argument("-n", "--showname", help="specify file name prefix for recorded file")
     args = parser.parse_args()

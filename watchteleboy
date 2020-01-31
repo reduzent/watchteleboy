@@ -7,6 +7,7 @@ from wt_helpers import *
 
 def main():
     defaults = {
+        'wt_version': '2.0',
         'wt_dir': '{home_dir}/.watchteleboy',
         'configfile': '{wt_dir}/config',
         'session_cache': '{wt_dir}/session_cache',
@@ -25,8 +26,9 @@ def main():
         ]
     }
     env = create_env(defaults)
-    #print(env)
-    #sys.exit()
+    if env['version']:
+        print(f'watchteleboy {env["wt_version"]}')
+        sys.exit(0)
     wts = WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
         try:
@@ -59,6 +61,7 @@ def main():
             player.wait()
         except WatchTeleboyError:
             sys.exit(1)
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()
