@@ -2,7 +2,7 @@
 
 import sys
 from wt_classes import WatchTeleboyError, WatchTeleboySession, WatchTeleboyPlayer
-from wt_helpers import *
+from wt_helpers import create_env
 
 
 def main():
