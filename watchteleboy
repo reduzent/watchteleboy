@@ -24,7 +24,6 @@ def main():
             '--demuxer-max-bytes=1GiB',
         ]
     }
-
     env = create_env(defaults)
     wts = WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
@@ -44,7 +43,7 @@ def main():
     try:
         player = WatchTeleboyPlayer(env)
         player.set_mpd_url(mpd_url, ch)
-        player.play(start_time=env['starttime'], end_time=env['endtime'])
+        player.play()
         player.wait()
     except WatchTeleboyError:
         sys.exit(1)

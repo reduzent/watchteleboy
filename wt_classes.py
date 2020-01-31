@@ -368,21 +368,21 @@ class WatchTeleboyPlayer:
         self.manifest = WatchTeleboyStreamContainer(mpd_url)
         self.channel = channel if not None else '-' # channel is used in Window Title
 
-    def play(self, start_time=None, end_time=None):
-        player = threading.Thread(target=self._player_thread, kwargs={'start_time': start_time, 'end_time': end_time})
+    def play(self):
+        player = threading.Thread(target=self._player_thread)
         player.start()
 
-    def _player_thread(self, start_time=None, end_time=None):
+    def _player_thread(self):
         audio = self.manifest.extract_audio_stream()
         video = self.manifest.extract_video_stream()
         self.audio_fifo = self.env['fifo'].format(content_type=audio.content_type, id=audio.id)
         self.video_fifo = self.env['fifo'].format(content_type=video.content_type, id=video.id)
-        if start_time is not None:
-            stobj = parse_time_string(start_time)
+        if self.env['starttime'] is not None:
+            stobj = parse_time_string(self.env['starttime'])
             audio.set_start_time(stobj)
             video.set_start_time(stobj)
-        if end_time is not None:
-            etobj = parse_time_string(end_time)
+        if self.env['endtime'] is not None:
+            etobj = parse_time_string(self.env['endtime'])
             audio.set_stop_time(etobj)
             video.set_stop_time(etobj)
         os.mkfifo(self.audio_fifo)
