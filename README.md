@@ -1,73 +1,41 @@
 watchteleboy
 ============
 
-is a script to watch and record live TV streams from
-http://www.teleboy.ch without browser nor flash.
+is a script to watch and record IPTV streams from http://www.teleboy.ch
+while leaving out unskippable ads and other browser annoyances. It uses
+the highly configurable mpv media player for playback. By using a custom
+MPEG-DASH implementation, it allows access to the cached media segments
+and thus plays up to 3 hours old content (depending on how long
+segments are cached on cdn servers).
 
-THIS MOST LIKELY WORKS ONLY FROM SWITZERLAND, SINCE THE IPTV SERVICE
-FROM TELEBOY.CH IS ONLY AVAILABLE TO SWISS IP ADDRESSES.
+This is a complete rewrite in Python of the original script written in Bash.
+The new Python version is not yet that mature, but already useable.
 
-see: http://github.com/reduzent/watchteleboy
+The code is hosted at:
+http://github.com/reduzent/watchteleboy
 
-Copyright: Roman Haefeli, 2011 - 2017
 
+Copyright: Roman Haefeli, 2011 - 2020
 License:   GPL-2
-
-
-News
-----
-
-Since version 1.21 there is no need to have avconv installed anymore. Instead, the
-HLS stream receiver is implemented in bash with curl. By not sticking strictly to
-the HLS protocol, `watchteleboy` now is able to watch shows up to 6 hours after their
-air time. Just use the option --starttime when you want to watch a missed show.
 
 
 Requirements
 ------------
 
-This script is based on the following binary programs (make sure
-you have them installed):
+This script requires a Python 3 flavour and the following modules:
 
-* One of the following media players:
+* **python-crontab**
+* **python-requests**
+* **python-json**
+* **python-subprocess**
+* **python-datetime**
 
-  * **mpv** (recommended on most Linux systems)
-  * **mplayer** (if mpv is not available)
-  * **vlc** (not well tested)
-
-* **crontab**
-* **date**
-* **jq** - JSON processor for the cmdline
-* **curl**
-* **whiptail** (optional, used for 'nice' dialogs)
-
-
-Installation
-------------
-### Ubuntu
-1. Install reduzent's ppa:
-
-   `sudo apt-add-repository ppa:reduzierer/reduzent`
-
-2. `sudo apt update`
-3. `sudo apt install watchteleboy`
-
-### Debian
-1. Download latest [release](https://github.com/reduzent/watchteleboy/releases/latest) as .deb-file
-2. Install it by doing:
-
-   `gdebi watchteleboy_<version>_all.deb`
-
-### macOS
-`brew install reduzent/reduzent/watchteleboy`
 
 Usage
 -----
 
 Do `watchteleboy --help` in order to get a quick summary of the available
-options. When invoked without options it starts in interactive mode.
-`man watchteleboy` shows the full documentation of all commandline flags
-and configuration file options.
+options.
 
 
 Bugs
