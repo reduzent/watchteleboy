@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import sys
+import datetime
 from wt_classes import WatchTeleboyError, WatchTeleboySession, WatchTeleboyPlayer
-from wt_helpers import create_env
+from wt_helpers import create_env, parse_time_string, schedule_recording
 
 
 def main():
@@ -44,6 +45,14 @@ def main():
     if env['print_url']:
         print(mpd_url)
         sys.exit(0)
+    try:
+        if env['record'] and env['starttime']:
+            st_obj = parse_time_string(env['starttime'])
+            if st_obj > datetime.datetime.now() + datetime.timedelta(seconds=10):
+                schedule_recording(env)
+                sys.exit()
+    except WatchTeleboyError:
+        sys.exit(1)
     player = WatchTeleboyPlayer(env)
     try:
         player.set_mpd_url(mpd_url, ch)
