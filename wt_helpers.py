@@ -1,3 +1,4 @@
+import argparse
 import configparser
 from datetime import date, datetime, time, timedelta
 import os
@@ -45,6 +46,20 @@ max_bitrate = {max_bitrate}
 ##################################################################################
 # SOME HELPER FUNCTIONS
 ##################################################################################
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Watch IPTV from teleboy")
+    parser.add_argument("-l", "--list", help="list available channels", action="store_true")
+    parser.add_argument("-c", "--channel", help="play channel")
+    parser.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
+    parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
+    parser.add_argument("-e", "--endtime", help="specify an end time")
+    rec = parser.add_argument_group()
+    rec.add_argument("-r", "--record", help="record a stream instead of watching it", action="store_true")
+    rec.add_argument("-p", "--path", help="specify target directory for recordings")
+    rec.add_argument("-n", "--showname", help="specify file name prefix for recorded file")
+    args = parser.parse_args()
+    return args
 
 def parse_time_string(rawstring):
     """
@@ -116,7 +131,8 @@ def create_env(defaults):
     except KeyError:
         create_config(defaults)
         env = read_config(defaults)
-    return {**defaults, **env}
+    args = parse_args()
+    return {**defaults, **env, **args.__dict__}
 
 def create_config(defaults):
     from wt_classes import WatchTeleboySession

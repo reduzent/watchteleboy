@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import argparse
 import sys
 from wt_classes import WatchTeleboyError, WatchTeleboySession, WatchTeleboyPlayer
 from wt_helpers import *
@@ -26,14 +25,6 @@ def main():
         ]
     }
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--list", help="list available channels", action="store_true")
-    parser.add_argument("-c", "--channel", help="play channel")
-    parser.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
-    parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
-    parser.add_argument("-e", "--endtime", help="specify an end time")
-    args = parser.parse_args()
-
     env = create_env(defaults)
     wts = WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
@@ -42,18 +33,18 @@ def main():
         except AssertionError:
             sys.exit(1)
     wts.set_channel_selection(env['channel_selection'])
-    if args.list:
+    if env['list']:
         wts.list_channels()
         sys.exit(0)
-    ch = args.channel if args.channel else 'SRF1'
+    ch = env['channel'] if env['channel'] else 'SRF1'
     ch, mpd_url = wts.get_stream_url(ch) # also returns canonical channel name
-    if args.print_url:
+    if env['print_url']:
         print(mpd_url)
         sys.exit(0)
     try:
         player = WatchTeleboyPlayer(env)
         player.set_mpd_url(mpd_url, ch)
-        player.play(start_time=args.starttime, end_time=args.endtime)
+        player.play(start_time=env['starttime'], end_time=env['endtime'])
         player.wait()
     except WatchTeleboyError:
         sys.exit(1)
