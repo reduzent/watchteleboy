@@ -9,7 +9,8 @@ and thus plays up to 3 hours old content (depending on how long
 segments are cached on cdn servers).
 
 This is a complete rewrite in Python of the original script written in Bash.
-The new Python version is not yet that mature, but already useable.
+The new Python version is not yet that mature, but already usable. Teleboy's
+switch from Apple HLS to MPEG-DASH triggered the rewrite.
 
 The code is hosted at:
 http://github.com/reduzent/watchteleboy
@@ -26,9 +27,10 @@ This script requires a Python 3 flavour and the following modules:
 
 * **python-crontab**
 * **python-requests**
-* **python-json**
-* **python-subprocess**
-* **python-datetime**
+
+For playback, you also require:
+
+* **mpv**
 
 
 Usage
