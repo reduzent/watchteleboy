@@ -226,7 +226,7 @@ class WatchTeleboyStreamHandler:
 
     def _download_thread(self, outfile):
         max_tries = 5
-        fd = os.open(outfile, os.O_WRONLY)
+        fd = os.open(outfile, os.O_WRONLY | os.O_CREAT)
         try_count = max_tries
         while not self.initialize_outfile(fd):
             try_count = -1
@@ -305,6 +305,9 @@ class WatchTeleboyStreamHandler:
             self.stop() # this happens only when mpv stopped reading from fifo
         return r
 
+    def wait(self):
+        self.download_thread.join()
+
 class WatchTeleboyStreamContainer:
     """
     This class parses an MPD file from given URL (supposedly from a Teleboy streaming server)
@@ -365,36 +368,58 @@ class WatchTeleboyPlayer:
         self.stop_event = threading.Event()
 
     def set_mpd_url(self, mpd_url, channel=None):
+        self.stop_event.clear()
         self.manifest = WatchTeleboyStreamContainer(mpd_url)
         self.channel = channel if not None else '-' # channel is used in Window Title
+        self.audio = self.manifest.extract_audio_stream()
+        self.video = self.manifest.extract_video_stream()
+        if self.env['starttime'] is not None:
+            stobj = parse_time_string(self.env['starttime'])
+            self.audio.set_start_time(stobj)
+            self.video.set_start_time(stobj)
+        if self.env['endtime'] is not None:
+            etobj = parse_time_string(self.env['endtime'])
+            self.audio.set_stop_time(etobj)
+            self.video.set_stop_time(etobj)
 
     def play(self):
         player = threading.Thread(target=self._player_thread)
         player.start()
 
     def _player_thread(self):
-        audio = self.manifest.extract_audio_stream()
-        video = self.manifest.extract_video_stream()
-        self.audio_fifo = self.env['fifo'].format(content_type=audio.content_type, id=audio.id)
-        self.video_fifo = self.env['fifo'].format(content_type=video.content_type, id=video.id)
-        if self.env['starttime'] is not None:
-            stobj = parse_time_string(self.env['starttime'])
-            audio.set_start_time(stobj)
-            video.set_start_time(stobj)
-        if self.env['endtime'] is not None:
-            etobj = parse_time_string(self.env['endtime'])
-            audio.set_stop_time(etobj)
-            video.set_stop_time(etobj)
-        os.mkfifo(self.audio_fifo)
-        os.mkfifo(self.video_fifo)
-        audio.start_download(self.audio_fifo, self.stop_event)
-        video.start_download(self.video_fifo, self.stop_event)
+        audio_fifo = self.env['fifo'].format(content_type=self.audio.content_type, id=self.audio.id)
+        video_fifo = self.env['fifo'].format(content_type=self.video.content_type, id=self.video.id)
+        os.mkfifo(audio_fifo)
+        os.mkfifo(video_fifo)
+        self.audio.start_download(audio_fifo, self.stop_event)
+        self.video.start_download(video_fifo, self.stop_event)
         try:
             self._run_player()
         except KeyboardInterrupt:
             self.stop_event.set()
-        os.unlink(self.audio_fifo)
-        os.unlink(self.video_fifo)
+        os.unlink(audio_fifo)
+        os.unlink(video_fifo)
+
+    def record(self):
+        recorder = threading.Thread(target=self._recorder_thread)
+        recorder.start()
+
+    def _recorder_thread(self):
+        if not self.env['showname']:
+            showname = f'{self.channel}-{datetime.now().strftime("%Y%m%d%H%M%S")}'
+        else:
+            showname = self.env['showname']
+        rec_dir = self.env['path'] or self.env['record_dir']
+        audio_file = f'{rec_dir}/{showname}.m4a'
+        video_file = f'{rec_dir}/{showname}.mp4'
+        self.audio.start_download(audio_file, self.stop_event)
+        self.video.start_download(video_file, self.stop_event)
+        try:
+            self.audio.wait()
+            self.video.wait()
+        except KeyboardInterrupt:
+            pass
+        self.stop_event.set()
 
     def _run_player(self):
         mpv_command = [

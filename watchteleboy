@@ -25,6 +25,8 @@ def main():
         ]
     }
     env = create_env(defaults)
+    #print(env)
+    #sys.exit()
     wts = WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
         try:
@@ -40,15 +42,23 @@ def main():
     if env['print_url']:
         print(mpd_url)
         sys.exit(0)
+    player = WatchTeleboyPlayer(env)
     try:
-        player = WatchTeleboyPlayer(env)
         player.set_mpd_url(mpd_url, ch)
-        player.play()
-        player.wait()
     except WatchTeleboyError:
         sys.exit(1)
+    if env['record']:
+        try:
+            player.record()
+            player.wait()
+        except WatchTeleboyError:
+            sys.exit(1)
     else:
-        sys.exit()
+        try:
+            player.play()
+            player.wait()
+        except WatchTeleboyError:
+            sys.exit(1)
 
 if __name__ == '__main__':
     main()
