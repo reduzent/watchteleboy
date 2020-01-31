@@ -1,10 +1,13 @@
 import argparse
 import configparser
-import crontab
 from datetime import date, datetime, time, timedelta
 import os
 import random
 import sys
+
+import crontab # python3-crontab
+
+import wt
 
 config_template = """[watchteleboy]
 # watchteleboy configuration
@@ -72,7 +75,6 @@ def parse_time_string(rawstring):
     'tomorrow' as dates.
     Format: [YYYY-MM-DD ]HH:MM[:ss]
     """
-    from wt_classes import WatchTeleboyError
     def guess_date(start):
         # if midnight is not long ago, assume evening times to be
         # from yesterday
@@ -92,7 +94,7 @@ def parse_time_string(rawstring):
             return time(*list(map(int, tstr.split(':'))))
         except ValueError:
             print('Cannot parse given time: ' + tstr)
-            raise WatchTeleboyError
+            raise wt.WatchTeleboyError
 
     def evaluate_date(dstr):
         try:
@@ -104,7 +106,7 @@ def parse_time_string(rawstring):
                 return date(*list(map(int, dstr.split('-'))))
         except ValueError:
             print('Cannot parse given date: '  + dstr)
-            raise WatchTeleboyError
+            raise wt.WatchTeleboyError
 
     dtstr = rawstring.split(' ')
     if len(dtstr) == 1:
@@ -115,7 +117,7 @@ def parse_time_string(rawstring):
         timepart = evaluate_time(dtstr[1])
     else:
         print('Cannot parse given time: ' + tstr)
-        raise WatchTeleboyError
+        raise wt.WatchTeleboyError
     return datetime.combine(datepart, timepart)
 
 def create_env(defaults):
@@ -140,8 +142,7 @@ def create_env(defaults):
     return {**defaults, **env, **args.__dict__}
 
 def create_config(defaults):
-    from wt_classes import WatchTeleboySession
-    wts = WatchTeleboySession(defaults['session_cache'])
+    wts = wt.WatchTeleboySession(defaults['session_cache'])
     while not wts.logged_in():
         try:
             user = input("Please enter your teleboy username: ")
@@ -168,14 +169,13 @@ def read_config(defaults):
     return config['watchteleboy']
 
 def schedule_recording(env):
-    from wt_classes import WatchTeleboyError
     st_obj = parse_time_string(env['starttime'])
     et_obj = parse_time_string(env['endtime'])
     try:
         assert st_obj < et_obj
     except AssertionError:
         print('--endtime must be after --starttime')
-        raise WatchTeleboyError
+        raise wt.WatchTeleboyError
     cron = crontab.CronTab(user=True)
     command = f'watchteleboy --record --channel {env["channel"]} --starttime {env["starttime"]} --endtime {env["endtime"]} --path {env["record_dir"]} --showname {env["showname"]}'
     job = cron.new(command=command, comment=env['wt_instance'])

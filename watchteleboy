@@ -2,9 +2,8 @@
 
 import sys
 import datetime
-from wt_classes import WatchTeleboyError, WatchTeleboySession, WatchTeleboyPlayer
-from wt_helpers import create_env, parse_time_string, schedule_recording
 
+import wt
 
 def main():
     defaults = {
@@ -26,11 +25,11 @@ def main():
             '--demuxer-max-bytes=1GiB',
         ]
     }
-    env = create_env(defaults)
+    env = wt.create_env(defaults)
     if env['version']:
         print(f'watchteleboy {env["wt_version"]}')
         sys.exit(0)
-    wts = WatchTeleboySession(env['session_cache'])
+    wts = wt.WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
         try:
             assert wts.login(user=env['teleboy_user'], password=env['teleboy_pass'])
@@ -47,28 +46,28 @@ def main():
         sys.exit(0)
     try:
         if env['record'] and env['starttime']:
-            st_obj = parse_time_string(env['starttime'])
+            st_obj = wt.parse_time_string(env['starttime'])
             if st_obj > datetime.datetime.now() + datetime.timedelta(seconds=10):
-                schedule_recording(env)
+                wt.schedule_recording(env)
                 sys.exit()
-    except WatchTeleboyError:
+    except wt.WatchTeleboyError:
         sys.exit(1)
-    player = WatchTeleboyPlayer(env)
+    player = wt.WatchTeleboyPlayer(env)
     try:
         player.set_mpd_url(mpd_url, ch)
-    except WatchTeleboyError:
+    except wt.WatchTeleboyError:
         sys.exit(1)
     if env['record']:
         try:
             player.record()
             player.wait()
-        except WatchTeleboyError:
+        except wt.WatchTeleboyError:
             sys.exit(1)
     else:
         try:
             player.play()
             player.wait()
-        except WatchTeleboyError:
+        except wt.WatchTeleboyError:
             sys.exit(1)
     sys.exit(0)
 

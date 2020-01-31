@@ -2,13 +2,15 @@ import json
 import os
 import pickle
 import re
-import requests
 import subprocess
 import sys
 import threading
 from time import sleep
 from xml.dom import minidom
-from wt_helpers import *
+
+import requests            # DEB: python3-request
+
+from wt.helpers import *
 
 ##################################################################################
 # SOME CLASSES
