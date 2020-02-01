@@ -65,6 +65,7 @@ def parse_args():
     rec.add_argument("-r", "--record", help="record a stream to a file", action="store_true")
     rec.add_argument("-p", "--path", help="specify target directory for recordings")
     rec.add_argument("-n", "--showname", help="specify file name prefix for recorded file")
+    rec.add_argument("--delete-cronjob", help="this is used for scheduled recordings to delete themselves from cron")
     args = parser.parse_args()
     return args
 
@@ -121,8 +122,7 @@ def parse_time_string(rawstring):
     return datetime.combine(datepart, timepart)
 
 def create_env(defaults):
-    home_dir = os.path.expanduser('~')
-    defaults['wt_dir'] = defaults['wt_dir'].format(home_dir=home_dir)
+    defaults['wt_dir'] = defaults['wt_dir'].format(home_dir=defaults['home_dir'])
     defaults['record_dir'] = defaults['record_dir'].format(wt_dir=defaults['wt_dir'])
     defaults['configfile'] = defaults['configfile'].format(wt_dir=defaults['wt_dir'])
     defaults['session_cache'] = defaults['session_cache'].format(wt_dir=defaults['wt_dir'])
@@ -134,12 +134,12 @@ def create_env(defaults):
     except FileExistsError:
         pass
     try:
-        env = read_config(defaults)
+        config = read_config(defaults)
     except KeyError:
         create_config(defaults)
-        env = read_config(defaults)
+        config = read_config(defaults)
     args = parse_args()
-    return {**defaults, **env, **args.__dict__}
+    return {**defaults, **config, **args.__dict__}
 
 def create_config(defaults):
     wts = wt.WatchTeleboySession(defaults['session_cache'])
@@ -177,10 +177,15 @@ def schedule_recording(env):
         print('--endtime must be after --starttime')
         raise wt.WatchTeleboyError
     cron = crontab.CronTab(user=True)
-    command = f'watchteleboy --record --channel {env["channel"]} --starttime {env["starttime"]} --endtime {env["endtime"]} --path {env["record_dir"]} --showname {env["showname"]}'
-    job = cron.new(command=command, comment=env['wt_instance'])
-    job.minute.on(st_obj.minute)
+    command = f'{env["wt_abspath"]} --record --channel \'{env["channel"]}\' --starttime \'{env["starttime"]}\' --endtime \'{env["endtime"]}\' --path \'{env["record_dir"]}\' --showname \'{env["showname"]}\' --delete-cronjob \'{env["wt_instance"]}\''
+    job = cron.new(command=command)
+    job.minute.on(st_obj.minute+1)
     job.hour.on(st_obj.hour)
     job.day.on(st_obj.day)
     job.month.on(st_obj.month)
+    cron.write()
+
+def delete_cronjob(env):
+    cron = crontab.CronTab(user=True)
+    cron.remove_all(command=env['delete_cronjob'])
     cron.write()

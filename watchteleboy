@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import datetime
 
@@ -8,6 +9,8 @@ import wt
 def main():
     defaults = {
         'wt_version': '2.0',
+        'wt_abspath': os.path.abspath(__file__),
+        'home_dir': os.path.expanduser('~'),
         'wt_dir': '{home_dir}/.watchteleboy',
         'configfile': '{wt_dir}/config',
         'session_cache': '{wt_dir}/session_cache',
@@ -29,6 +32,8 @@ def main():
     if env['version']:
         print(f'watchteleboy {env["wt_version"]}')
         sys.exit(0)
+    if env['delete_cronjob']:
+        wt.delete_cronjob(env)
     wts = wt.WatchTeleboySession(env['session_cache'])
     if not wts.logged_in():
         try:
