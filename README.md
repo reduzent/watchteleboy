@@ -32,6 +32,11 @@ For playback, you also require:
 
 * **mpv**
 
+For merging a recording's audio and video files into a single mkv file,
+you need also:
+
+* **ffmpeg**
+
 
 Usage
 -----
