@@ -412,32 +412,67 @@ class WatchTeleboyPlayer:
         else:
             showname = self.env['showname']
         rec_dir = self.env['path'] or self.env['record_dir']
+        audio_ts = self.audio.segment_current_timestamp / self.audio.segment_timescale
+        video_ts = self.video.segment_current_timestamp / self.video.segment_timescale
+        audio_offset = audio_ts - video_ts
         audio_file = f'{rec_dir}/{showname}.m4a'
         video_file = f'{rec_dir}/{showname}.mp4'
+        mkv_file = f'{rec_dir}/{showname}.mkv'
         self.audio.start_download(audio_file, self.stop_event)
         self.video.start_download(video_file, self.stop_event)
+        print(f'audio: {audio_ts}')
+        print(f'video: {video_ts}')
+        print(f'audio_offset: {audio_offset}')
         try:
             self.audio.wait()
             self.video.wait()
         except KeyboardInterrupt:
             pass
         self.stop_event.set()
+        self._merge_audio_video_to_mkv(audio_file=audio_file, video_file=video_file, mkv_file=mkv_file, audio_offset=audio_offset)
+        os.unlink(audio_file)
+        os.unlink(video_file)
 
     def _run_player(self, audio_file=None, video_file=None):
         mpv_command = [
-            self.env['mpv'],
-            *self.env['mpv_args'],
+            self.env['player_binary'],
+            *self.env['player_args'],
             f'--title={self.channel}',
             f'--audio-file={audio_file}',
             video_file
         ]
-        mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        try:
+            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        except FileNotFoundError:
+            print('Cannot play stream, because mpv was not found.')
+            print('Please install it with "sudo apt install mpv".')
+            self.stop_event.set()
+            raise WatchTeleboyError
         while mpv.poll() is None:
             if self.stop_event.wait(timeout=0.1):
                 mpv.terminate()
                 break
             sleep(0.1)
         self.stop_event.set()
+
+    def _merge_audio_video_to_mkv(self, audio_file=None, video_file=None, mkv_file=None, audio_offset=None):
+        merge_cmd = [
+            '/usr/bin/ffmpeg',
+            '-i', video_file,
+            '-itsoffset', str(audio_offset),
+            '-i', audio_file,
+            '-c', 'copy',
+            '-map', '0:v:0',
+            '-map', '1:a:0', mkv_file
+        ]
+        try:
+            ffmpeg = subprocess.Popen(merge_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except FileNotFoundError:
+            print('Merging audio and video file, because ffmpeg was not found.')
+            print('Please install it with "sudo apt install ffmpeg".')
+            raise WatchTeleboyError
+        stdout, stderr = ffmpeg.communicate()
+        ffmpeg.wait()
 
     def stop(self):
         self.stop_event.set()
