@@ -1,3 +1,7 @@
 watchteleboy usr/bin
 DOCS/man/watchteleboy.1 usr/share/man/man1
 tvbrowser/ usr/share/watchteleboy
+wt/__init__.py usr/lib/python3/dist-packages/wt
+wt/classes.py usr/lib/python3/dist-packages/wt
+wt/helpers.py usr/lib/python3/dist-packages/wt
+
