@@ -21,7 +21,7 @@ teleboy_pass = {teleboy_pass}
 # all available channels (in default order) or use a customized
 # channel list in user-defined order. You may visit
 # http://www.teleboy.ch/en/sender to customize your personal
-# channel selection. Allowed values: 'all', 'customized'
+# channel selection. Allowed values: 'all', 'custom'
 channel_selection = {channel_selection}
 
 # Additional flags passed to mpv
