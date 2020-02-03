@@ -5,7 +5,7 @@ import os
 import random
 import sys
 
-import crontab # python3-crontab
+import crontab # DEB: python3-crontab
 
 import wt
 
@@ -58,15 +58,21 @@ def parse_args():
     oneshots.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
     oneshots.add_argument("-v", "--version", help="print version", action="store_true")
     parser.add_argument("-c", "--channel", help="play channel")
-    parser.add_argument("-t", "--starttime", help="specify a start time other than 'now'")
-    parser.add_argument("-e", "--endtime", help="specify an end time")
+    parser.add_argument("-t", "--starttime", help="specify a start time other than 'now' ([YYYY-mm-dd ]HH:MM[:SS])")
+    length = parser.add_mutually_exclusive_group()
+    length.add_argument("-e", "--endtime", help="specify an end time ([YYYY-mm-dd ]HH:MM[:SS])")
+    length.add_argument("-d", "--duration", help="specify a duration ([[HH:]MM:]SS)")
     parser.add_argument("-q", "--quiet", help="suppress any output", action="store_true")
     rec = parser.add_argument_group()
     rec.add_argument("-r", "--record", help="record a stream to a file", action="store_true")
     rec.add_argument("-p", "--path", help="specify target directory for recordings")
     rec.add_argument("-n", "--showname", help="specify file name prefix for recorded file")
-    rec.add_argument("--delete-cronjob", help="this is used for scheduled recordings to delete themselves from cron")
+    rec.add_argument("--delete-cronjob", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    # enforce some logic
+    if args.starttime and not args.endtime and not args.duration:
+        print('watchteleboy: error: If --starttime is specified, either --endtime or --duration is required.')
+        raise wt.WatchTeleboyError
     return args
 
 def parse_time_string(rawstring):
@@ -121,6 +127,31 @@ def parse_time_string(rawstring):
         raise wt.WatchTeleboyError
     return datetime.combine(datepart, timepart)
 
+def parse_duration_string(dstr):
+    """
+    accept a string containing a duration of the format [[HH:]MM:]ss
+    and return a datetime.timedelta object
+    """
+    try:
+        dlist = list(map(int, dstr.split(':')))
+        assert len(dlist) <= 3
+    except ValueError:
+        print(f'Could not parse duration: {dstr}')
+        raise wt.WatchTeleboyError
+    except AssertionError:
+        print(f'Could not parse duration, too many fields: {dstr}')
+        raise wt.WatchTeleboyError
+    seconds = dlist[-1]
+    try:
+        minutes = dlist[-2]
+    except IndexError:
+        minutes = 0
+    try:
+        hours = dlist[-3]
+    except IndexError:
+        hours = 0
+    return timedelta(hours=hours, minutes=minutes, seconds=seconds)
+
 def create_env(defaults):
     defaults['wt_dir'] = defaults['wt_dir'].format(home_dir=defaults['home_dir'])
     defaults['record_dir'] = defaults['record_dir'].format(wt_dir=defaults['wt_dir'])
@@ -170,16 +201,23 @@ def read_config(defaults):
 
 def schedule_recording(env):
     st_obj = parse_time_string(env['starttime'])
-    et_obj = parse_time_string(env['endtime'])
+    if env['endtime']:
+        et_obj = parse_time_string(env['endtime'])
+        st_et_delta = et_obj - st_obj
+    else:
+        st_et_delta = parse_duration_string(env['duration'])
+    duration = st_et_delta.seconds
     try:
         assert st_obj < et_obj
     except AssertionError:
         print('--endtime must be after --starttime')
         raise wt.WatchTeleboyError
     cron = crontab.CronTab(user=True)
-    command = f'{env["wt_abspath"]} --record --channel \'{env["channel"]}\' --starttime \'{env["starttime"]}\' --endtime \'{env["endtime"]}\' --path \'{env["record_dir"]}\' --showname \'{env["showname"]}\' --delete-cronjob \'{env["wt_instance"]}\''
+    command = f'{env["wt_abspath"]} --record --channel \'{env["channel"]}\' --starttime \'{env["starttime"]}\' --duration \'{duration}\' --path \'{env["record_dir"]}\' --showname \'{env["showname"]}\' --delete-cronjob \'{env["wt_instance"]}\''
     job = cron.new(command=command)
-    job.minute.on(st_obj.minute+1)
+    job.minute.on(st_obj.minute+2) # we do not want to start recording before segments are available
+                                   # consider start_time=19:29:59 would be scheduled to 19:31, which means
+                                   # segments are at least one minute old when wewe start downloading.
     job.hour.on(st_obj.hour)
     job.day.on(st_obj.day)
     job.month.on(st_obj.month)

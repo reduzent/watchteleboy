@@ -383,6 +383,11 @@ class WatchTeleboyPlayer:
             etobj = parse_time_string(self.env['endtime'])
             self.audio.set_stop_time(etobj)
             self.video.set_stop_time(etobj)
+        if self.env['duration'] is not None:
+            dobj = parse_duration_string(self.env['duration'])
+            etobj = stobj + dobj
+            self.audio.set_stop_time(etobj)
+            self.video.set_stop_time(etobj)
 
     def play(self):
         player = threading.Thread(target=self._player_thread)
@@ -420,9 +425,6 @@ class WatchTeleboyPlayer:
         mkv_file = f'{rec_dir}/{showname}.mkv'
         self.audio.start_download(audio_file, self.stop_event)
         self.video.start_download(video_file, self.stop_event)
-        print(f'audio: {audio_ts}')
-        print(f'video: {video_ts}')
-        print(f'audio_offset: {audio_offset}')
         try:
             self.audio.wait()
             self.video.wait()

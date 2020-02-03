@@ -28,7 +28,10 @@ def main():
             '--demuxer-max-bytes=1GiB',
         ]
     }
-    env = wt.create_env(defaults)
+    try:
+        env = wt.create_env(defaults)
+    except wt.WatchTeleboyError:
+        sys.exit(1)
     if env['version']:
         print(f'watchteleboy {env["wt_version"]}')
         sys.exit(0)
