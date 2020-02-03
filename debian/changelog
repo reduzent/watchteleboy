@@ -1,3 +1,12 @@
+watchteleboy (2.0~bionic~ppa0) bionic; urgency=low
+
+  * First release of script rewritten in Python.
+  * No fancy interactive CLI interface (yet).
+  * CLI options compatible with deprecated BASH version
+  * Now based on MPEG-DASH (Teleboy ditched Apple HLS, it seems)
+
+ -- Roman Haefeli <reduzent@gmail.com>  Mon, 03 Feb 2020 23:55:44 +0100
+
 watchteleboy (1.31~bionic~ppa0) bionic; urgency=low
 
   * update key of the teleboy API
