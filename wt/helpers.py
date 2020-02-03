@@ -52,7 +52,7 @@ max_bitrate = {max_bitrate}
 ##################################################################################
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Watch and record IPTV from Teleboy")
+    parser = argparse.ArgumentParser(description="Watch and record MPEG-DASH streams from Teleboy")
     oneshots = parser.add_mutually_exclusive_group()
     oneshots.add_argument("-l", "--list", help="list available channels", action="store_true")
     oneshots.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
