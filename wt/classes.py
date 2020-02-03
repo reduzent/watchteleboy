@@ -436,8 +436,11 @@ class WatchTeleboyPlayer:
         os.unlink(video_file)
 
     def _run_player(self, audio_file=None, video_file=None):
+        mpv_opts_raw = self.env['player_opts'] or self.env['mpv_opts']
+        mpv_opts = mpv_opts_raw.split(' ')
         mpv_command = [
             self.env['player_binary'],
+            *mpv_opts,
             *self.env['player_args'],
             f'--title={self.channel}',
             f'--audio-file={audio_file}',

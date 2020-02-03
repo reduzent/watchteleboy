@@ -21,7 +21,6 @@ def main():
         'fifo': '{wt_dir}/fifo_{wt_instance}_{content_type}_{id}',
         'player_binary': 'mpv',
         'player_args': [
-            '--keep-open',
             '--force-seekable=yes',
             '--cache=yes',
             '--cache-secs=600',
