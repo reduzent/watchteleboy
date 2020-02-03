@@ -63,7 +63,7 @@ def parse_args():
     length.add_argument("-e", "--endtime", help="specify an end time ([YYYY-mm-dd ]HH:MM[:SS])")
     length.add_argument("-d", "--duration", help="specify a duration ([[HH:]MM:]SS)")
     parser.add_argument("-q", "--quiet", help="suppress any output", action="store_true")
-    parser.add_argument("-o", "--player-opts", help="options passed to mpv player")
+    parser.add_argument("--player-opts", help="options passed to mpv player")
     rec = parser.add_argument_group()
     rec.add_argument("-r", "--record", help="record a stream to a file", action="store_true")
     rec.add_argument("-p", "--path", help="specify target directory for recordings")

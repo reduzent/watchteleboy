@@ -81,8 +81,10 @@ in the user's crontab.
 .IP "\fB\-v, \-\-version"
 Print the version of this software and exit.
 .SH WATCHING OPTIONS
-.IP "\fB\-o, \-\-player-opts OPTIONS"
-Options passed to player software.
+.IP "\fB\-\-player-opts OPTIONS"
+Options passed to player software. Make sure to use an equal sign between command line option and value. Otherwise
+.B watchteleboy
+will try to parse the value as option because of the leading dashes. EXAMPLE: \fI--player-opts='--keep-open'\fR.
 .B watchteleboy
 currently only supports \fImpv\fR as player. \fIOPTIONS\fR are passed as command line arguments to \fImpv\fR. Note that
 some hard-coded options are passed for playback to work correctly, so conflicting options might be overriden by options
