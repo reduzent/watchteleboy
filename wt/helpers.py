@@ -157,7 +157,7 @@ def parse_duration_string(dstr):
 
 def create_env(defaults):
     defaults['wt_dir'] = defaults['wt_dir'].format(home_dir=defaults['home_dir'])
-    defaults['record_dir'] = defaults['record_dir'].format(wt_dir=defaults['wt_dir'])
+    defaults['record_dir'] = defaults['record_dir'].format(home_dir=defaults['home_dir'])
     defaults['configfile'] = defaults['configfile'].format(wt_dir=defaults['wt_dir'])
     defaults['session_cache'] = defaults['session_cache'].format(wt_dir=defaults['wt_dir'])
     defaults['wt_instance'] = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for i in range(8))

@@ -16,7 +16,7 @@ def main():
         'session_cache': '{wt_dir}/session_cache',
         'mpv_opts': '--keep-open',
         'channel_selection': 'all',
-        'record_dir': '{wt_dir}',
+        'record_dir': '{home_dir}',
         'max_bitrate': '4800000',
         'fifo': '{wt_dir}/fifo_{wt_instance}_{content_type}_{id}',
         'player_binary': 'mpv',
