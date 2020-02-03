@@ -3,31 +3,9 @@ Upstream-Name: watchteleboy
 Upstream-Contact: Roman Haefeli <reduzent@gmail.com>
 Source: https://github.com/reduzent/watchteleboy
 
-Files: watchteleboy
-Copyright: 2011-2012 Roman Haefeli <reduzent@gmail.com>
-           2012      Doma Smoljo <doma@bitnik.org
-           2011      Alexander Tuchaček <tuchacek@krcf.org>
-License: GPL-2
-
 Files: *
-Copyright: 2011-2012 Roman Haefeli <reduzent@gmail.com>
+Copyright: 2011-2020 Roman Haefeli <reduzent@gmail.com>
 License: GPL-2+
-
-License: GPL-2
- This package is free software; you can redistribute it and/or modify it
- under the terms of the GNU General Public License as published by the
- Free Software Foundation.
- .
- This package is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- General Public License for more details.
- .
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
-Comment:
- On Debian systems, the complete text of the GNU General
- Public License can be found in `/usr/share/common-licenses/GPL-2'.
 
 License: GPL-2+
  This package is free software; you can redistribute it and/or modify it
