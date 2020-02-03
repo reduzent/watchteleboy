@@ -21,20 +21,20 @@ watchteleboy \- watch and record online HDTV streams
 .B --record --channel
 .I CHANNEL
 [
-.B --endtime 
-.I TIME 
+.B --endtime
+.I TIME
 |
 .B --duration
 .I SECONDS
 [
 .B --starttime
-.I TIME 
+.I TIME
 ]]
 .SH DESCRIPTION
 .B watchteleboy
 plays and records live HDTV streams.
 .PP
-When launched without any options, 
+When launched without any options,
 .B watchteleboy
 asks you to select a channel to watch. When launched with
 .B --record
@@ -50,9 +50,6 @@ is started, it creates a configuration file in $HOME/.watchteleboyrc. It
 then asks you for a valid Teleboy login.
 .br
 .SH GENERAL OPTIONS
-.IP "\fB\-a, \-\-alternative"
-Play or record alternative audio stream (if one is available), sometimes
-containing the original language of a movie.
 .IP "\fB\-c, \-\-channel CHANNEL"
 Specify the channel to be played or recorded. Without any other options
 .B watchteleboy
@@ -71,12 +68,12 @@ avoid downloading unnecessary data when watching shows from the past. TIME can
 be anything understood by the command
 .B date
 .IP "\fB\-\-delete-cron CHANNEL TIME"
-Delete a previously scheduled job from crontab. To match exactly a 
+Delete a previously scheduled job from crontab. To match exactly a
 specific job you need to specify the CHANNEL and its start time TIME.
 .IP "\fB\-h, \-\-help"
 Print a summary of available options and exit.
 .IP "\fB\-l, \-\-list"
-Print a list of available channels and exit. 
+Print a list of available channels and exit.
 .IP "\fB\-q, \-\-quiet"
 Do not print any messages or errors, whatsoever.
 .IP "\fB\-t, \-\-starttime TIME"
@@ -87,7 +84,7 @@ might be used. In watching mode, any time from 6 hours in the past until now is
 supported, in recording mode any time from 6 hours in the past to anytime in the future.
 In recording mode, a start time in the future triggers an entry in the user's crontab.
 .IP "\fB\-v, \-\-version"
-Print the version of this software and exit. 
+Print the version of this software and exit.
 .SH WATCHING OPTIONS
 .IP "\fB\-o, \-\-player-opts OPTIONS"
 Options passed to player software.
@@ -110,7 +107,7 @@ Those options can only be used in recording mode, which is set with the
 option.
 In recording mode,
 .B watchteleboy
-writes the received stream to a local file. The name of the resulting 
+writes the received stream to a local file. The name of the resulting
 file is composed of the channel name and the current date and time, by following
 this template:
 .PP
@@ -122,12 +119,12 @@ selected stream variant, but is usually 1280x720 pixels.
 .IP "\fB\-n, \-\-showname NAME"
 Specify a filename prefix that is used instead of the channel name.
 .IP "\fB\-p, \-\-path DIRECTORY"
-Specify directory where recorded shows are saved. The 
+Specify directory where recorded shows are saved. The
 default is the current directory.
 .IP "\fB\-r, \-\-record"
 Record a stream instead of watching it.
 .SH CONFIGURATION FILE
-If it exists, 
+If it exists,
 .B watchteleboy
 will read parameters from its configuration file, which is located
 in $HOME/.watchteleboyrc. Those parameters may be overriden by options specified on the
@@ -136,7 +133,7 @@ command line.
 .I PARAMETERS:
 .RS
 RECORDPATH
-.RS 
+.RS
 Directory where recordings are saved (overriden by
 .I --path
 ).
@@ -161,9 +158,9 @@ Options passed to vlc. This parameter has no effect in record mode.
 .RE
 BUFFERSECONDS
 .RS
-defines how much data is downloaded before playback starts. 
-.B watchteleboy 
-will wait to play the stream until 
+defines how much data is downloaded before playback starts.
+.B watchteleboy
+will wait to play the stream until
 .I BUFFERSECONDS * BITRATE / 8
 bytes have been downloaded. If you often experience premature player exits, it is advised
 to increase that value. The default is 8 (which means two stream segments).
@@ -187,7 +184,7 @@ Teleboy account the script uses to login to the service.
 .RE
 TELEBOY_PASS
 .RS
-Password for the given Teleboy account. 
+Password for the given Teleboy account.
 .RE
 .SH EXAMPLES
 .B Schedule a recording using interactive dialogs:
