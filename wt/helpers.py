@@ -94,7 +94,10 @@ def parse_time_string(rawstring):
         before_midnight = dt2.time()
         if now.time() < past_midnight and start > before_midnight:
             return today - timedelta(days=1)
-        return today
+        elif now.time() > before_midnight and start < past_midnight:
+            return today + timedelta(days=1)
+        else:
+            return today
 
     def evaluate_time(tstr):
         try:
