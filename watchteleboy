@@ -47,7 +47,10 @@ def main():
         wts.list_channels()
         sys.exit(0)
     ch = env['channel'] if env['channel'] else 'SRF1'
-    ch, mpd_url = wts.get_stream_url(ch) # also returns canonical channel name
+    try:
+        ch, mpd_url = wts.get_stream_url(ch) # also returns canonical channel name
+    except wt.WatchTeleboyError:
+        sys.exit(1)
     if env['print_url']:
         print(mpd_url)
         sys.exit(0)

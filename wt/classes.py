@@ -60,7 +60,7 @@ class WatchTeleboySession:
             assert r.status_code == 200
         except AssertionError:
             print('failed to retrieve channel data')
-            raise
+            raise WatchTeleboyError
         channel_data = json.loads(r.content.decode())
         return (channel, channel_data['data']['stream']['url'])
 
