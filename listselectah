@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+import urwid
+
+channels = u'SRF1 SRF2 ARD ZDF Arte 3sat ZDF-Info BBCWorldNews'.split()
+title = 'Select a channel:'
+
+line_box_chars = {
+    'tlcorner': '\N{Full block}',
+    'trcorner': '\N{Full block}',
+    'brcorner': '\N{Full block}',
+    'blcorner': '\N{Full block}',
+    'lline': '\N{Full block}',
+    'rline': '\N{Full block}',
+    'tline': '\N{Upper half block}',
+    'bline': '\N{Lower half block}'
+}
+
+palette = [
+    ('outer', '', '', '', '#408', '#fff'),
+    ('border', '', '', '', '#80f', '#fdf'),
+    ('inner', '', '', '', '#006', '#fdf'),
+    ('reversed', '', '', '', '#fdf', '#006')
+]
+
+def menu(title, choices):
+    body = [urwid.Text(('inner', title)), urwid.Divider()]
+    for c in choices:
+        button = urwid.Button(c)
+        urwid.connect_signal(button, 'click', item_chosen, c)
+        body.append(urwid.AttrMap(button, 'inner', focus_map='reversed'))
+    listbox = urwid.ListBox(urwid.SimpleListWalker(body))
+    return urwid.Padding(listbox, left=1, right=1)
+
+def item_chosen(button, choice):
+    global main
+    response = urwid.Text([u'Now playing ', choice, u'\n'])
+    done = urwid.Button(u'Stop')
+    urwid.connect_signal(done, 'click', exit_program)
+    content = urwid.Filler(urwid.Pile([response,
+        urwid.AttrMap(done, 'inner', focus_map='reversed')]))
+    main.original_widget = urwid.AttrMap(urwid.LineBox(content, title='WatchTeleboy', **line_box_chars), 'border')
+
+
+def exit_program(button):
+    raise urwid.ExitMainLoop()
+
+def dropdown_dialog(title, choices):
+    global main
+    linebox = urwid.LineBox(menu(title, choices), title='WatchTeleboy', **line_box_chars)
+    main = urwid.AttrMap(linebox, 'border')
+    top = urwid.Overlay(main, urwid.AttrMap(urwid.SolidFill(u'\N{FULL BLOCK}'), 'outer'),
+        align='center', width=('relative', 50),
+        valign='middle', height=('relative', 80),
+        min_width=20, min_height=9)
+    loop = urwid.MainLoop(top, palette=palette)
+    loop.screen.set_terminal_properties(colors=256)
+    loop.run()
+
+while True:
+    dropdown_dialog(title, channels)
+
