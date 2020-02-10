@@ -1,16 +1,12 @@
-#!/usr/bin/env python3
 import urwid
 
-channels = u'SRF1 SRF2 ARD ZDF Arte 3sat ZDF-Info BBCWorldNews'.split()
-
-
-
-class ChanSelectah:
+class WatchTeleboyGUI:
 
     palette = [
         ('outer', '', '', '', '#408', '#fff'),
         ('border', '', '', '', '#80f', '#fdf'),
         ('inner', '', '', '', '#006', '#fdf'),
+        ('title', '', '', '', '#006,bold', '#fdf'),
         ('reversed', '', '', '', '#fdf', '#006')
     ]
 
@@ -26,17 +22,21 @@ class ChanSelectah:
     }
 
     def __init__(self, channels):
-        body = [urwid.Text(('inner', 'Select a channel:')), urwid.Divider()]
+        # channel selection
+        body = [urwid.Text(('title', 'Select a channel:')), urwid.Divider()]
         for channel in channels:
             button = urwid.Button(channel)
             urwid.connect_signal(button, 'click', self.now_playing, channel)
-            body.append(urwid.AttrMap(button, 'inner', focus_map='reversed'))
+            body.append(urwid.AttrMap(button, None, focus_map='reversed'))
         self.channel_selection_w = urwid.ListBox(urwid.SimpleListWalker(body))
+
+        # embed main widget (initially channel_selection_w)
         self.container = urwid.Padding(self.channel_selection_w, left=1, right=1)
-        linebox = urwid.LineBox(self.container, title='WatchTeleboy', **self.line_box_chars)
+        guts = urwid.AttrMap(self.container, 'inner')
+        linebox = urwid.LineBox(guts, title='WatchTeleboy', **self.line_box_chars)
         frame = urwid.AttrMap(linebox, 'border')
         main = urwid.Overlay(frame, urwid.AttrMap(urwid.SolidFill(u'\N{FULL BLOCK}'), 'outer'),
-                align='center', width=('relative', 50),
+                align=('relative', 50), width=('relative', 50),
                 valign='middle', height=('relative', 80),
                 min_width=20, min_height=9)
         self.loop = urwid.MainLoop(main,self.palette)
@@ -49,16 +49,10 @@ class ChanSelectah:
         self.container.original_widget = widget
 
     def now_playing(self, button, channel):
-        response = urwid.Text(['Now playing ', channel, '\n'])
+        response = urwid.Text(('title', ['Now playing ', channel, '\n']))
         stop = urwid.Button(u'Stop')
         urwid.connect_signal(stop, 'click', self.switch_widget, self.channel_selection_w)
-        now_playing_w = urwid.Filler(urwid.Pile([response,
-            urwid.AttrMap(stop, None, focus_map='reversed')]))
+        pile = urwid.Pile([response,
+            urwid.AttrMap(stop, None, focus_map='reversed')])
+        now_playing_w = urwid.Filler(pile, valign='top')
         self.switch_widget(button, now_playing_w)
-
-
-
-
-chs = ChanSelectah(channels)
-chs.run()
-
