@@ -1,4 +1,6 @@
 import urwid
+import sys
+import time
 
 class WatchTeleboyGUI:
 
@@ -21,7 +23,13 @@ class WatchTeleboyGUI:
         'bline': '\N{Lower half block}'
     }
 
-    def __init__(self, channels):
+    def __init__(self, wt_session, wt_player):
+        # wt_session is expected to be an instance of WatchTeleboySession
+        # wt_player is expected to be an instance of WatchTeleboyPlayer
+        self.wt_session = wt_session
+        self.wt_player = wt_player
+        channels = self.wt_session.get_channels()
+
         # channel selection
         body = [urwid.Text(('title', 'Select a channel:')), urwid.Divider()]
         for channel in channels:
@@ -49,10 +57,18 @@ class WatchTeleboyGUI:
         self.container.original_widget = widget
 
     def now_playing(self, button, channel):
-        response = urwid.Text(('title', ['Now playing ', channel, '\n']))
+        ch, mpd_url = self.wt_session.get_stream_url(channel)
+        self.wt_player.set_mpd_url(mpd_url, ch)
+        self.wt_player.play()
+        response = urwid.Text(('title', ['Now playing ', ch, '\n']))
         stop = urwid.Button(u'Stop')
-        urwid.connect_signal(stop, 'click', self.switch_widget, self.channel_selection_w)
+        urwid.connect_signal(stop, 'click', self.stop_playing)
         pile = urwid.Pile([response,
             urwid.AttrMap(stop, None, focus_map='reversed')])
         now_playing_w = urwid.Filler(pile, valign='top')
         self.switch_widget(button, now_playing_w)
+
+    def stop_playing(self, button):
+        self.wt_player.stop()
+        self.switch_widget(button, self.channel_selection_w)
+

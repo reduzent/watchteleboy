@@ -64,6 +64,18 @@ class WatchTeleboySession:
         channel_data = json.loads(r.content.decode())
         return (channel, channel_data['data']['stream']['url'])
 
+    def get_channels(self):
+        """
+        print all available channels
+        """
+        try:
+            self.channel_ids
+        except AttributeError:
+            self.__retrieve_channel_ids()
+        chanlist = list(self.channel_ids.keys())
+        chanlist.remove('__selection__')
+        return chanlist
+
     def list_channels(self):
         """
         print all available channels
