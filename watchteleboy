@@ -49,8 +49,13 @@ def main():
     if not env['channel']:
         player = wt.WatchTeleboyPlayer(env)
         wtgui = wt.WatchTeleboyGUI(wts, player)
-        wtgui.run()
-        sys.exit()
+        try:
+            wtgui.run(0)
+        except KeyboardInterrupt:
+            sys.exit(0)
+        except wt.WatchTeleboyError:
+            sys.exit(1)
+        sys.exit(0)
     try:
         ch, mpd_url = wts.get_stream_url(env['channel']) # also returns canonical channel name
     except wt.WatchTeleboyError:
