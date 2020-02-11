@@ -30,8 +30,8 @@ class WatchTeleboyGUI:
         channels = self.wt_session.get_channels()
 
         # channel selection
-        title = urwid.Pile([urwid.Text(('title', 'Select a channel:')),
-            urwid.Divider()])
+        div = urwid.Divider()
+        title = urwid.Pile([div, urwid.Text(('title', 'Select a channel:')), div])
         quit = urwid.Button('Quit')
         urwid.connect_signal(quit, 'click', self.exit_program)
         footer = urwid.Pile([urwid.Divider(), urwid.Padding(
