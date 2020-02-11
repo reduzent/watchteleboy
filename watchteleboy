@@ -50,7 +50,7 @@ def main():
         player = wt.WatchTeleboyPlayer(env)
         wtgui = wt.WatchTeleboyGUI(wts, player)
         try:
-            wtgui.run(0)
+            wtgui.run()
         except KeyboardInterrupt:
             sys.exit(0)
         except wt.WatchTeleboyError:
