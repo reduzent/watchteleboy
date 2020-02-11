@@ -32,13 +32,17 @@ class WatchTeleboyGUI:
         # channel selection
         title = urwid.Pile([urwid.Text(('title', 'Select a channel:')),
             urwid.Divider()])
+        quit = urwid.Button('Quit')
+        urwid.connect_signal(quit, 'click', self.exit_program)
+        footer = urwid.Pile([urwid.Divider(), urwid.Padding(
+            urwid.AttrMap(quit, 'title'), align='center', width=8)])
         body = []
         for channel in channels:
             button = urwid.Button(channel)
             urwid.connect_signal(button, 'click', self.now_playing, channel)
             body.append(urwid.AttrMap(button, None, focus_map='reversed'))
         chanlist = urwid.ListBox(urwid.SimpleListWalker(body))
-        self.channel_selection_w = urwid.Frame(chanlist, header=title)
+        self.channel_selection_w = urwid.Frame(chanlist, header=title, footer=footer)
 
         # embed main widget (initially channel_selection_w)
         self.container = urwid.Padding(self.channel_selection_w, left=1, right=1)
@@ -81,3 +85,5 @@ class WatchTeleboyGUI:
         self.switch_widget(None, self.channel_selection_w)
         self.loop.draw_screen()
 
+    def exit_program(self, button):
+        raise urwid.ExitMainLoop()
