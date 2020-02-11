@@ -1,6 +1,5 @@
 import urwid
-import sys
-import time
+import threading
 
 class WatchTeleboyGUI:
 
@@ -67,8 +66,16 @@ class WatchTeleboyGUI:
             urwid.AttrMap(stop, None, focus_map='reversed')])
         now_playing_w = urwid.Filler(pile, valign='top')
         self.switch_widget(button, now_playing_w)
+        # thread that waits for wt_player to stop
+        waiter = threading.Thread(target=self._player_wait, args=(self.wt_player,))
+        waiter.start()
 
     def stop_playing(self, button):
         self.wt_player.stop()
         self.switch_widget(button, self.channel_selection_w)
+
+    def _player_wait(self, player):
+        player.wait()
+        self.switch_widget(None, self.channel_selection_w)
+        self.loop.draw_screen()
 
