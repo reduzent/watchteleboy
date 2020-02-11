@@ -469,7 +469,7 @@ class WatchTeleboyPlayer:
             video_file
         ]
         try:
-            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except FileNotFoundError:
             print('Cannot play stream, because mpv was not found.')
             print('Please install it with "sudo apt install mpv".')
