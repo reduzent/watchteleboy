@@ -5,7 +5,7 @@ import time
 class WatchTeleboyGUI:
 
     palette = [
-        ('outer', '', '', '', '#408', '#fff'),
+        ('outer', '', '', '', '#408', '#fdf'),
         ('border', '', '', '', '#80f', '#fdf'),
         ('inner', '', '', '', '#006', '#fdf'),
         ('title', '', '', '', '#006,bold', '#fdf'),
