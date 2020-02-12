@@ -68,7 +68,7 @@ class WatchTeleboyGUI:
         response = urwid.Text(('title', ['Now playing ', ch, '\n']))
         stop = urwid.Button(u'Stop')
         urwid.connect_signal(stop, 'click', self.stop_playing)
-        pile = urwid.Pile([response,
+        pile = urwid.Pile([urwid.Divider(), response,
             urwid.AttrMap(stop, None, focus_map='reversed')])
         now_playing_w = urwid.Filler(pile, valign='top')
         self.switch_widget(button, now_playing_w)
