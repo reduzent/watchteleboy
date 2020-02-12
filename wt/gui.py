@@ -1,10 +1,11 @@
 import urwid
 import threading
+import os
 
 class WatchTeleboyGUI:
 
     palette = [
-        ('outer', '', '', '', '#408', '#fdf'),
+        ('outer', '', '', '', '#fdf', '#408'),
         ('border', '', '', '', '#80f', '#fdf'),
         ('inner', '', '', '', '#006', '#fdf'),
         ('title', '', '', '', '#006,bold', '#fdf'),
@@ -44,16 +45,23 @@ class WatchTeleboyGUI:
         chanlist = urwid.ListBox(urwid.SimpleListWalker(body))
         self.channel_selection_w = urwid.Frame(chanlist, header=title, footer=footer)
 
+        # mpv output widget
+        self.mpv_output_w = urwid.Text('')
+        background = urwid.Frame(urwid.SolidFill(' '), footer=self.mpv_output_w)
+
         # embed main widget (initially channel_selection_w)
         self.container = urwid.Padding(self.channel_selection_w, left=1, right=1)
         guts = urwid.AttrMap(self.container, 'inner')
         linebox = urwid.LineBox(guts, title='WatchTeleboy', **self.line_box_chars)
         frame = urwid.AttrMap(linebox, 'border')
-        main = urwid.Overlay(frame, urwid.AttrMap(urwid.SolidFill(u'\N{FULL BLOCK}'), 'outer'),
+        main = urwid.Overlay(frame, urwid.AttrMap(background, 'outer'),
                 align=('relative', 50), width=('relative', 50),
                 valign='middle', height=('relative', 80))
         self.loop = urwid.MainLoop(main,self.palette)
         self.loop.screen.set_terminal_properties(colors=256)
+
+        # mpv output
+        self.mpv_stdout = self.loop.watch_pipe(self._player_receive_output)
 
     def run(self):
         self.loop.run()
@@ -64,7 +72,7 @@ class WatchTeleboyGUI:
     def now_playing(self, button, channel):
         ch, mpd_url = self.wt_session.get_stream_url(channel)
         self.wt_player.set_mpd_url(mpd_url, ch)
-        self.wt_player.play()
+        self.wt_player.play(output_fd=self.mpv_stdout)
         response = urwid.Text(('title', ['Now playing ', ch, '\n']))
         stop = urwid.Button(u'Stop')
         urwid.connect_signal(stop, 'click', self.stop_playing)
@@ -78,12 +86,20 @@ class WatchTeleboyGUI:
 
     def stop_playing(self, button):
         self.wt_player.stop()
+        try:
+            os.close(self.mpv_stdout)
+        except OSError:
+            pass
         self.switch_widget(button, self.channel_selection_w)
 
     def _player_wait(self, player):
         player.wait()
+        #os.close(self.mpv_stdout)
         self.switch_widget(None, self.channel_selection_w)
         self.loop.draw_screen()
+
+    def _player_receive_output(self, mpv_out):
+        self.mpv_output_w.set_text( mpv_out.decode('utf8'))
 
     def exit_program(self, button):
         raise urwid.ExitMainLoop()

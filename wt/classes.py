@@ -402,15 +402,15 @@ class WatchTeleboyPlayer:
             self.audio.set_stop_time(etobj)
             self.video.set_stop_time(etobj)
 
-    def play(self):
+    def play(self, output_fd=None):
         if self.is_active:
             return
         self.is_active = True
         self.stop_event.clear()
-        self.playerrecorder = threading.Thread(target=self._player_thread)
+        self.playerrecorder = threading.Thread(target=self._player_thread, args=(output_fd,))
         self.playerrecorder.start()
 
-    def _player_thread(self):
+    def _player_thread(self, output_fd):
         audio_fifo = self.env['fifo'].format(content_type=self.audio.content_type, id=self.audio.id)
         video_fifo = self.env['fifo'].format(content_type=self.video.content_type, id=self.video.id)
         os.mkfifo(audio_fifo)
@@ -418,7 +418,7 @@ class WatchTeleboyPlayer:
         self.audio.start_download(audio_fifo, self.stop_event)
         self.video.start_download(video_fifo, self.stop_event)
         try:
-            self._run_player(audio_file=audio_fifo, video_file=video_fifo)
+            self._run_player(audio_file=audio_fifo, video_file=video_fifo, output_fd=output_fd)
         except KeyboardInterrupt:
             self.stop_event.set()
         os.unlink(audio_fifo)
@@ -457,7 +457,8 @@ class WatchTeleboyPlayer:
         os.unlink(video_file)
         self.is_active = False
 
-    def _run_player(self, audio_file=None, video_file=None):
+    def _run_player(self, audio_file=None, video_file=None, output_fd=None):
+        output_fd = output_fd or subprocess.DEVNULL
         mpv_opts_raw = self.env['player_opts'] or self.env['mpv_opts']
         mpv_opts = mpv_opts_raw.split(' ')
         mpv_command = [
@@ -469,7 +470,7 @@ class WatchTeleboyPlayer:
             video_file
         ]
         try:
-            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=output_fd)
         except FileNotFoundError:
             print('Cannot play stream, because mpv was not found.')
             print('Please install it with "sudo apt install mpv".')
