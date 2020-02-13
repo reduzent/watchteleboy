@@ -47,7 +47,7 @@ class WatchTeleboyGUI:
 
         # mpv output widget
         self.mpv_output_w = urwid.Text('')
-        background = urwid.Frame(urwid.SolidFill(' '), footer=self.mpv_output_w)
+        background = urwid.Frame(urwid.SolidFill(' '), footer=urwid.Padding(self.mpv_output_w, align='center', width=50))
 
         # embed main widget (initially channel_selection_w)
         self.container = urwid.Padding(self.channel_selection_w, left=1, right=1)
@@ -99,7 +99,7 @@ class WatchTeleboyGUI:
         self.loop.draw_screen()
 
     def _player_receive_output(self, mpv_out):
-        self.mpv_output_w.set_text( mpv_out.decode('utf8'))
+        self.mpv_output_w.set_text( mpv_out[4:-1].decode('utf8'))
 
     def exit_program(self, button):
         raise urwid.ExitMainLoop()
