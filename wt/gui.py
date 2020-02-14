@@ -1,6 +1,13 @@
-import urwid
-import threading
+import datetime
 import os
+import threading
+import urwid
+
+def convert_mpv_timestring(t_str):
+    hours, minutes, seconds = list(map(int, t_str.split(':')))
+    epoch = hours*3600 + minutes*60 + seconds
+    cur_dt = datetime.datetime.fromtimestamp(epoch)
+    return cur_dt.strftime('%Y-%m-%d %H:%M:%S')
 
 class WatchTeleboyGUI:
 
@@ -47,7 +54,7 @@ class WatchTeleboyGUI:
 
         # mpv output widget
         self.mpv_output_w = urwid.Text('')
-        background = urwid.Frame(urwid.SolidFill(' '), footer=urwid.Padding(self.mpv_output_w, align='center', width=50))
+        background = urwid.Frame(urwid.SolidFill(' '), footer=urwid.Padding(self.mpv_output_w, align='center', width=52))
 
         # embed main widget (initially channel_selection_w)
         self.container = urwid.Padding(self.channel_selection_w, left=1, right=1)
@@ -86,20 +93,22 @@ class WatchTeleboyGUI:
 
     def stop_playing(self, button):
         self.wt_player.stop()
-        try:
-            os.close(self.mpv_stdout)
-        except OSError:
-            pass
         self.switch_widget(button, self.channel_selection_w)
 
     def _player_wait(self, player):
         player.wait()
-        #os.close(self.mpv_stdout)
         self.switch_widget(None, self.channel_selection_w)
         self.loop.draw_screen()
 
     def _player_receive_output(self, mpv_out):
-        self.mpv_output_w.set_text( mpv_out[4:-1].decode('utf8'))
+        output = mpv_out[4:-1].decode('utf8')
+        output_list = output.split(' ')
+        try:
+            output_list[1] = convert_mpv_timestring(output_list[1])
+            output_list[3] = convert_mpv_timestring(output_list[3]).split(' ')[1]
+        except (IndexError, ValueError):
+            pass
+        self.mpv_output_w.set_text(' '.join(output_list))
 
     def exit_program(self, button):
         raise urwid.ExitMainLoop()
