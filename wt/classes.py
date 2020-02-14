@@ -402,6 +402,20 @@ class WatchTeleboyPlayer:
             self.audio.set_stop_time(etobj)
             self.video.set_stop_time(etobj)
 
+    def get_video_representations(self):
+        try:
+            self.video
+        except NameError:
+            return None
+        return self.video.representations
+
+    def set_video_representation(self, representation_id=None):
+        try:
+            self.video
+        except NameError:
+            return False
+        self.video.select_representation(representation_id=representation_id)
+
     def play(self, output_fd=None):
         if self.is_active:
             return
@@ -499,7 +513,6 @@ class WatchTeleboyPlayer:
             print('Merging audio and video file, because ffmpeg was not found.')
             print('Please install it with "sudo apt install ffmpeg".')
             raise WatchTeleboyError
-        stdout, stderr = ffmpeg.communicate()
         ffmpeg.wait()
 
     def stop(self):
