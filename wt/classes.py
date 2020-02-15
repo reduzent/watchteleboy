@@ -244,16 +244,16 @@ class WatchTeleboyStreamHandler:
         max_tries = 5
         fd = os.open(outfile, os.O_WRONLY | os.O_CREAT)
         try_count = max_tries
-        try_count = max_tries
         while not self.download_stop_event.is_set():
             # check it we reached end of duration
             if self.segment_current_timestamp >= self.segment_last_timestamp:
                 break
             # initialization (after every representation switch)
             if self.representation_switched:
+                i_try_count = max_tries
                 while not self.initialize_outfile(fd):
-                    try_count = -1
-                    if try_count <= 0:
+                    i_try_count = -1
+                    if i_try_count <= 0:
                         os.close(fd)
                         return False
                 self.representation_switched = False
