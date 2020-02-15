@@ -218,6 +218,7 @@ class WatchTeleboyStreamHandler:
         self.segment_header_template = self.segment_template.attributes.get('initialization').value
         self.segment_media_template = self.segment_template.attributes.get('media').value
         self.representations = self.parse_representations()
+        self.representation_switched = False
         self.select_representation()
 
     def parse_representations(self):
@@ -232,6 +233,7 @@ class WatchTeleboyStreamHandler:
         if representation_id is None:
             representation_id = min(dict(self.representations).keys())
         self.selected_representation = self.representations[representation_id]
+        self.representation_switched = True
         return self.selected_representation
 
     def bump_timestamp(self):
@@ -242,15 +244,20 @@ class WatchTeleboyStreamHandler:
         max_tries = 5
         fd = os.open(outfile, os.O_WRONLY | os.O_CREAT)
         try_count = max_tries
-        while not self.initialize_outfile(fd):
-            try_count = -1
-            if try_count <= 0:
-                os.close(fd)
-                return False
         try_count = max_tries
         while not self.download_stop_event.is_set():
+            # check it we reached end of duration
             if self.segment_current_timestamp >= self.segment_last_timestamp:
                 break
+            # initialization (after every representation switch)
+            if self.representation_switched:
+                while not self.initialize_outfile(fd):
+                    try_count = -1
+                    if try_count <= 0:
+                        os.close(fd)
+                        return False
+                self.representation_switched = False
+            # append segments
             try:
                 r = self.append_media_segment(fd)
                 assert r.status_code == 200
@@ -401,6 +408,15 @@ class WatchTeleboyPlayer:
             etobj = stobj + dobj
             self.audio.set_stop_time(etobj)
             self.video.set_stop_time(etobj)
+        # select representation according to max_bitrate fom config
+        target_bw = int(self.env['max_bitrate'])
+        available_bws = [int(dict(r)['bandwidth']) for r in self.video.representations.values()]
+        smaller_bws = [bw for bw in available_bws if bw <= target_bw]
+        fitting_bw = max(smaller_bws) if smaller_bws else min(available_bws)
+        r_id = [int(dict(r)['id']) for r in self.video.representations.values()
+                if int(dict(r)['bandwidth']) == fitting_bw][0]
+        self.video.select_representation(representation_id=r_id)
+
 
     def get_video_representations(self):
         try:
