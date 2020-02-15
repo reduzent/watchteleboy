@@ -81,10 +81,15 @@ class WatchTeleboyGUI:
         self.wt_player.set_mpd_url(mpd_url, ch)
         self.wt_player.play(output_fd=self.mpv_stdout)
         response = urwid.Text(('title', ['Now playing ', ch, '\n']))
+        representation_radio = []
         stop = urwid.Button(u'Stop')
         urwid.connect_signal(stop, 'click', self.stop_playing)
-        pile = urwid.Pile([urwid.Divider(), response,
-            urwid.AttrMap(stop, None, focus_map='reversed')])
+        pile = urwid.Pile([
+                urwid.Divider(),
+                response,
+                urwid.Divider(),
+                urwid.AttrMap(stop, None, focus_map='reversed'),
+        ])
         now_playing_w = urwid.Filler(pile, valign='top')
         self.switch_widget(button, now_playing_w)
         # thread that waits for wt_player to stop
