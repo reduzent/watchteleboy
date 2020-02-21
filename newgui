@@ -18,9 +18,6 @@ audio_languages = {
 }
 
 palette = [
-    ('outer', '', '', '', '#fdf', '#408'),
-    ('border', '', '', '', '#80f', '#fdf'),
-    ('inner', '', '', '', '#006', '#fdf'),
     ('title', '', '', '', '#008,bold', '#fdf'),
     ('focus', '', '', '', '#000', '#ddd'),
     ('focus_u', '', '', '', '#000,underline', '#ddd'),
