@@ -66,9 +66,12 @@ title = urwid.Pile([div, title_am, div])
 
 # Box "Channel:" (left part)
 ch_sel_header = urwid.AttrMap(urwid.Padding(urwid.Text('Channel:'), width=('relative', 100)), 'title')
-ch_sel_radios = []
-for channel in channels:
-    urwid.RadioButton(ch_sel_radios, channel, on_state_change=switch_channel, user_data=channel)
+ch_sel_group = []
+ch_sel_radios = [
+    urwid.AttrMap(
+        urwid.RadioButton(ch_sel_group, channel, on_state_change=switch_channel, user_data=channel),
+        None, focus_map='focus')
+    for channel in channels]
 ch_list = urwid.ListBox(urwid.SimpleFocusListWalker(ch_sel_radios))
 left_content = urwid.Pile([
     ('pack', ch_sel_header),
@@ -99,9 +102,11 @@ right1_box = urwid.LineBox(right1_content)
 
 # Box "Quality:"
 repr_header = urwid.AttrMap(urwid.Padding(urwid.Text('Quality:'), width=('relative', 100)), 'title')
-repr_radios = []
-for r_id in representations.keys():
-    urwid.RadioButton(repr_radios, representations[r_id], on_state_change=switch_representation, user_data=r_id)
+repr_group = []
+repr_radios = [urwid.AttrMap(
+    urwid.RadioButton(repr_group, representations[r_id], on_state_change=switch_representation, user_data=r_id),
+    None, focus_map='focus')
+    for r_id in representations.keys()]
 r_list = urwid.ListBox(urwid.SimpleListWalker(repr_radios))
 right2_pile = urwid.Pile([
     ('pack', repr_header),
@@ -113,9 +118,11 @@ right2_box = urwid.LineBox(right2_content)
 
 # Box "Language:"
 lang_header = urwid.AttrMap(urwid.Padding(urwid.Text('Language:'), width=('relative', 100)), 'title')
-lang_radios = []
-for lang_id in audio_languages.keys():
-    urwid.RadioButton(lang_radios, audio_languages[lang_id], on_state_change=switch_language, user_data=lang_id)
+lang_group = []
+lang_radios = [urwid.AttrMap(
+    urwid.RadioButton(lang_group, audio_languages[lang_id], on_state_change=switch_language, user_data=lang_id),
+    None, focus_map='focus')
+    for lang_id in audio_languages.keys()]
 lang_list = urwid.ListBox(urwid.SimpleListWalker(lang_radios))
 right3_pile = urwid.Pile([
     ('pack', lang_header),
