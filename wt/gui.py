@@ -40,17 +40,18 @@ class WatchTeleboyGUI:
         # channel selection
         div = urwid.Divider()
         title = urwid.Pile([div, urwid.Text(('title', 'Select a channel:')), div])
-        quit = urwid.Button('Quit')
-        urwid.connect_signal(quit, 'click', self.exit_program)
-        footer = urwid.Pile([urwid.Divider(), urwid.Padding(
-            urwid.AttrMap(quit, 'title'), align='center', width=8)])
+        quit_btn = urwid.Button('Quit')
+        urwid.connect_signal(quit_btn, 'click', self.exit_program)
+        quit = urwid.Pile([urwid.Divider(), urwid.Padding(
+            urwid.AttrMap(quit_btn, 'title'), align='center', width=8)])
         body = []
         for channel in channels:
-            button = urwid.Button(channel)
-            urwid.connect_signal(button, 'click', self.now_playing, channel)
-            body.append(urwid.AttrMap(button, None, focus_map='reversed'))
+            button = urwid.RadioButton(body, channel, on_state_change=self.now_playing, user_data=channel)
         chanlist = urwid.ListBox(urwid.SimpleListWalker(body))
-        self.channel_selection_w = urwid.Frame(chanlist, header=title, footer=footer)
+        self.channel_selection_w = urwid.Columns([
+            urwid.Frame(chanlist, header=title, footer=quit),
+            urwid.SolidFill('+')
+        ], dividechars=2)
 
         # mpv output widget
         self.mpv_output_w = urwid.Text('')
@@ -76,25 +77,26 @@ class WatchTeleboyGUI:
     def switch_widget(self, button, widget):
         self.container.original_widget = widget
 
-    def now_playing(self, button, channel):
-        ch, mpd_url = self.wt_session.get_stream_url(channel)
-        self.wt_player.set_mpd_url(mpd_url, ch)
-        self.wt_player.play(output_fd=self.mpv_stdout)
-        response = urwid.Text(('title', ['Now playing ', ch, '\n']))
-        representation_radio = []
-        stop = urwid.Button(u'Stop')
-        urwid.connect_signal(stop, 'click', self.stop_playing)
-        pile = urwid.Pile([
-                urwid.Divider(),
-                response,
-                urwid.Divider(),
-                urwid.AttrMap(stop, None, focus_map='reversed'),
-        ])
-        now_playing_w = urwid.Filler(pile, valign='top')
-        self.switch_widget(button, now_playing_w)
-        # thread that waits for wt_player to stop
-        waiter = threading.Thread(target=self._player_wait, args=(self.wt_player,))
-        waiter.start()
+    def now_playing(self, button, state, channel):
+        if state:
+            ch, mpd_url = self.wt_session.get_stream_url(channel)
+            self.wt_player.set_mpd_url(mpd_url, ch)
+            self.wt_player.play(output_fd=self.mpv_stdout)
+            response = urwid.Text(('title', ['Now playing ', ch, '\n']))
+            representation_radio = []
+            stop = urwid.Button(u'Stop')
+            urwid.connect_signal(stop, 'click', self.stop_playing)
+            pile = urwid.Pile([
+                    urwid.Divider(),
+                    response,
+                    urwid.Divider(),
+                    urwid.AttrMap(stop, None, focus_map='reversed'),
+            ])
+            now_playing_w = urwid.Filler(pile, valign='top')
+            self.switch_widget(button, now_playing_w)
+            # thread that waits for wt_player to stop
+            waiter = threading.Thread(target=self._player_wait, args=(self.wt_player,))
+            waiter.start()
 
     def stop_playing(self, button):
         self.wt_player.stop()
