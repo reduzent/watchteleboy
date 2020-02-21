@@ -17,12 +17,16 @@ audio_languages = {
     2: 'en'
 }
 
+mpv_stderr = "A: 01:30:24 / 01:30:29 (99%) Cache: 4.2s/146KB"
+
 palette = [
     ('title', '', '', '', '#008,bold', '#fdf'),
-    ('focus', '', '', '', '#000', '#ddd'),
-    ('focus_u', '', '', '', '#000,underline', '#ddd'),
+    ('body', '', '', '', 'default', 'default'),
+    ('focus', '', '', '', 'default', '#ddd'),
+    ('focus_u', '', '', '', 'default,underline', '#ddd'),
     ('underline', '', '', '', 'default,underline', 'default'),
-    ('button', '', '', '', '#000,bold', '#dff')
+    ('button', '', '', '', 'default,bold', '#dff'),
+    ('border', '', '', '', '#a4f', '#80f')
 ]
 
 line_box_chars = {
@@ -157,11 +161,15 @@ right = urwid.Pile([
     urwid.LineBox(urwid.SolidFill(' '))
 ])
 
+# footer
+mpv_status = urwid.AttrMap(urwid.Padding(urwid.Text(mpv_stderr), align='center', width=52), 'title')
+footer = urwid.Pile([div, mpv_status, div])
+
 # Overall Layout
 columns = urwid.Padding(urwid.Columns([left, right], dividechars=2), left=2, right=2)
-content = urwid.Frame(columns, header=title, footer=div)
+content = urwid.AttrMap(urwid.Frame(columns, header=title, footer=footer), 'body')
 lbc = urwid.LineBox(content, **line_box_chars)
-hlbc = urwid.Padding(lbc, left=1, right=1)
+hlbc = urwid.AttrMap(urwid.Padding(lbc, left=1, right=1), 'border')
 loop = urwid.MainLoop(hlbc, palette=palette)
 loop.screen.set_terminal_properties(colors=256)
 
