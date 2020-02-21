@@ -22,7 +22,7 @@ palette = [
     ('border', '', '', '', '#80f', '#fdf'),
     ('inner', '', '', '', '#006', '#fdf'),
     ('title', '', '', '', '#008,bold', '#fdf'),
-    ('focus', 'black', 'white', '', '#000', '#ddd'),
+    ('focus', '', '', '', '#000', '#ddd'),
     ('focus_u', '', '', '', '#000,underline', '#ddd'),
     ('underline', '', '', '', 'default,underline', 'default'),
     ('button', '', '', '', '#000,bold', '#dff')
@@ -141,7 +141,7 @@ right4_pile = urwid.Pile([
     ('pack', time_string),
     urwid.SolidFill(' ')
 ])
-right4_content = urwid.BoxAdapter(right4_pile, height=5)
+right4_content = urwid.BoxAdapter(right4_pile, height=3)
 right4_box = urwid.LineBox(right4_content)
 
 # Stitching boxes together
