@@ -11,23 +11,27 @@ def convert_mpv_timestring(t_str):
 
 class WatchTeleboyGUI:
 
+    autoplay = True
+
     palette = [
-        ('outer', '', '', '', '#fdf', '#408'),
-        ('border', '', '', '', '#80f', '#fdf'),
-        ('inner', '', '', '', '#006', '#fdf'),
-        ('title', '', '', '', '#006,bold', '#fdf'),
-        ('reversed', '', '', '', '#fdf', '#006')
+        ('title', '', '', '', '#008,bold', '#fdf'),
+        ('body', '', '', '', 'default', 'default'),
+        ('focus', '', '', '', 'default', '#ddd'),
+        ('focus_u', '', '', '', 'default,underline', '#ddd'),
+        ('underline', '', '', '', 'default,underline', 'default'),
+        ('button', '', '', '', 'default,bold', '#dff'),
+        ('border', '', '', '', '#a4f', 'default')
     ]
 
     line_box_chars = {
-        'tlcorner': '\N{Full block}',
-        'trcorner': '\N{Full block}',
-        'brcorner': '\N{Full block}',
-        'blcorner': '\N{Full block}',
+        'tlcorner': '\N{Lower half block}',
+        'trcorner': '\N{Lower half block}',
+        'brcorner': '\N{Upper half block}',
+        'blcorner': '\N{Upper half block}',
         'lline': '\N{Full block}',
         'rline': '\N{Full block}',
-        'tline': '\N{Upper half block}',
-        'bline': '\N{Lower half block}'
+        'tline': '\N{Lower half block}',
+        'bline': '\N{Upper half block}'
     }
 
     def __init__(self, wt_session, wt_player):
@@ -35,37 +39,127 @@ class WatchTeleboyGUI:
         # wt_player is expected to be an instance of WatchTeleboyPlayer
         self.wt_session = wt_session
         self.wt_player = wt_player
-        channels = self.wt_session.get_channels()
+        self.channels = self.wt_session.get_channels()
+        self.representations = {}
+        self.audio_languages = {}
 
-        # channel selection
-        div = urwid.Divider()
-        title = urwid.Pile([div, urwid.Text(('title', 'Select a channel:')), div])
-        quit_btn = urwid.Button('Quit')
-        urwid.connect_signal(quit_btn, 'click', self.exit_program)
-        quit = urwid.Pile([urwid.Divider(), urwid.Padding(
-            urwid.AttrMap(quit_btn, 'title'), align='center', width=8)])
-        body = []
-        for channel in channels:
-            button = urwid.RadioButton(body, channel, on_state_change=self.now_playing, user_data=channel)
-        chanlist = urwid.ListBox(urwid.SimpleListWalker(body))
-        self.channel_selection_w = urwid.Columns([
-            urwid.Frame(chanlist, header=title, footer=quit),
-            urwid.SolidFill('+')
-        ], dividechars=2)
-
-        # mpv output widget
+        # init some widgets
+        self.div = urwid.Divider()
+        self.pp_placeholder = urwid.WidgetPlaceholder(urwid.Text('----'))
         self.mpv_output_w = urwid.Text('')
-        background = urwid.Frame(urwid.SolidFill(' '), footer=urwid.Padding(self.mpv_output_w, align='center', width=52))
 
-        # embed main widget (initially channel_selection_w)
-        self.container = urwid.Padding(self.channel_selection_w, left=1, right=1)
-        guts = urwid.AttrMap(self.container, 'inner')
-        linebox = urwid.LineBox(guts, title='WatchTeleboy', **self.line_box_chars)
-        frame = urwid.AttrMap(linebox, 'border')
-        main = urwid.Overlay(frame, urwid.AttrMap(background, 'outer'),
-                align=('relative', 50), width=('relative', 50),
-                valign='middle', height=('relative', 80))
-        self.loop = urwid.MainLoop(main,self.palette)
+        # main title
+        title_bt = urwid.BigText(('title', "watchteleboy"), urwid.HalfBlock5x4Font())
+        title_am = urwid.AttrMap(urwid.Padding(title_bt, width='clip', align='center'), 'title')
+        title = urwid.Pile([self.div, title_am, self.div])
+
+        # Box "Channel:" (left part)
+        ch_sel_header = urwid.AttrMap(urwid.Padding(urwid.Text('Channel:'), width=('relative', 100)), 'title')
+        ch_sel_group = []
+        ch_sel_radios = [
+            urwid.AttrMap(
+                urwid.RadioButton(ch_sel_group, channel, on_state_change=self.switch_channel, user_data=channel),
+                None, focus_map='focus')
+            for channel in self.channels]
+        ch_list = urwid.ListBox(urwid.SimpleFocusListWalker(ch_sel_radios))
+        left_content = urwid.Pile([
+            ('pack', ch_sel_header),
+            ('pack', self.div),
+            ch_list,
+            ('pack', self.div)
+        ])
+        left = urwid.LineBox(left_content)
+
+        # Settings and stuff (right part)
+        # Box "Control:"
+        ctrl_header = urwid.AttrMap(urwid.Padding(urwid.Text('Control:'), width=('relative', 100)), 'title')
+        autoplay = urwid.AttrMap(urwid.CheckBox('Autoplay', state=self.autoplay, on_state_change=self.set_autoplay), '', focus_map='focus')
+        play = urwid.Button('Play', on_press=self.start_playback)
+        stop = urwid.Button('Stop', on_press=self.stop_playback)
+        self.pp_placeholder.original_widget = play
+        left_button = urwid.Padding(urwid.AttrMap(urwid.LineBox(self.pp_placeholder), 'button', focus_map='focus'), width=10)
+        quit = urwid.Padding(urwid.AttrMap(urwid.LineBox(urwid.Button('Quit', on_press=self.quit_program)), 'button', focus_map='focus'), width=10, align='right')
+        playstop_quit = urwid.Columns([left_button, quit])
+        right1_pile = urwid.Pile([
+            ('pack', ctrl_header),
+            ('pack', self.div),
+            ('pack', autoplay),
+            ('pack', self.div),
+            ('pack', playstop_quit),
+            urwid.SolidFill(' ')
+        ])
+        right1_content = urwid.BoxAdapter(right1_pile, height=7)
+        right1_box = urwid.LineBox(right1_content)
+
+        # Box "Quality:"
+        repr_header = urwid.AttrMap(urwid.Padding(urwid.Text('Quality:'), width=('relative', 100)), 'title')
+        repr_group = []
+        repr_radios = [urwid.AttrMap(
+            urwid.RadioButton(repr_group, self.representations[r_id],
+                state=(True if r_id == 2 else False),
+                on_state_change=self.switch_representation, user_data=r_id),
+            None, focus_map='focus')
+            for r_id in self.representations.keys()]
+        r_list = urwid.ListBox(urwid.SimpleListWalker(repr_radios))
+        right2_pile = urwid.Pile([
+            ('pack', repr_header),
+            ('pack', self.div),
+            r_list
+        ])
+        right2_content = urwid.BoxAdapter(right2_pile, height=8)
+        right2_box = urwid.LineBox(right2_content)
+
+        # Box "Language:"
+        lang_header = urwid.AttrMap(urwid.Padding(urwid.Text('Language:'), width=('relative', 100)), 'title')
+        lang_group = []
+        lang_radios = [urwid.AttrMap(
+            urwid.RadioButton(lang_group, self.audio_languages[lang_id], on_state_change=self.switch_language, user_data=lang_id),
+            None, focus_map='focus')
+            for lang_id in self.audio_languages.keys()]
+        lang_list = urwid.ListBox(urwid.SimpleListWalker(lang_radios))
+        right3_pile = urwid.Pile([
+            ('pack', lang_header),
+            ('pack', self.div),
+            lang_list
+        ])
+        right3_content = urwid.BoxAdapter(right3_pile, height=4)
+        right3_box = urwid.LineBox(right3_content)
+
+        # Box "Time:"
+        time_header = urwid.AttrMap(urwid.Padding(urwid.Text('Time:'), width=('relative', 100)), 'title')
+        time_sep = urwid.Text(':')
+        time_hours = urwid.IntEdit(caption='', default=20)
+        time_minutes = urwid.IntEdit(caption='', default=15)
+        time_seconds = urwid.IntEdit(caption='', default=00)
+        time = urwid.GridFlow([time_hours, time_sep, time_minutes, time_sep, time_seconds], 2, 0, 1, 'left')
+        right4_pile = urwid.Pile([
+            ('pack', time_header),
+            ('pack', self.div),
+            ('pack', time),
+            urwid.SolidFill(' ')
+        ])
+        right4_content = urwid.BoxAdapter(right4_pile, height=3)
+        right4_box = urwid.LineBox(right4_content)
+
+        # Stitching boxes together
+        right = urwid.Pile([
+            ('pack', right1_box),
+            ('pack', right2_box),
+            ('pack', right3_box),
+            ('pack', right4_box),
+            urwid.LineBox(urwid.SolidFill(' '))
+        ])
+
+        # footer
+        mpv_status = urwid.AttrMap(urwid.Padding(self.mpv_output_w, align='center', width=52), 'title')
+        footer = urwid.Pile([self.div, mpv_status, self.div])
+
+        # Overall Layout
+        columns = urwid.Padding(urwid.Columns([left, right], dividechars=2), left=2, right=2)
+        content = urwid.AttrMap(urwid.Frame(columns, header=title, footer=footer), 'body')
+        lbc = urwid.LineBox(content, **self.line_box_chars)
+        hlbc = urwid.AttrMap(urwid.Padding(lbc, left=1, right=1), 'border')
+        self.loop = urwid.MainLoop(hlbc, palette=self.palette)
         self.loop.screen.set_terminal_properties(colors=256)
 
         # mpv output
@@ -73,34 +167,6 @@ class WatchTeleboyGUI:
 
     def run(self):
         self.loop.run()
-
-    def switch_widget(self, button, widget):
-        self.container.original_widget = widget
-
-    def now_playing(self, button, state, channel):
-        if state:
-            ch, mpd_url = self.wt_session.get_stream_url(channel)
-            self.wt_player.set_mpd_url(mpd_url, ch)
-            self.wt_player.play(output_fd=self.mpv_stdout)
-            response = urwid.Text(('title', ['Now playing ', ch, '\n']))
-            representation_radio = []
-            stop = urwid.Button(u'Stop')
-            urwid.connect_signal(stop, 'click', self.stop_playing)
-            pile = urwid.Pile([
-                    urwid.Divider(),
-                    response,
-                    urwid.Divider(),
-                    urwid.AttrMap(stop, None, focus_map='reversed'),
-            ])
-            now_playing_w = urwid.Filler(pile, valign='top')
-            self.switch_widget(button, now_playing_w)
-            # thread that waits for wt_player to stop
-            waiter = threading.Thread(target=self._player_wait, args=(self.wt_player,))
-            waiter.start()
-
-    def stop_playing(self, button):
-        self.wt_player.stop()
-        self.switch_widget(button, self.channel_selection_w)
 
     def _player_wait(self, player):
         player.wait()
@@ -117,5 +183,24 @@ class WatchTeleboyGUI:
             pass
         self.mpv_output_w.set_text(' '.join(output_list))
 
-    def exit_program(self, button):
+    def switch_channel(self, button, state, channel):
+        pass
+
+    def switch_representation(self, button, state, r_id):
+        pass
+
+    def switch_language(self, button, state, l_id):
+        pass
+
+    def set_autoplay(self, button, state):
+        self.autoplay = state
+
+    def start_playback(self, button):
+        self.pp_placeholder.original_widget = stop
+
+    def stop_playback(self, button):
+        self.pp_placeholder.original_widget = play
+
+    def quit_program(self, button):
         raise urwid.ExitMainLoop()
+
