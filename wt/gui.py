@@ -184,7 +184,9 @@ class WatchTeleboyGUI:
         self.mpv_output_w.set_text(' '.join(output_list))
 
     def switch_channel(self, button, state, channel):
-        pass
+        self.current_channel = channel
+        mpd_url = self.wt_session.get_stream_url(self.current_channel)
+        
 
     def switch_representation(self, button, state, r_id):
         pass
