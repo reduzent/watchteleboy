@@ -26,7 +26,7 @@ palette = [
     ('focus_u', '', '', '', 'default,underline', '#ddd'),
     ('underline', '', '', '', 'default,underline', 'default'),
     ('button', '', '', '', 'default,bold', '#dff'),
-    ('border', '', '', '', '#a4f', '#80f')
+    ('border', '', '', '', '#a4f', 'default')
 ]
 
 line_box_chars = {
@@ -39,6 +39,7 @@ line_box_chars = {
     'tline': '\N{Lower half block}',
     'bline': '\N{Upper half block}'
 }
+
 
 def switch_channel(button, state, channel):
     pass
@@ -53,15 +54,16 @@ def set_autoplay(button, state):
     pass
 
 def start_playback(button):
-    pass
+    placeholder.original_widget = stop
 
 def stop_playback(button):
-    pass
+    placeholder.original_widget = play
 
 def quit_program(button):
-    pass
+    raise urwid.ExitMainLoop()
 
 div = urwid.Divider()
+placeholder = urwid.WidgetPlaceholder(urwid.Text('----'))
 
 # main title
 title_bt = urwid.BigText(('title', "watchteleboy"), urwid.HalfBlock5x4Font())
@@ -89,10 +91,12 @@ left = urwid.LineBox(left_content)
 # Box "Control:"
 ctrl_header = urwid.AttrMap(urwid.Padding(urwid.Text('Control:'), width=('relative', 100)), 'title')
 autoplay = urwid.AttrMap(urwid.CheckBox('Autoplay', state=True, on_state_change=set_autoplay), '', focus_map='focus')
-play = urwid.Padding(urwid.AttrMap(urwid.LineBox(urwid.Button('Play', on_press=start_playback)), 'button', focus_map='focus'), width=10)
-stop = urwid.Padding(urwid.Button('Stop', on_press=stop_playback), width=8)
+play = urwid.Button('Play', on_press=start_playback)
+stop = urwid.Button('Stop', on_press=stop_playback)
+placeholder.original_widget = play
+left_button = urwid.Padding(urwid.AttrMap(urwid.LineBox(placeholder), 'button', focus_map='focus'), width=10)
 quit = urwid.Padding(urwid.AttrMap(urwid.LineBox(urwid.Button('Quit', on_press=quit_program)), 'button', focus_map='focus'), width=10, align='right')
-playstop_quit = urwid.Columns([play, quit])
+playstop_quit = urwid.Columns([left_button, quit])
 right1_pile = urwid.Pile([
     ('pack', ctrl_header),
     ('pack', div),
@@ -108,7 +112,9 @@ right1_box = urwid.LineBox(right1_content)
 repr_header = urwid.AttrMap(urwid.Padding(urwid.Text('Quality:'), width=('relative', 100)), 'title')
 repr_group = []
 repr_radios = [urwid.AttrMap(
-    urwid.RadioButton(repr_group, representations[r_id], on_state_change=switch_representation, user_data=r_id),
+    urwid.RadioButton(repr_group, representations[r_id],
+        state=(True if r_id == 2 else False),
+        on_state_change=switch_representation, user_data=r_id),
     None, focus_map='focus')
     for r_id in representations.keys()]
 r_list = urwid.ListBox(urwid.SimpleListWalker(repr_radios))
@@ -139,14 +145,15 @@ right3_box = urwid.LineBox(right3_content)
 # Box "Time:"
 time_header = urwid.AttrMap(urwid.Padding(urwid.Text('Time:'), width=('relative', 100)), 'title')
 time_string = urwid.Padding(urwid.AttrMap(urwid.Edit(caption='', edit_text='20:15:00'), 'underline', focus_map='focus_u'), width=8)
+time_sep = urwid.Text(':')
 time_hours = urwid.IntEdit(caption='', default=20)
-time_minutes = urwid.IntEdit(caption=':', default=15)
-time_seconds = urwid.IntEdit(caption=':', default=0)
-time_edit = urwid.GridFlow([time_string, time_hours, time_minutes, time_seconds], 3, 3, 3, 'left')
+time_minutes = urwid.IntEdit(caption='', default=15)
+time_seconds = urwid.IntEdit(caption='', default=00)
+time = urwid.GridFlow([time_hours, time_sep, time_minutes, time_sep, time_seconds], 2, 0, 1, 'left')
 right4_pile = urwid.Pile([
     ('pack', time_header),
     ('pack', div),
-    ('pack', time_string),
+    ('pack', time),
     urwid.SolidFill(' ')
 ])
 right4_content = urwid.BoxAdapter(right4_pile, height=3)
