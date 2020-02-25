@@ -1,5 +1,4 @@
 import datetime
-import os
 import threading
 import urwid
 
@@ -40,8 +39,8 @@ class WatchTeleboyGUI:
         self.wt_session = wt_session
         self.wt_player = wt_player
         self.channels = self.wt_session.get_channels()
-        self.representations = {}
-        self.audio_languages = {}
+        self.video_representation = None
+        self.audio_language = None
 
         # init some widgets
         self.div = urwid.Divider()
@@ -58,7 +57,7 @@ class WatchTeleboyGUI:
         ch_sel_group = []
         ch_sel_radios = [
             urwid.AttrMap(
-                urwid.RadioButton(ch_sel_group, channel, on_state_change=self.switch_channel, user_data=channel),
+                urwid.RadioButton(ch_sel_group, channel, state=False, on_state_change=self.switch_channel, user_data=channel),
                 None, focus_map='focus')
             for channel in self.channels]
         ch_list = urwid.ListBox(urwid.SimpleFocusListWalker(ch_sel_radios))
@@ -74,9 +73,9 @@ class WatchTeleboyGUI:
         # Box "Control:"
         ctrl_header = urwid.AttrMap(urwid.Padding(urwid.Text('Control:'), width=('relative', 100)), 'title')
         autoplay = urwid.AttrMap(urwid.CheckBox('Autoplay', state=self.autoplay, on_state_change=self.set_autoplay), '', focus_map='focus')
-        play = urwid.Button('Play', on_press=self.start_playback)
-        stop = urwid.Button('Stop', on_press=self.stop_playback)
-        self.pp_placeholder.original_widget = play
+        self.play = urwid.Button('Play', on_press=self.start_playback)
+        self.stop = urwid.Button('Stop', on_press=self.stop_playback)
+        self.pp_placeholder.original_widget = self.play
         left_button = urwid.Padding(urwid.AttrMap(urwid.LineBox(self.pp_placeholder), 'button', focus_map='focus'), width=10)
         quit = urwid.Padding(urwid.AttrMap(urwid.LineBox(urwid.Button('Quit', on_press=self.quit_program)), 'button', focus_map='focus'), width=10, align='right')
         playstop_quit = urwid.Columns([left_button, quit])
@@ -93,36 +92,24 @@ class WatchTeleboyGUI:
 
         # Box "Quality:"
         repr_header = urwid.AttrMap(urwid.Padding(urwid.Text('Quality:'), width=('relative', 100)), 'title')
-        repr_group = []
-        repr_radios = [urwid.AttrMap(
-            urwid.RadioButton(repr_group, self.representations[r_id],
-                state=(True if r_id == 2 else False),
-                on_state_change=self.switch_representation, user_data=r_id),
-            None, focus_map='focus')
-            for r_id in self.representations.keys()]
-        r_list = urwid.ListBox(urwid.SimpleListWalker(repr_radios))
+        self.repr_radios = urwid.WidgetPlaceholder(urwid.ListBox(urwid.SimpleListWalker([])))
         right2_pile = urwid.Pile([
             ('pack', repr_header),
             ('pack', self.div),
-            r_list
+            self.repr_radios
         ])
         right2_content = urwid.BoxAdapter(right2_pile, height=8)
         right2_box = urwid.LineBox(right2_content)
 
-        # Box "Language:"
-        lang_header = urwid.AttrMap(urwid.Padding(urwid.Text('Language:'), width=('relative', 100)), 'title')
-        lang_group = []
-        lang_radios = [urwid.AttrMap(
-            urwid.RadioButton(lang_group, self.audio_languages[lang_id], on_state_change=self.switch_language, user_data=lang_id),
-            None, focus_map='focus')
-            for lang_id in self.audio_languages.keys()]
-        lang_list = urwid.ListBox(urwid.SimpleListWalker(lang_radios))
+        # Box "Audio:"
+        lang_header = urwid.AttrMap(urwid.Padding(urwid.Text('Audio:'), width=('relative', 100)), 'title')
+        self.lang_radios = urwid.WidgetPlaceholder(urwid.ListBox(urwid.SimpleListWalker([])))
         right3_pile = urwid.Pile([
             ('pack', lang_header),
             ('pack', self.div),
-            lang_list
+            self.lang_radios
         ])
-        right3_content = urwid.BoxAdapter(right3_pile, height=4)
+        right3_content = urwid.BoxAdapter(right3_pile, height=5)
         right3_box = urwid.LineBox(right3_content)
 
         # Box "Time:"
@@ -170,8 +157,11 @@ class WatchTeleboyGUI:
 
     def _player_wait(self, player):
         player.wait()
-        self.switch_widget(None, self.channel_selection_w)
-        self.loop.draw_screen()
+        self.pp_placeholder.original_widget = self.play
+        try:
+            self.loop.draw_screen()
+        except AssertionError:
+            pass
 
     def _player_receive_output(self, mpv_out):
         output = mpv_out[4:-1].decode('utf8')
@@ -183,26 +173,76 @@ class WatchTeleboyGUI:
             pass
         self.mpv_output_w.set_text(' '.join(output_list))
 
+    def refresh_languages(self):
+        langs = self.wt_player.get_audio_languages()
+        if not self.audio_language:
+            self.audio_language = langs[0]
+        lang_group = []
+        lang_radios = [urwid.AttrMap(
+            urwid.RadioButton(lang_group, lang,
+                state=(True if lang == self.audio_language else False),
+                on_state_change=self.switch_language, user_data=lang),
+            None, focus_map='focus')
+            for lang in langs]
+        self.lang_radios.original_widget = urwid.ListBox(urwid.SimpleListWalker(lang_radios))
+
+    def refresh_representations(self):
+        reprs = self.wt_player.get_video_representations()
+        if not self.video_representation:
+            self.video_representation = min(reprs.keys())
+        repr_group = []
+        repr_radios = [urwid.AttrMap(
+            urwid.RadioButton(repr_group, f"{dict(reprs[rid])['width']}x{dict(reprs[rid])['height']}@{dict(reprs[rid])['frameRate']}Hz",
+                state=(True if rid == self.video_representation else False),
+                on_state_change=self.switch_representation, user_data=rid),
+            None, focus_map='focus')
+            for rid in reprs.keys()]
+        self.repr_radios.original_widget = urwid.ListBox(urwid.SimpleListWalker(repr_radios))
+
     def switch_channel(self, button, state, channel):
-        self.current_channel = channel
-        mpd_url = self.wt_session.get_stream_url(self.current_channel)
-        
+        if state:
+            with open('log', 'a') as fd:
+                fd.write(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S switch_channel\n'))
+            self.channel, mpd_url = self.wt_session.get_stream_url(channel)
+            self.wt_player.set_mpd_url(mpd_url, self.channel)
+            self.refresh_representations()
+            self.refresh_languages()
+            if self.autoplay and not self.wt_player.is_playing:
+                self.start_playback(None)
 
     def switch_representation(self, button, state, r_id):
-        pass
+        if state:
+            with open('log', 'a') as fd:
+                fd.write(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S switch_representation\n'))
+            self.wt_player.set_video_representation(representation_id=r_id)
+            self.video_representation = r_id
 
-    def switch_language(self, button, state, l_id):
-        pass
+    def switch_language(self, button, state, lang):
+        if state:
+            self.wt_player.set_audio_language(lang=lang)
+            self.audio_language = lang
 
     def set_autoplay(self, button, state):
         self.autoplay = state
 
     def start_playback(self, button):
-        self.pp_placeholder.original_widget = stop
+        with open('log', 'a') as fd:
+            fd.write(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S start_playback\n'))
+        self.pp_placeholder.original_widget = self.stop
+        self.wt_player.play(output_fd=self.mpv_stdout)
+        # thread that waits for wt_player to stop
+        waiter = threading.Thread(target=self._player_wait, args=(self.wt_player,))
+        waiter.start()
+        with open('log', 'a') as fd:
+            fd.write(datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S is_playing: {self.wt_player.is_playing}\n'))
 
     def stop_playback(self, button):
-        self.pp_placeholder.original_widget = play
+        self.pp_placeholder.original_widget = self.play
+        self.wt_player.stop()
+        with open('log', 'a') as fd:
+            fd.write(datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S is_playing: {self.wt_player.is_playing}\n'))
 
     def quit_program(self, button):
+        self.wt_player.stop()
         raise urwid.ExitMainLoop()
 

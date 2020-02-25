@@ -417,12 +417,18 @@ class WatchTeleboyPlayer:
                 if int(dict(r)['bandwidth']) == fitting_bw][0]
         self.video.select_representation(representation_id=r_id)
 
+    def get_audio_languages(self):
+        try:
+            self.manifest
+        except NameError:
+            return []
+        return self.manifest.list_audio_languages()
 
     def get_video_representations(self):
         try:
             self.video
         except NameError:
-            return None
+            return {}
         return self.video.representations
 
     def set_video_representation(self, representation_id=None):
@@ -431,6 +437,9 @@ class WatchTeleboyPlayer:
         except NameError:
             return False
         self.video.select_representation(representation_id=representation_id)
+
+    def set_audio_language(self, lang=None):
+        self.audio = self.manifest.extract_audio_stream(lang=lang)
 
     def play(self, output_fd=None):
         if self.is_active:
