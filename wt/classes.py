@@ -390,6 +390,7 @@ class WatchTeleboyPlayer:
             self.video.set_stop_time(etobj)
 
     def play(self):
+        self.stop_event.clear()
         player = threading.Thread(target=self._player_thread)
         player.start()
 
