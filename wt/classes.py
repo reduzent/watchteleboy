@@ -368,6 +368,7 @@ class WatchTeleboyPlayer:
     def __init__(self, env):
         self.env = env
         self.stop_event = threading.Event()
+        self.is_active = False
 
     def set_mpd_url(self, mpd_url, channel=None):
         self.stop_event.clear()
@@ -390,9 +391,12 @@ class WatchTeleboyPlayer:
             self.video.set_stop_time(etobj)
 
     def play(self):
+        if self.is_active:
+            return
+        self.is_active = True
         self.stop_event.clear()
-        player = threading.Thread(target=self._player_thread)
-        player.start()
+        self.playerrecorder = threading.Thread(target=self._player_thread)
+        self.playerrecorder.start()
 
     def _player_thread(self):
         audio_fifo = self.env['fifo'].format(content_type=self.audio.content_type, id=self.audio.id)
@@ -407,10 +411,14 @@ class WatchTeleboyPlayer:
             self.stop_event.set()
         os.unlink(audio_fifo)
         os.unlink(video_fifo)
+        self.is_active = False
 
     def record(self):
-        recorder = threading.Thread(target=self._recorder_thread)
-        recorder.start()
+        if self.is_active:
+            return
+        self.is_active = True
+        self.playerrecorder = threading.Thread(target=self._recorder_thread)
+        self.playerrecorder.start()
 
     def _recorder_thread(self):
         if not self.env['showname']:
@@ -435,6 +443,7 @@ class WatchTeleboyPlayer:
         self._merge_audio_video_to_mkv(audio_file=audio_file, video_file=video_file, mkv_file=mkv_file, audio_offset=audio_offset)
         os.unlink(audio_file)
         os.unlink(video_file)
+        self.is_active = False
 
     def _run_player(self, audio_file=None, video_file=None):
         mpv_opts_raw = self.env['player_opts'] or self.env['mpv_opts']
@@ -482,7 +491,10 @@ class WatchTeleboyPlayer:
 
     def stop(self):
         self.stop_event.set()
+        self.playerrecorder.join()
 
     def wait(self, timeout=None):
         self.stop_event.wait(timeout=timeout)
+        if not timeout:
+            self.playerrecorder.join()
 
