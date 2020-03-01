@@ -201,19 +201,15 @@ class WatchTeleboyGUI:
 
     def switch_channel(self, button, state, channel):
         if state:
-            with open('log', 'a') as fd:
-                fd.write(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S switch_channel\n'))
             self.channel, mpd_url = self.wt_session.get_stream_url(channel)
             self.wt_player.set_mpd_url(mpd_url, self.channel)
             self.refresh_representations()
             self.refresh_languages()
-            if self.autoplay and not self.wt_player.is_playing:
+            if self.autoplay:
                 self.start_playback(None)
 
     def switch_representation(self, button, state, r_id):
         if state:
-            with open('log', 'a') as fd:
-                fd.write(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S switch_representation\n'))
             self.wt_player.set_video_representation(representation_id=r_id)
             self.video_representation = r_id
 
@@ -226,21 +222,15 @@ class WatchTeleboyGUI:
         self.autoplay = state
 
     def start_playback(self, button):
-        with open('log', 'a') as fd:
-            fd.write(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S start_playback\n'))
         self.pp_placeholder.original_widget = self.stop
         self.wt_player.play(output_fd=self.mpv_stdout)
         # thread that waits for wt_player to stop
         waiter = threading.Thread(target=self._player_wait, args=(self.wt_player,))
         waiter.start()
-        with open('log', 'a') as fd:
-            fd.write(datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S is_playing: {self.wt_player.is_playing}\n'))
 
     def stop_playback(self, button):
         self.pp_placeholder.original_widget = self.play
         self.wt_player.stop()
-        with open('log', 'a') as fd:
-            fd.write(datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S is_playing: {self.wt_player.is_playing}\n'))
 
     def quit_program(self, button):
         self.wt_player.stop()
