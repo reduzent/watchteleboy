@@ -218,7 +218,6 @@ class WatchTeleboyStreamHandler:
         self.segment_header_template = self.segment_template.attributes.get('initialization').value
         self.segment_media_template = self.segment_template.attributes.get('media').value
         self.representations = self.parse_representations()
-        self.representation_switched = False
         self.select_representation()
 
     def parse_representations(self):
@@ -233,7 +232,6 @@ class WatchTeleboyStreamHandler:
         if representation_id is None:
             representation_id = min(dict(self.representations).keys())
         self.selected_representation = self.representations[representation_id]
-        self.representation_switched = True
         return self.selected_representation
 
     def bump_timestamp(self):
@@ -243,20 +241,19 @@ class WatchTeleboyStreamHandler:
     def _download_thread(self, outfile):
         max_tries = 5
         fd = os.open(outfile, os.O_WRONLY | os.O_CREAT)
+        # add init section
+        try_count = max_tries
+        while not self.initialize_outfile(fd):
+            try_count =- 1
+            if try_count <= 0:
+                os.close(fd)
+                return False
+        # download segments
         try_count = max_tries
         while not self.download_stop_event.is_set():
             # check it we reached end of duration
             if self.segment_current_timestamp >= self.segment_last_timestamp:
                 break
-            # initialization (after every representation switch)
-            if self.representation_switched:
-                i_try_count = max_tries
-                while not self.initialize_outfile(fd):
-                    i_try_count = -1
-                    if i_try_count <= 0:
-                        os.close(fd)
-                        return False
-                self.representation_switched = False
             # append segments
             try:
                 r = self.append_media_segment(fd)
