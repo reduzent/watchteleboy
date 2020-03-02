@@ -271,6 +271,7 @@ class WatchTeleboyStreamHandler:
 
     def stop(self):
         self.download_stop_event.set()
+        self.download_thread.join()
 
     def set_start_time(self, st_obj):
         # st_obj is expected to be a datetime.datetime object
@@ -457,6 +458,8 @@ class WatchTeleboyPlayer:
             self._run_player(audio_file=audio_fifo, video_file=video_fifo, output_fd=output_fd)
         except KeyboardInterrupt:
             self.stop_event.set()
+        self.audio.stop()
+        self.video.stop()
         os.unlink(audio_fifo)
         os.unlink(video_fifo)
         self.is_active = False
@@ -488,6 +491,8 @@ class WatchTeleboyPlayer:
         except KeyboardInterrupt:
             pass
         self.stop_event.set()
+        self.audio.stop()
+        self.video.stop()
         self._merge_audio_video_to_mkv(audio_file=audio_file, video_file=video_file, mkv_file=mkv_file, audio_offset=audio_offset)
         os.unlink(audio_file)
         os.unlink(video_file)
