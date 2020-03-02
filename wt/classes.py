@@ -271,7 +271,10 @@ class WatchTeleboyStreamHandler:
 
     def stop(self):
         self.download_stop_event.set()
-        self.download_thread.join()
+        try:
+            self.download_thread.join()
+        except RuntimeError:
+            pass
 
     def set_start_time(self, st_obj):
         # st_obj is expected to be a datetime.datetime object
