@@ -386,6 +386,8 @@ class WatchTeleboyPlayer:
         self.env = env
         self.stop_event = threading.Event()
         self.is_active = False
+        self.mpv_returncode = None
+        self.mpv_stdout = None
 
     def set_mpd_url(self, mpd_url, channel=None):
         self.stop_event.clear()
@@ -468,6 +470,7 @@ class WatchTeleboyPlayer:
         if self.is_active:
             return
         self.is_active = True
+        self.stop_event.clear()
         self.playerrecorder = threading.Thread(target=self._recorder_thread)
         self.playerrecorder.start()
 
@@ -511,7 +514,7 @@ class WatchTeleboyPlayer:
             video_file
         ]
         try:
-            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=output_fd)
+            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=output_fd)
         except FileNotFoundError:
             print('Cannot play stream, because mpv was not found.')
             print('Please install it with "sudo apt install mpv".')
@@ -523,6 +526,12 @@ class WatchTeleboyPlayer:
                 break
             sleep(0.1)
         self.stop_event.set()
+        self.mpv_returncode =  mpv.returncode
+        self.mpv_stdout, mpv_stderr = mpv.communicate()
+        # make sure to clear pipes in case of mpv error
+        if self.mpv_returncode == 1:
+            os.open(audio_file, os.O_RDONLY)
+            os.open(video_file, os.O_RDONLY)
 
     def _merge_audio_video_to_mkv(self, audio_file=None, video_file=None, mkv_file=None, audio_offset=None):
         merge_cmd = [
@@ -550,4 +559,7 @@ class WatchTeleboyPlayer:
         self.stop_event.wait(timeout=timeout)
         if not timeout:
             self.playerrecorder.join()
+            if self.mpv_returncode == 1:
+                print('mpv failed:\n' + self.mpv_stdout.decode())
+                raise WatchTeleboyError()
 
