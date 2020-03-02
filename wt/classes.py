@@ -440,6 +440,7 @@ class WatchTeleboyPlayer:
         except NameError:
             return False
         self.video.select_representation(representation_id=representation_id)
+        return True
 
     def set_audio_language(self, lang=None):
         self.audio = self.manifest.extract_audio_stream(lang=lang)
