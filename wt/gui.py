@@ -39,6 +39,7 @@ class WatchTeleboyGUI:
         self.wt_session = wt_session
         self.wt_player = wt_player
         self.channels = self.wt_session.get_channels()
+        self.channel = ''
         self.video_representation = None
         self.audio_language = None
 
@@ -60,11 +61,12 @@ class WatchTeleboyGUI:
                 urwid.RadioButton(ch_sel_group, channel, state=False, on_state_change=self.switch_channel, user_data=channel),
                 None, focus_map='focus')
             for channel in self.channels]
-        ch_list = urwid.ListBox(urwid.SimpleFocusListWalker(ch_sel_radios))
+        self.channel_radio = urwid.ListBox(urwid.SimpleListWalker(ch_sel_radios))
+        self.channel_widget = urwid.WidgetPlaceholder(self.channel_radio)
         left_content = urwid.Pile([
             ('pack', ch_sel_header),
             ('pack', self.div),
-            ch_list,
+            self.channel_widget,
             ('pack', self.div)
         ])
         left = urwid.LineBox(left_content)
@@ -157,7 +159,7 @@ class WatchTeleboyGUI:
 
     def _player_wait(self, player):
         player.wait()
-        self.pp_placeholder.original_widget = self.play
+        self._switch_widgets('stop')
         try:
             self.loop.draw_screen()
         except AssertionError:
@@ -222,15 +224,28 @@ class WatchTeleboyGUI:
         self.autoplay = state
 
     def start_playback(self, button):
-        self.pp_placeholder.original_widget = self.stop
+        self._switch_widgets('play')
         self.wt_player.play(output_fd=self.mpv_stdout)
         # thread that waits for wt_player to stop
         waiter = threading.Thread(target=self._player_wait, args=(self.wt_player,))
         waiter.start()
 
     def stop_playback(self, button):
-        self.pp_placeholder.original_widget = self.play
+        self._switch_widgets('stop')
         self.wt_player.stop()
+
+    def _switch_widgets(self, state):
+        if state == 'play':
+            self.pp_placeholder.original_widget = self.stop
+            channel_playing = urwid.Pile([
+                ('pack', urwid.Text(f'Now playing: {self.channel}')),
+                urwid.SolidFill(' ')
+            ])
+
+            self.channel_widget.original_widget = channel_playing
+        elif state == 'stop':
+            self.pp_placeholder.original_widget = self.play
+            self.channel_widget.original_widget = self.channel_radio
 
     def quit_program(self, button):
         self.wt_player.stop()
