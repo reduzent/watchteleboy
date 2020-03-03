@@ -235,8 +235,8 @@ class WatchTeleboyGUI:
         self._switch_widgets('stop')
         self.wt_player.stop()
 
-    def _switch_widgets(self, state):
-        if state == 'play':
+    def _switch_widgets(self, action):
+        if action == 'play':
             self.pp_placeholder.original_widget = self.stop
             channel_playing = urwid.Pile([
                 ('pack', urwid.Text(f'Now playing: {self.channel}')),
@@ -245,7 +245,7 @@ class WatchTeleboyGUI:
 
             self.channel_widget.original_widget = channel_playing
             self.columns.set_focus_path([1, 0, 4, 0])
-        elif state == 'stop':
+        elif action == 'stop':
             self.pp_placeholder.original_widget = self.play
             self.channel_widget.original_widget = self.channel_radio
             self.columns.set_focus_path([0])
