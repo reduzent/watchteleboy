@@ -144,8 +144,9 @@ class WatchTeleboyGUI:
         footer = urwid.Pile([self.div, mpv_status, self.div])
 
         # Overall Layout
-        columns = urwid.Padding(urwid.Columns([left, right], dividechars=2), left=2, right=2)
-        content = urwid.AttrMap(urwid.Frame(columns, header=title, footer=footer), 'body')
+        self.columns = urwid.Columns([left, right], dividechars=2)
+        columns_padded = urwid.Padding(self.columns, left=2, right=2)
+        content = urwid.AttrMap(urwid.Frame(columns_padded, header=title, footer=footer), 'body')
         lbc = urwid.LineBox(content, **self.line_box_chars)
         hlbc = urwid.AttrMap(urwid.Padding(lbc, left=1, right=1), 'border')
         self.loop = urwid.MainLoop(hlbc, palette=self.palette)
@@ -243,9 +244,11 @@ class WatchTeleboyGUI:
             ])
 
             self.channel_widget.original_widget = channel_playing
+            self.columns.set_focus_path([1, 0, 4, 0])
         elif state == 'stop':
             self.pp_placeholder.original_widget = self.play
             self.channel_widget.original_widget = self.channel_radio
+            self.columns.set_focus_path([0])
 
     def quit_program(self, button):
         self.wt_player.stop()
