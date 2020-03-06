@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Script to watch and record IPTV streams from http://www.teleboy.ch
+Copyright: Roman Haefeli, 2011 - 2020
+License:   GPL-2
+"""
 
 import datetime
 import os
@@ -6,29 +11,32 @@ import sys
 
 import wt
 
+DEFAULTS = {
+    'wt_version': '2.1',
+    'wt_abspath': os.path.abspath(__file__),
+    'home_dir': os.path.expanduser('~'),
+    'wt_dir': '{home_dir}/.watchteleboy',
+    'configfile': '{wt_dir}/config',
+    'session_cache': '{wt_dir}/session_cache',
+    'mpv_opts': '--keep-open',
+    'channel_selection': 'all',
+    'record_dir': '{home_dir}',
+    'max_bitrate': '4800000',
+    'fifo': '{wt_dir}/fifo_{wt_instance}_{content_type}_{id}',
+    'player_binary': 'mpv',
+    'player_args': [
+        '--force-seekable=yes',
+        '--cache=yes',
+        '--cache-secs=600',
+        '--demuxer-max-bytes=1073741824',
+    ]
+}
+
 def main():
-    defaults = {
-        'wt_version': '2.1',
-        'wt_abspath': os.path.abspath(__file__),
-        'home_dir': os.path.expanduser('~'),
-        'wt_dir': '{home_dir}/.watchteleboy',
-        'configfile': '{wt_dir}/config',
-        'session_cache': '{wt_dir}/session_cache',
-        'mpv_opts': '--keep-open',
-        'channel_selection': 'all',
-        'record_dir': '{home_dir}',
-        'max_bitrate': '4800000',
-        'fifo': '{wt_dir}/fifo_{wt_instance}_{content_type}_{id}',
-        'player_binary': 'mpv',
-        'player_args': [
-            '--force-seekable=yes',
-            '--cache=yes',
-            '--cache-secs=600',
-            '--demuxer-max-bytes=1073741824',
-        ]
-    }
+    """main entry function to run watchteleboy"""
+
     try:
-        env = wt.create_env(defaults)
+        env = wt.create_env(DEFAULTS)
     except wt.WatchTeleboyError:
         sys.exit(1)
     if env['version']:
@@ -57,7 +65,7 @@ def main():
             sys.exit(1)
         sys.exit(0)
     try:
-        ch, mpd_url = wts.get_stream_url(env['channel']) # also returns canonical channel name
+        channel, mpd_url = wts.get_stream_url(env['channel']) # also returns canonical channel name
     except wt.WatchTeleboyError:
         sys.exit(1)
     if env['print_url']:
@@ -73,7 +81,7 @@ def main():
         sys.exit(1)
     player = wt.WatchTeleboyPlayer(env)
     try:
-        player.set_mpd_url(mpd_url, ch)
+        player.set_mpd_url(mpd_url, channel)
     except wt.WatchTeleboyError:
         sys.exit(1)
     if env['record']:
@@ -92,4 +100,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
