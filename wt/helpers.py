@@ -9,7 +9,7 @@ import crontab # DEB: python3-crontab
 
 import wt
 
-config_template = """[watchteleboy]
+CONFIG_TEMPLATE = """[watchteleboy]
 # watchteleboy configuration
 
 # Teleboy Login Credentials
@@ -55,10 +55,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Watch and record MPEG-DASH streams from Teleboy")
     oneshots = parser.add_mutually_exclusive_group()
     oneshots.add_argument("-l", "--list", help="list available channels", action="store_true")
-    oneshots.add_argument("--print-url", help="print url of channel instead of starting playback", action="store_true")
+    oneshots.add_argument("--print-url", help="print url of channel instead of starting playback",
+                          action="store_true")
     oneshots.add_argument("-v", "--version", help="print version", action="store_true")
     parser.add_argument("-c", "--channel", help="select channel for playback or recording")
-    parser.add_argument("-t", "--starttime", help="specify a start time other than 'now' ([YYYY-mm-dd ]HH:MM[:SS])")
+    parser.add_argument("-t", "--starttime",
+                        help="specify a start time other than 'now' ([YYYY-mm-dd ]HH:MM[:SS])")
     length = parser.add_mutually_exclusive_group()
     length.add_argument("-e", "--endtime", help="specify an end time ([YYYY-mm-dd ]HH:MM[:SS])")
     length.add_argument("-d", "--duration", help="specify a duration ([[HH:]MM:]SS)")
@@ -72,7 +74,8 @@ def parse_args():
     args = parser.parse_args()
     # enforce some logic
     if args.starttime and not args.endtime and not args.duration:
-        print('watchteleboy: error: If --starttime is specified, either --endtime or --duration is required.')
+        print('watchteleboy: error: If --starttime is specified, ' +
+              'either --endtime or --duration is required.')
         raise wt.WatchTeleboyError
     return args
 
@@ -97,8 +100,7 @@ def parse_time_string(rawstring):
             return today - timedelta(days=1)
         elif now.time() > before_midnight and start < past_midnight:
             return today + timedelta(days=1)
-        else:
-            return today
+        return today
 
     def evaluate_time(tstr):
         try:
@@ -113,8 +115,7 @@ def parse_time_string(rawstring):
                 return date.today() + timedelta(days=1)
             elif dstr == 'yesterday':
                 return date.today() + timedelta(days=-1)
-            else:
-                return date(*list(map(int, dstr.split('-'))))
+            return date(*list(map(int, dstr.split('-'))))
         except ValueError:
             print('Cannot parse given date: '  + dstr)
             raise wt.WatchTeleboyError
@@ -127,7 +128,7 @@ def parse_time_string(rawstring):
         datepart = evaluate_date(dtstr[0])
         timepart = evaluate_time(dtstr[1])
     else:
-        print('Cannot parse given time: ' + tstr)
+        print('Cannot parse given time: ' + dtstr)
         raise wt.WatchTeleboyError
     return datetime.combine(datepart, timepart)
 
@@ -161,9 +162,12 @@ def create_env(defaults):
     defaults['record_dir'] = defaults['record_dir'].format(home_dir=defaults['home_dir'])
     defaults['configfile'] = defaults['configfile'].format(wt_dir=defaults['wt_dir'])
     defaults['session_cache'] = defaults['session_cache'].format(wt_dir=defaults['wt_dir'])
-    defaults['wt_instance'] = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for i in range(8))
+    defaults['wt_instance'] = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789')
+                                      for i in range(8))
     defaults['fifo'] = defaults['fifo'].format(wt_dir=defaults['wt_dir'],
-        wt_instance=defaults['wt_instance'], content_type='{content_type}', id='{id}')
+                                               wt_instance=defaults['wt_instance'],
+                                               content_type='{content_type}',
+                                               id='{id}')
     try:
         os.mkdir(defaults['wt_dir'])
     except FileExistsError:
@@ -188,7 +192,7 @@ def create_config(defaults):
     consent = input("Password is written in plain text to config. OK? [y/n] ")
     if consent == 'n':
         sys.exit()
-    config_content = config_template.format(
+    config_content = CONFIG_TEMPLATE.format(
         teleboy_user=user,
         teleboy_pass=password,
         mpv_opts=defaults['mpv_opts'],
@@ -217,11 +221,15 @@ def schedule_recording(env):
         print('--endtime must be after --starttime')
         raise wt.WatchTeleboyError
     cron = crontab.CronTab(user=True)
-    command = f'{env["wt_abspath"]} --record --channel \'{env["channel"]}\' --starttime \'{env["starttime"]}\' --duration \'{duration}\' --path \'{env["record_dir"]}\' --showname \'{env["showname"]}\' --delete-cronjob \'{env["wt_instance"]}\''
+    command = f'{env["wt_abspath"]} --record --channel \'{env["channel"]}\' '\
+               '--starttime \'{env["starttime"]}\' --duration \'{duration}\' '\
+               '--path \'{env["record_dir"]}\' --showname \'{env["showname"]}\' '\
+               '--delete-cronjob \'{env["wt_instance"]}\''
     job = cron.new(command=command)
-    job.minute.on(st_obj.minute+2) # we do not want to start recording before segments are available
-                                   # consider start_time=19:29:59 would be scheduled to 19:31, which means
-                                   # segments are at least one minute old when wewe start downloading.
+    # we do not want to start recording before segments are available
+    # consider start_time=19:29:59 would be scheduled to 19:31, which means
+    # segments are at least one minute old when we start downloading.
+    job.minute.on(st_obj.minute+2)
     job.hour.on(st_obj.hour)
     job.day.on(st_obj.day)
     job.month.on(st_obj.month)
