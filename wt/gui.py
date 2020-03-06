@@ -16,7 +16,8 @@ class WatchTeleboyGUI:
         ('title', '', '', '', '#008,bold', '#fdf'),
         ('body', '', '', '', 'default', 'default'),
         ('focus', '', '', '', 'default', '#ddd'),
-        ('focus_u', '', '', '', 'default,underline', '#ddd'),
+        ('focus_greyed', '', '', '', '#888', '#ddd'),
+        ('greyed', '', '', '', '#888', 'default'),
         ('underline', '', '', '', 'default,underline', 'default'),
         ('button', '', '', '', 'default,bold', '#dff'),
         ('border', '', '', '', '#a4f', 'default')
@@ -42,6 +43,7 @@ class WatchTeleboyGUI:
         self.channel = ''
         self.video_representation = None
         self.audio_language = None
+        self.time_now = True
 
         # init some widgets
         self.div = urwid.Divider()
@@ -116,15 +118,14 @@ class WatchTeleboyGUI:
 
         # Box "Time:"
         time_header = urwid.AttrMap(urwid.Padding(urwid.Text('Time:'), width=('relative', 100)), 'title')
-        time_sep = urwid.Text(':')
-        time_hours = urwid.IntEdit(caption='', default=20)
-        time_minutes = urwid.IntEdit(caption='', default=15)
-        time_seconds = urwid.IntEdit(caption='', default=00)
-        time = urwid.GridFlow([time_hours, time_sep, time_minutes, time_sep, time_seconds], 2, 0, 1, 'left')
+        self.time_edit = urwid.Edit(edit_text='20:15:00')
+        self.time_w = urwid.AttrMap(self.time_edit, 'greyed', focus_map='focus_greyed')
+        time_now_w = urwid.AttrMap(urwid.CheckBox('live', state=self.time_now, on_state_change=self.set_time_now), '', focus_map='focus')
+        time_grid = urwid.GridFlow([time_now_w, self.time_w], 8, 2, 0, 'left')
         right4_pile = urwid.Pile([
             ('pack', time_header),
             ('pack', self.div),
-            ('pack', time),
+            ('pack', time_grid),
             urwid.SolidFill(' ')
         ])
         right4_content = urwid.BoxAdapter(right4_pile, height=3)
@@ -223,6 +224,16 @@ class WatchTeleboyGUI:
 
     def set_autoplay(self, button, state):
         self.autoplay = state
+
+    def set_time_now(self, button, state):
+        self.time_now = state
+        if state:
+            self.time_edit.set_edit_text('14:33:56')
+            self.time_w.set_attr_map({None: 'greyed'})
+            self.time_w.set_focus_map({None: 'focus_greyed'})
+        else:
+            self.time_w.set_attr_map({None: 'default'})
+            self.time_w.set_focus_map({None: 'focus'})
 
     def start_playback(self, button):
         self._switch_widgets('play')
