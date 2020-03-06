@@ -557,7 +557,10 @@ class WatchTeleboyPlayer:
 
     def stop(self):
         self.stop_event.set()
-        self.playerrecorder.join()
+        try:
+            self.playerrecorder.join()
+        except AttributeError:
+            pass
 
     def wait(self, timeout=None):
         self.stop_event.wait(timeout=timeout)
