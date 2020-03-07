@@ -125,7 +125,7 @@ class WatchTeleboySession:
         """
         try:
             self.s.cookies.clear_expired_cookies()
-            self.s.cookies['cinergy_auth']
+            _s = self.s.cookies['cinergy_auth']
             return True
         except KeyError:
             return False
@@ -146,9 +146,11 @@ class WatchTeleboySession:
             print('Setting environment failed...')
             raise
         if self.channel_selection == 'custom':
-            api_channellist_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/broadcasts/now?expand=station&stream=true'
+            api_channellist_url = f'https://tv.api.teleboy.ch/users/'\
+                                   '{self.user_id}/broadcasts/now?expand=station&stream=true'
         else:
-            api_channellist_url = 'https://tv.api.teleboy.ch/epg/broadcasts/now?expand=station&stream=true'
+            api_channellist_url = 'https://tv.api.teleboy.ch/epg/broadcasts/now?'\
+                                  'expand=station&stream=true'
         self.api = requests.Session()
         headers = {
             'x-teleboy-apikey': self.api_key,
@@ -163,7 +165,8 @@ class WatchTeleboySession:
             print('failed to retrieve channel ids')
             return False
         channels = json.loads(r.content.decode())
-        self.channel_ids = {channel['station_label']: channel['station_id'] for channel in channels['data']['items']}
+        self.channel_ids = {channel['station_label']: channel['station_id']
+                            for channel in channels['data']['items']}
         self.channel_ids['__selection__'] = self.channel_selection
         return True
 
@@ -244,7 +247,7 @@ class WatchTeleboyStreamHandler:
         # add init section
         try_count = max_tries
         while not self.initialize_outfile(fd):
-            try_count =- 1
+            try_count -= 1
             if try_count <= 0:
                 os.close(fd)
                 return False
@@ -261,7 +264,8 @@ class WatchTeleboyStreamHandler:
                 self.bump_timestamp()
                 try_count = max_tries
             except AssertionError:
-                if not self.download_stop_event.wait(timeout=self.segment_duration/self.segment_timescale):
+                if not self.download_stop_event.wait(
+                        timeout=self.segment_duration/self.segment_timescale):
                     try_count -= 1
                     if try_count <= 0:
                         os.close(fd)
@@ -279,7 +283,8 @@ class WatchTeleboyStreamHandler:
     def set_start_time(self, st_obj):
         # st_obj is expected to be a datetime.datetime object
         start_time = st_obj.timestamp() * self.segment_timescale
-        start_time = start_time - (start_time % self.segment_duration) # quantize to segment duration
+        # quantize to segment duration
+        start_time = start_time - (start_time % self.segment_duration)
         if start_time > self.segment_start_timestamp:
             print('Cannot watch content from the future')
             raise WatchTeleboyError()
@@ -302,7 +307,8 @@ class WatchTeleboyStreamHandler:
     def initialize_outfile(self, fd):
         bw_pattern = r'\$Bandwidth\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
-        stream_header_url = self.base_url + re.sub(bw_pattern, str(bandwidth), self.segment_header_template)
+        stream_header_url = self.base_url + re.sub(bw_pattern, str(bandwidth),
+                                                   self.segment_header_template)
         r = requests.get(stream_header_url)
         try:
             os.write(fd, r.content)
@@ -315,7 +321,8 @@ class WatchTeleboyStreamHandler:
         ts_pattern = r'\$Time\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
         time = self.segment_current_timestamp
-        segment_url = self.base_url + re.sub(bw_pattern, str(bandwidth), self.segment_media_template)
+        segment_url = self.base_url + re.sub(bw_pattern, str(bandwidth),
+                                             self.segment_media_template)
         segment_url = re.sub(ts_pattern, str(time), segment_url)
         r = requests.get(segment_url)
         if r.status_code == 404 and self.segment_current_timestamp < self.segment_start_timestamp:
@@ -500,7 +507,8 @@ class WatchTeleboyPlayer:
         self.stop_event.set()
         self.audio.stop()
         self.video.stop()
-        self._merge_audio_video_to_mkv(audio_file=audio_file, video_file=video_file, mkv_file=mkv_file, audio_offset=audio_offset)
+        self._merge_audio_video_to_mkv(audio_file=audio_file, video_file=video_file,
+                                       mkv_file=mkv_file, audio_offset=audio_offset)
         os.unlink(audio_file)
         os.unlink(video_file)
         self.is_active = False
@@ -518,7 +526,8 @@ class WatchTeleboyPlayer:
             video_file
         ]
         try:
-            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=output_fd)
+            mpv = subprocess.Popen(mpv_command, stdin=subprocess.DEVNULL,
+                                   stdout=subprocess.PIPE, stderr=output_fd)
         except FileNotFoundError:
             print('Cannot play stream, because mpv was not found.')
             print('Please install it with "sudo apt install mpv".')
@@ -530,14 +539,15 @@ class WatchTeleboyPlayer:
                 break
             sleep(0.1)
         self.stop_event.set()
-        self.mpv_returncode =  mpv.returncode
+        self.mpv_returncode = mpv.returncode
         self.mpv_stdout, mpv_stderr = mpv.communicate()
         # make sure to clear pipes in case of mpv error
         if self.mpv_returncode == 1:
             os.open(audio_file, os.O_RDONLY)
             os.open(video_file, os.O_RDONLY)
 
-    def _merge_audio_video_to_mkv(self, audio_file=None, video_file=None, mkv_file=None, audio_offset=None):
+    def _merge_audio_video_to_mkv(self, audio_file=None, video_file=None,
+                                  mkv_file=None, audio_offset=None):
         merge_cmd = [
             '/usr/bin/ffmpeg',
             '-i', video_file,
@@ -548,7 +558,8 @@ class WatchTeleboyPlayer:
             '-map', '1:a:0', mkv_file
         ]
         try:
-            ffmpeg = subprocess.Popen(merge_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            ffmpeg = subprocess.Popen(merge_cmd, stdout=subprocess.DEVNULL,
+                                      stderr=subprocess.DEVNULL)
         except FileNotFoundError:
             print('Merging audio and video file, because ffmpeg was not found.')
             print('Please install it with "sudo apt install ffmpeg".')
@@ -569,4 +580,3 @@ class WatchTeleboyPlayer:
             if self.mpv_returncode == 1:
                 print('mpv failed:\n' + self.mpv_stdout.decode())
                 raise WatchTeleboyError()
-
