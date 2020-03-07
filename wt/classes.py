@@ -7,6 +7,7 @@ import sys
 import threading
 from time import sleep
 from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 import requests            # DEB: python3-request
 
@@ -36,9 +37,13 @@ class WatchTeleboySession:
             self.__restore_session()
         except (AssertionError, FileNotFoundError):
             # create new session
-            self.s = requests.Session()
-            self.s.headers.update(self.headers)
+            self.session = requests.Session()
+            self.session.headers.update(self.headers)
         self.channel_selection = 'all'
+        self.api = None
+        self.channel_ids = None
+        self.user_id = None
+        self.session_id = None
 
     def get_stream_url(self, channel=None, station_id=None):
         try:
@@ -46,22 +51,22 @@ class WatchTeleboySession:
         except AttributeError:
             self.__retrieve_channel_ids()
         if station_id is None:
-            for ch in self.channel_ids.keys():
-                if ch.lower() == channel.lower():
-                    channel = ch
+            for chan_name in self.channel_ids.keys():
+                if chan_name.lower() == channel.lower():
+                    channel = chan_name
                     break
             else:
                 print(f'No such channel: {channel}')
                 return None
             station_id = self.channel_ids[channel]
         api_url = f'https://tv.api.teleboy.ch/users/{self.user_id}/stream/live/{station_id}'
-        r = self.api.get(api_url)
+        r_api = self.api.get(api_url)
         try:
-            assert r.status_code == 200
+            assert r_api.status_code == 200
         except AssertionError:
             print('failed to retrieve channel data')
             raise WatchTeleboyError
-        channel_data = json.loads(r.content.decode())
+        channel_data = json.loads(r_api.content.decode())
         return (channel, channel_data['data']['stream']['url'])
 
     def get_channels(self):
@@ -69,8 +74,8 @@ class WatchTeleboySession:
         print all available channels
         """
         try:
-            self.channel_ids
-        except AttributeError:
+            assert self.channel_ids is not None
+        except AssertionError:
             self.__retrieve_channel_ids()
         chanlist = list(self.channel_ids.keys())
         chanlist.remove('__selection__')
@@ -81,12 +86,12 @@ class WatchTeleboySession:
         print all available channels
         """
         try:
-            self.channel_ids
-        except AttributeError:
+            assert self.channel_ids is not None
+        except AssertionError:
             self.__retrieve_channel_ids()
-        for ch in self.channel_ids:
-            if ch[0:2] != '__':
-                print(ch)
+        for channel in self.channel_ids:
+            if channel[0:2] != '__':
+                print(channel)
 
     def login(self, user=None, password=None):
         """
@@ -102,15 +107,15 @@ class WatchTeleboySession:
             'password': password,
             'keep_login': '1'
             }
-        r = self.s.post(self.login_url, data=data)
+        r_login = self.session.post(self.login_url, data=data)
         try:
-            assert r.status_code != 429
+            assert r_login.status_code != 429
         except AssertionError:
             print("Your login is blocked. Please login via browser and answer captcha.")
             print("Visit https://www.teleboy.ch/ and try again.")
             return False
         try:
-            self.s.cookies['cinergy_auth']
+            self.session.cookies['cinergy_auth']
         except KeyError:
             print('Login failed')
             return False
@@ -124,8 +129,8 @@ class WatchTeleboySession:
         return True when session is authenticated, False if not
         """
         try:
-            self.s.cookies.clear_expired_cookies()
-            _s = self.s.cookies['cinergy_auth']
+            self.session.cookies.clear_expired_cookies()
+            _s = self.session.cookies['cinergy_auth']
             return True
         except KeyError:
             return False
@@ -158,40 +163,45 @@ class WatchTeleboySession:
         }
         self.api.headers.update(headers)
         self.api.headers.update(self.headers)
-        r = self.api.get(api_channellist_url)
+        r_api = self.api.get(api_channellist_url)
         try:
-            assert r.status_code == 200
+            assert r_api.status_code == 200
         except AssertionError:
             print('failed to retrieve channel ids')
             return False
-        channels = json.loads(r.content.decode())
+        channels = json.loads(r_api.content.decode())
         self.channel_ids = {channel['station_label']: channel['station_id']
                             for channel in channels['data']['items']}
         self.channel_ids['__selection__'] = self.channel_selection
         return True
 
     def __restore_session(self):
-        with open(self.cache_file, 'rb') as fd:
-            self.s = pickle.load(fd)
-        assert isinstance(self.s, requests.sessions.Session)
-        assert self.logged_in()
+        with open(self.cache_file, 'rb') as session_fd:
+            self.session = pickle.load(session_fd)
+        try:
+            assert isinstance(self.session, requests.sessions.Session)
+            assert self.logged_in()
+        except AssertionError:
+            print("Failed to restore session")
+            raise WatchTeleboyError
 
     def __dump_session(self):
-        with open(self.cache_file, 'wb') as fd:
-            pickle.dump(self.s, fd)
+        with open(self.cache_file, 'wb') as session_fd:
+            pickle.dump(self.session, session_fd)
 
     def __set_api_env(self):
         try:
             assert self.logged_in()
-            r = self.s.get(self.userenv_url)
-            assert r.status_code == 200
-            c = r.content.decode()
-            uid_raw = re.findall(r'\s+\.setId\(\d+\)', c, re.MULTILINE)[0]
+            r_env = self.session.get(self.userenv_url)
+            assert r_env.status_code == 200
+            content = r_env.content.decode()
+            uid_raw = re.findall(r'\s+\.setId\(\d+\)', content, re.MULTILINE)[0]
             self.user_id = uid_raw[uid_raw.find('(')+1:uid_raw.find(')')]
-            self.session_id = self.s.cookies['cinergy_s']
+            self.session_id = self.session.cookies['cinergy_s']
             return True
         except AssertionError:
-            return False
+            print("Failed to retrieve user_id")
+            raise WatchTeleboyError
 
 class WatchTeleboyStreamHandler:
     """
@@ -204,7 +214,7 @@ class WatchTeleboyStreamHandler:
         self.base_url = base_url
         assert isinstance(self.adaptationset, minidom.Element)
         self.content_type = self.adaptationset.attributes.get('contentType').value
-        self.id = self.adaptationset.attributes.get('id').value
+        self.stream_id = self.adaptationset.attributes.get('id').value
         try:
             self.language = self.adaptationset.attributes.get('lang').value
         except AttributeError:
@@ -222,6 +232,8 @@ class WatchTeleboyStreamHandler:
         self.segment_media_template = self.segment_template.attributes.get('media').value
         self.representations = self.parse_representations()
         self.select_representation()
+        self.download_stop_event = None
+        self.download_thread = None
 
     def parse_representations(self):
         representations = {}
@@ -243,13 +255,13 @@ class WatchTeleboyStreamHandler:
 
     def _download_thread(self, outfile):
         max_tries = 5
-        fd = os.open(outfile, os.O_WRONLY | os.O_CREAT)
+        dwnld_fd = os.open(outfile, os.O_WRONLY | os.O_CREAT)
         # add init section
         try_count = max_tries
-        while not self.initialize_outfile(fd):
+        while not self.initialize_outfile(dwnld_fd):
             try_count -= 1
             if try_count <= 0:
-                os.close(fd)
+                os.close(dwnld_fd)
                 return False
         # download segments
         try_count = max_tries
@@ -259,8 +271,8 @@ class WatchTeleboyStreamHandler:
                 break
             # append segments
             try:
-                r = self.append_media_segment(fd)
-                assert r.status_code == 200
+                r_dwnld = self.append_media_segment(dwnld_fd)
+                assert r_dwnld.status_code == 200
                 self.bump_timestamp()
                 try_count = max_tries
             except AssertionError:
@@ -268,9 +280,9 @@ class WatchTeleboyStreamHandler:
                         timeout=self.segment_duration/self.segment_timescale):
                     try_count -= 1
                     if try_count <= 0:
-                        os.close(fd)
+                        os.close(dwnld_fd)
                         return False
-        os.close(fd)
+        os.close(dwnld_fd)
         return True
 
     def stop(self):
@@ -304,35 +316,36 @@ class WatchTeleboyStreamHandler:
         self.download_thread = threading.Thread(target=self._download_thread, args=(outfile,))
         self.download_thread.start()
 
-    def initialize_outfile(self, fd):
+    def initialize_outfile(self, dwnld_fd):
         bw_pattern = r'\$Bandwidth\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
         stream_header_url = self.base_url + re.sub(bw_pattern, str(bandwidth),
                                                    self.segment_header_template)
-        r = requests.get(stream_header_url)
+        r_header = requests.get(stream_header_url)
         try:
-            os.write(fd, r.content)
+            os.write(dwnld_fd, r_header.content)
         except BrokenPipeError:
             self.stop()
-        return r.ok
+        return r_header.ok
 
-    def append_media_segment(self, fd):
+    def append_media_segment(self, dwnld_fd):
         bw_pattern = r'\$Bandwidth\$'
         ts_pattern = r'\$Time\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
-        time = self.segment_current_timestamp
         segment_url = self.base_url + re.sub(bw_pattern, str(bandwidth),
                                              self.segment_media_template)
-        segment_url = re.sub(ts_pattern, str(time), segment_url)
-        r = requests.get(segment_url)
-        if r.status_code == 404 and self.segment_current_timestamp < self.segment_start_timestamp:
+        segment_url = re.sub(ts_pattern, str(self.segment_current_timestamp),
+                             segment_url)
+        r_segment = requests.get(segment_url)
+        if (r_segment.status_code == 404 and
+                self.segment_current_timestamp < self.segment_start_timestamp):
             print("Segment not available. Maybe too old?")
             self.stop() # 404 on segment from the past means caches on server expired
         try:
-            os.write(fd, r.content)
+            os.write(dwnld_fd, r_segment.content)
         except BrokenPipeError:
             self.stop() # this happens only when mpv stopped reading from fifo
-        return r
+        return r_segment
 
     def wait(self):
         self.download_thread.join()
@@ -346,15 +359,15 @@ class WatchTeleboyStreamContainer:
 
     def __init__(self, url):
         self.base_url = '/'.join(url.split('/')[:-1]) + '/'
-        r = requests.get(url)
+        r_mpd = requests.get(url)
         try:
-            assert r.status_code == 200
+            assert r_mpd.status_code == 200
         except AssertionError:
             print('Failed to download manifest')
             raise WatchTeleboyError()
         try:
-            self.root = minidom.parseString(r.content)
-        except xml.parsers.expat.ExpatError:
+            self.root = minidom.parseString(r_mpd.content)
+        except ExpatError:
             print('Failed to parse manifest')
             raise WatchTeleboyError()
         self.mpd_element = self.root.getElementsByTagName('MPD')[0]
@@ -398,6 +411,11 @@ class WatchTeleboyPlayer:
         self.is_active = False
         self.mpv_returncode = None
         self.mpv_stdout = None
+        self.manifest = None
+        self.channel = None
+        self.audio = None
+        self.video = None
+        self.playerrecorder = None
 
     def set_mpd_url(self, mpd_url, channel=None):
         self.stop_event.clear()
@@ -461,8 +479,10 @@ class WatchTeleboyPlayer:
         self.playerrecorder.start()
 
     def _player_thread(self, output_fd):
-        audio_fifo = self.env['fifo'].format(content_type=self.audio.content_type, id=self.audio.id)
-        video_fifo = self.env['fifo'].format(content_type=self.video.content_type, id=self.video.id)
+        audio_fifo = self.env['fifo'].format(content_type=self.audio.content_type,
+                                             id=self.audio.stream_id)
+        video_fifo = self.env['fifo'].format(content_type=self.video.content_type,
+                                             id=self.video.stream_id)
         os.mkfifo(audio_fifo)
         os.mkfifo(video_fifo)
         self.audio.start_download(audio_fifo, self.stop_event)
@@ -540,13 +560,14 @@ class WatchTeleboyPlayer:
             sleep(0.1)
         self.stop_event.set()
         self.mpv_returncode = mpv.returncode
-        self.mpv_stdout, mpv_stderr = mpv.communicate()
+        self.mpv_stdout = mpv.communicate()[0]
         # make sure to clear pipes in case of mpv error
         if self.mpv_returncode == 1:
             os.open(audio_file, os.O_RDONLY)
             os.open(video_file, os.O_RDONLY)
 
-    def _merge_audio_video_to_mkv(self, audio_file=None, video_file=None,
+    @staticmethod
+    def _merge_audio_video_to_mkv(audio_file=None, video_file=None,
                                   mkv_file=None, audio_offset=None):
         merge_cmd = [
             '/usr/bin/ffmpeg',
