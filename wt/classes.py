@@ -1,3 +1,5 @@
+"""Collection of some classes used by watchteleboy"""
+
 import json
 import os
 import pickle
@@ -18,9 +20,14 @@ from wt.helpers import *
 ##################################################################################
 
 class WatchTeleboyError(BaseException):
+    "Error class for wt"
     pass
 
 class WatchTeleboySession:
+    """
+    Emulates a web session and deals with authentication and
+    interfaces with the Teleboy API
+    """
 
     user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:71.0) Gecko/20100101 Firefox/71.0'
     login_url = 'https://www.teleboy.ch/login_check'
@@ -46,6 +53,9 @@ class WatchTeleboySession:
         self.session_id = None
 
     def get_stream_url(self, channel=None, station_id=None):
+        """
+        get MPEG-DASH manifest URL for given channel or station id
+        """
         try:
             self.channel_ids
         except AttributeError:
@@ -71,7 +81,7 @@ class WatchTeleboySession:
 
     def get_channels(self):
         """
-        print all available channels
+        return a list of available channels
         """
         try:
             assert self.channel_ids is not None
@@ -83,7 +93,7 @@ class WatchTeleboySession:
 
     def list_channels(self):
         """
-        print all available channels
+        print available channels
         """
         try:
             assert self.channel_ids is not None
@@ -136,6 +146,10 @@ class WatchTeleboySession:
             return False
 
     def set_channel_selection(self, channel_selection):
+        """
+        define whether all or only user-defined channels are listed
+        Allowed values: 'all', 'custom'
+        """
         try:
             assert channel_selection in ['all', 'custom']
         except AssertionError:
@@ -145,6 +159,9 @@ class WatchTeleboySession:
             self.channel_selection = channel_selection
 
     def __retrieve_channel_ids(self):
+        """
+        retrieve list of all channel names with their station ids
+        """
         try:
             assert self.__set_api_env()
         except AssertionError:
@@ -176,6 +193,9 @@ class WatchTeleboySession:
         return True
 
     def __restore_session(self):
+        """
+        restore a previously saved teleboy login session
+        """
         with open(self.cache_file, 'rb') as session_fd:
             self.session = pickle.load(session_fd)
         try:
@@ -186,10 +206,18 @@ class WatchTeleboySession:
             raise WatchTeleboyError
 
     def __dump_session(self):
+        """
+        write down current teleboy login session
+        """
         with open(self.cache_file, 'wb') as session_fd:
             pickle.dump(self.session, session_fd)
 
     def __set_api_env(self):
+        """
+        set some environment variables used for API access
+          * user_id
+          * session_id
+        """
         try:
             assert self.logged_in()
             r_env = self.session.get(self.userenv_url)
@@ -236,6 +264,9 @@ class WatchTeleboyStreamHandler:
         self.download_thread = None
 
     def parse_representations(self):
+        """
+        return a dict with representation data
+        """
         representations = {}
         for representation in self.representation_elements:
             repr_id = int(representation.attributes.get('id').value)
@@ -244,16 +275,25 @@ class WatchTeleboyStreamHandler:
         return representations
 
     def select_representation(self, representation_id=None):
+        """
+        select a representation by id
+        """
         if representation_id is None:
             representation_id = min(dict(self.representations).keys())
         self.selected_representation = self.representations[representation_id]
         return self.selected_representation
 
     def bump_timestamp(self):
+        """
+        increment segment timestamp by duration of segment
+        """
         self.segment_current_timestamp += self.segment_duration
         return self.segment_current_timestamp
 
     def _download_thread(self, outfile):
+        """
+        download method that is used inside a thread
+        """
         max_tries = 5
         dwnld_fd = os.open(outfile, os.O_WRONLY | os.O_CREAT)
         # add init section
@@ -286,6 +326,9 @@ class WatchTeleboyStreamHandler:
         return True
 
     def stop(self):
+        """
+        stop playback (or recording)
+        """
         self.download_stop_event.set()
         try:
             self.download_thread.join()
@@ -293,6 +336,13 @@ class WatchTeleboyStreamHandler:
             pass
 
     def set_start_time(self, st_obj):
+        """
+        set start time (other than now).
+
+        watchteleboy is able to play content from the past
+        by accessing old segments that are cached for up to three
+        hours.
+        """
         # st_obj is expected to be a datetime.datetime object
         start_time = st_obj.timestamp() * self.segment_timescale
         # quantize to segment duration
@@ -303,6 +353,9 @@ class WatchTeleboyStreamHandler:
         self.segment_current_timestamp = start_time
 
     def set_stop_time(self, st_obj):
+        """
+        set a time (original air time)  for stopping playback (or recording).
+        """
         # st_obj is expected to be a datetime.datetime object
         stop_time = st_obj.timestamp() * self.segment_timescale
         stop_time = stop_time - (stop_time % self.segment_duration) # quantize to segment duration
@@ -312,11 +365,17 @@ class WatchTeleboyStreamHandler:
         self.segment_last_timestamp = stop_time
 
     def start_download(self, outfile, stop_event):
+        """
+        start downloading segments to given outfile
+        """
         self.download_stop_event = stop_event
         self.download_thread = threading.Thread(target=self._download_thread, args=(outfile,))
         self.download_thread.start()
 
     def initialize_outfile(self, dwnld_fd):
+        """
+        download initialization segment
+        """
         bw_pattern = r'\$Bandwidth\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
         stream_header_url = self.base_url + re.sub(bw_pattern, str(bandwidth),
@@ -329,6 +388,9 @@ class WatchTeleboyStreamHandler:
         return r_header.ok
 
     def append_media_segment(self, dwnld_fd):
+        """
+        download subsequent media segment and aappend it to file
+        """
         bw_pattern = r'\$Bandwidth\$'
         ts_pattern = r'\$Time\$'
         bandwidth = dict(self.selected_representation)['bandwidth']
@@ -348,6 +410,9 @@ class WatchTeleboyStreamHandler:
         return r_segment
 
     def wait(self):
+        """
+        wait for the download thread to finish
+        """
         self.download_thread.join()
 
 class WatchTeleboyStreamContainer:
@@ -375,6 +440,9 @@ class WatchTeleboyStreamContainer:
         self.adaptationset_elements = self.period_element.getElementsByTagName('AdaptationSet')
 
     def extract_stream(self, content, lang=None):
+        """
+        return an instance of WatchTeleboyStreamHandler for given content type or language"
+        """
         for adaptationset in self.adaptationset_elements:
             if lang is None:
                 if adaptationset.attributes.get('contentType').value == content:
@@ -386,15 +454,27 @@ class WatchTeleboyStreamContainer:
         return None
 
     def extract_video_stream(self):
+        """
+        return an instance of WatchTeleboyStreamHandler with video content
+        """
         return self.extract_stream('video')
 
     def extract_audio_stream(self, lang=None):
+        """
+        return an instance of WatchTeleboyStreamHandler with audio content
+        """
         return self.extract_stream('audio', lang)
 
     def extract_subtitle_stream(self, lang=None):
+        """
+        return an instance of WatchTeleboyStreamHandler with subtitles
+        """
         return self.extract_stream('text', lang)
 
     def list_audio_languages(self):
+        """
+        return a list of available audio streams
+        """
         languages = []
         for adaptationset in self.adaptationset_elements:
             if adaptationset.attributes.get('contentType').value == 'audio':
@@ -418,6 +498,9 @@ class WatchTeleboyPlayer:
         self.playerrecorder = None
 
     def set_mpd_url(self, mpd_url, channel=None):
+        """
+        set URL to an MPEG-DASH file to download
+        """
         self.stop_event.clear()
         self.manifest = WatchTeleboyStreamContainer(mpd_url)
         self.channel = channel if not None else '-' # channel is used in Window Title
@@ -446,6 +529,9 @@ class WatchTeleboyPlayer:
         self.video.select_representation(representation_id=r_id)
 
     def get_audio_languages(self):
+        """
+        return list of available audio streams
+        """
         try:
             self.manifest
         except NameError:
@@ -453,6 +539,9 @@ class WatchTeleboyPlayer:
         return self.manifest.list_audio_languages()
 
     def get_video_representations(self):
+        """
+        return a list of available video representations
+        """
         try:
             self.video
         except NameError:
@@ -460,6 +549,10 @@ class WatchTeleboyPlayer:
         return self.video.representations
 
     def set_video_representation(self, representation_id=None):
+        """
+        set a video representation by id (if none is given, set the one with
+        loweset id)
+        """
         try:
             self.video
         except NameError:
@@ -468,9 +561,15 @@ class WatchTeleboyPlayer:
         return True
 
     def set_audio_language(self, lang=None):
+        """
+        set audio stream
+        """
         self.audio = self.manifest.extract_audio_stream(lang=lang)
 
     def play(self, output_fd=None):
+        """
+        start playback
+        """
         if self.is_active:
             return
         self.is_active = True
@@ -498,6 +597,9 @@ class WatchTeleboyPlayer:
         self.is_active = False
 
     def record(self):
+        """
+        start recording to file
+        """
         if self.is_active:
             return
         self.is_active = True
@@ -588,6 +690,9 @@ class WatchTeleboyPlayer:
         ffmpeg.wait()
 
     def stop(self):
+        """
+        stop playback (or recording)
+        """
         self.stop_event.set()
         try:
             self.playerrecorder.join()
@@ -595,6 +700,9 @@ class WatchTeleboyPlayer:
             pass
 
     def wait(self, timeout=None):
+        """
+        wait for playback or recording to finish
+        """
         self.stop_event.wait(timeout=timeout)
         if not timeout:
             self.playerrecorder.join()
