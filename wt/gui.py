@@ -1,10 +1,19 @@
-import datetime
+"""
+extension for watchteleboy to provide an urwid based frontend
+"""
+
 import threading
 import urwid
 
 from wt.helpers import convert_mpv_timestring
 
 class WatchTeleboyGUI:
+    """
+    urwid based class that provides a frontend for watchteleboy.
+    It needs an instance of WatchTeleboySession and WatchTeleboyPlayer
+    at creation time and will handle the rest when executed with its
+    run() method.
+    """
 
     autoplay = True
 
