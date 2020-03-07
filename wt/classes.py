@@ -1,5 +1,6 @@
 """Collection of some classes used by watchteleboy"""
 
+import datetime
 import json
 import os
 import pickle
@@ -11,9 +12,9 @@ from time import sleep
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
-import requests            # DEB: python3-request
+import requests           # DEB: python3-request
 
-from wt.helpers import *
+from wt.helpers import (parse_time_string, parse_duration_string)
 
 ##################################################################################
 # SOME CLASSES
@@ -609,7 +610,7 @@ class WatchTeleboyPlayer:
 
     def _recorder_thread(self):
         if not self.env['showname']:
-            showname = f'{self.channel}-{datetime.now().strftime("%Y%m%d%H%M%S")}'
+            showname = f'{self.channel}-{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}'
         else:
             showname = self.env['showname']
         rec_dir = self.env['path'] or self.env['record_dir']
