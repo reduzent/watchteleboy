@@ -239,3 +239,13 @@ def delete_cronjob(env):
     cron = crontab.CronTab(user=True)
     cron.remove_all(command=env['delete_cronjob'])
     cron.write()
+
+def convert_mpv_timestring(t_str):
+    """
+    convert mpv time from stdout (that shows hours since 1970)
+    to a human readable datetime string
+    """
+    hours, minutes, seconds = list(map(int, t_str.split(':')))
+    epoch = hours*3600 + minutes*60 + seconds
+    cur_dt = datetime.datetime.fromtimestamp(epoch)
+    return cur_dt.strftime('%Y-%m-%d %H:%M:%S')

@@ -11,8 +11,7 @@ from wt.classes import (WatchTeleboyError,
                         WatchTeleboyStreamHandler,
                         WatchTeleboyPlayer)
 
-from wt.gui import (WatchTeleboyGUI,
-                    convert_mpv_timestring)
+from wt.gui import (WatchTeleboyGUI)
 
 from wt.helpers import (parse_args,
                         parse_time_string,
@@ -21,4 +20,5 @@ from wt.helpers import (parse_args,
                         create_config,
                         read_config,
                         schedule_recording,
-                        delete_cronjob)
+                        delete_cronjob,
+                        convert_mpv_timestring)
