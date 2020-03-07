@@ -1,3 +1,7 @@
+"""
+some helper functions used by watchteleboy
+"""
+
 import argparse
 import configparser
 from datetime import date, datetime, time, timedelta
@@ -52,6 +56,9 @@ max_bitrate = {max_bitrate}
 ##################################################################################
 
 def parse_args():
+    """
+    parse commandline arguments passed to watchteleboy
+    """
     parser = argparse.ArgumentParser(description="Watch and record MPEG-DASH streams from Teleboy")
     oneshots = parser.add_mutually_exclusive_group()
     oneshots.add_argument("-l", "--list", help="list available channels", action="store_true")
@@ -87,8 +94,10 @@ def parse_time_string(rawstring):
     Format: [YYYY-MM-DD ]HH:MM[:ss]
     """
     def guess_date(start):
-        # if midnight is not long ago, assume evening times to be
-        # from yesterday
+        """
+        if midnight is not long ago, assume evening times to be
+        from yesterday
+        """
         extend_old_day_hours = 4
         now = datetime.now()
         today = now.date()
@@ -103,6 +112,9 @@ def parse_time_string(rawstring):
         return today
 
     def evaluate_time(tstr):
+        """
+        convert time part to time object
+        """
         try:
             return time(*list(map(int, tstr.split(':'))))
         except ValueError:
@@ -110,6 +122,9 @@ def parse_time_string(rawstring):
             raise wt.WatchTeleboyError
 
     def evaluate_date(dstr):
+        """
+        convert date part to date object
+        """
         try:
             if dstr == 'tomorrow':
                 return date.today() + timedelta(days=1)
@@ -158,6 +173,10 @@ def parse_duration_string(dstr):
     return timedelta(hours=hours, minutes=minutes, seconds=seconds)
 
 def create_env(defaults):
+    """
+    create and return environment dict from defaults, configuration, commandline
+    arguments (in this order)
+    """
     defaults['wt_dir'] = defaults['wt_dir'].format(home_dir=defaults['home_dir'])
     defaults['record_dir'] = defaults['record_dir'].format(home_dir=defaults['home_dir'])
     defaults['configfile'] = defaults['configfile'].format(wt_dir=defaults['wt_dir'])
@@ -181,6 +200,9 @@ def create_env(defaults):
     return {**defaults, **config, **args.__dict__}
 
 def create_config(defaults):
+    """
+    create configuration file with valid teleboy credentials
+    """
     wts = wt.WatchTeleboySession(defaults['session_cache'])
     while not wts.logged_in():
         try:
@@ -203,11 +225,17 @@ def create_config(defaults):
         configfile.write(config_content)
 
 def read_config(defaults):
+    """
+    read configuration file and return config
+    """
     config = configparser.ConfigParser()
     config.read(defaults['configfile'])
     return config['watchteleboy']
 
 def schedule_recording(env):
+    """
+    schedule a recording by creating a job in current user's crontab file
+    """
     st_obj = parse_time_string(env['starttime'])
     if env['endtime']:
         et_obj = parse_time_string(env['endtime'])
@@ -236,6 +264,9 @@ def schedule_recording(env):
     cron.write()
 
 def delete_cronjob(env):
+    """
+    delete a previously scheduled cron job
+    """
     cron = crontab.CronTab(user=True)
     cron.remove_all(command=env['delete_cronjob'])
     cron.write()
@@ -247,5 +278,5 @@ def convert_mpv_timestring(t_str):
     """
     hours, minutes, seconds = list(map(int, t_str.split(':')))
     epoch = hours*3600 + minutes*60 + seconds
-    cur_dt = datetime.datetime.fromtimestamp(epoch)
+    cur_dt = datetime.fromtimestamp(epoch)
     return cur_dt.strftime('%Y-%m-%d %H:%M:%S')
