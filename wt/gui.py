@@ -2,6 +2,8 @@ import datetime
 import threading
 import urwid
 
+from wt.helpers import convert_mpv_timestring
+
 class WatchTeleboyGUI:
 
     autoplay = True
