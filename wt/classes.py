@@ -147,7 +147,7 @@ class WatchTeleboySession:
             raise
         if self.channel_selection == 'custom':
             api_channellist_url = f'https://tv.api.teleboy.ch/users/'\
-                                   '{self.user_id}/broadcasts/now?expand=station&stream=true'
+                                  f'{self.user_id}/broadcasts/now?expand=station&stream=true'
         else:
             api_channellist_url = 'https://tv.api.teleboy.ch/epg/broadcasts/now?'\
                                   'expand=station&stream=true'
