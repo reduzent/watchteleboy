@@ -559,6 +559,14 @@ class WatchTeleboyPlayer:
         self.video.select_representation(representation_id=representation_id)
         return True
 
+    def set_starttime(self, time):
+        """
+        set starttime of stream (overrides CLI arguments)"
+        """
+        stobj = parse_time_string(time)
+        self.audio.set_start_time(stobj)
+        self.video.set_start_time(stobj)
+
     def set_audio_language(self, lang=None):
         """
         set audio stream
