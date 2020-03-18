@@ -48,7 +48,7 @@ class WatchTeleboyGUI:
         self.channel = ''
         self.video_representation = None
         self.audio_language = None
-        self.time_now = True
+        self.time_live = True
 
         # init some widgets
         self.div = urwid.Divider()
@@ -144,10 +144,10 @@ class WatchTeleboyGUI:
                                     'title')
         self.time_edit = urwid.Edit(edit_text='20:15:00')
         self.time_w = urwid.AttrMap(self.time_edit, 'greyed', focus_map='focus_greyed')
-        time_now_w = urwid.AttrMap(urwid.CheckBox('live', state=self.time_now,
-                                                  on_state_change=self.set_time_now),
+        time_live_w = urwid.AttrMap(urwid.CheckBox('live', state=self.time_live,
+                                                  on_state_change=self.set_time_live),
                                    '', focus_map='focus')
-        time_grid = urwid.GridFlow([time_now_w, self.time_w], 8, 2, 0, 'left')
+        time_grid = urwid.GridFlow([time_live_w, self.time_w], 8, 2, 0, 'left')
         right4_pile = urwid.Pile([
             ('pack', time_header),
             ('pack', self.div),
@@ -276,11 +276,11 @@ class WatchTeleboyGUI:
         """
         self.autoplay = state
 
-    def set_time_now(self, button, state):
+    def set_time_live(self, button, state):
         """
-        set start time (handler for time_now checkbox)
+        set start time (handler for time_live checkbox)
         """
-        self.time_now = state
+        self.time_live = state
         if state:
             self.time_edit.set_edit_text('14:33:56')
             self.time_w.set_attr_map({None: 'greyed'})
