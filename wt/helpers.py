@@ -79,11 +79,6 @@ def parse_args():
     rec.add_argument("-n", "--showname", help="specify file name prefix for recorded file")
     rec.add_argument("--delete-cronjob", help=argparse.SUPPRESS)
     args = parser.parse_args()
-    # enforce some logic
-    if args.starttime and not args.endtime and not args.duration:
-        print('watchteleboy: error: If --starttime is specified, ' +
-              'either --endtime or --duration is required.')
-        raise wt.WatchTeleboyError
     return args
 
 def parse_time_string(rawstring):
