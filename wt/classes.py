@@ -57,9 +57,7 @@ class WatchTeleboySession:
         """
         get MPEG-DASH manifest URL for given channel or station id
         """
-        try:
-            self.channel_ids
-        except AttributeError:
+        if not self.channel_ids:
             self.__retrieve_channel_ids()
         if station_id is None:
             for chan_name in self.channel_ids.keys():
