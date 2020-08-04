@@ -2,10 +2,11 @@
 extension for watchteleboy to provide an urwid based frontend
 """
 
+import datetime
 import threading
 import urwid
 
-from wt.helpers import convert_mpv_timestring
+from wt.helpers import convert_mpv_timestring, parse_time_string
 
 class WatchTeleboyGUI:
     """
@@ -49,6 +50,7 @@ class WatchTeleboyGUI:
         self.video_representation = None
         self.audio_language = None
         self.time_live = True
+        self.start_time = None
 
         # init some widgets
         self.div = urwid.Divider()
@@ -139,10 +141,12 @@ class WatchTeleboyGUI:
         right3_box = urwid.LineBox(right3_content)
 
         # Box "Time:"
-        time_header = urwid.AttrMap(urwid.Padding(urwid.Text('Time:'),
+        self.time_title = urwid.Text('Time:')
+        time_header = urwid.AttrMap(urwid.Padding(self.time_title,
                                                   width=('relative', 100)),
                                     'title')
-        self.time_edit = urwid.Edit(edit_text='20:15:00')
+        self.time_edit = urwid.Edit(edit_text='')
+        urwid.connect_signal(self.time_edit, 'postchange', self.set_starttime)
         self.time_w = urwid.AttrMap(self.time_edit, 'greyed', focus_map='focus_greyed')
         time_live_w = urwid.AttrMap(urwid.CheckBox('live', state=self.time_live,
                                                   on_state_change=self.set_time_live),
@@ -282,18 +286,39 @@ class WatchTeleboyGUI:
         """
         self.time_live = state
         if state:
-            self.time_edit.set_edit_text('14:33:56')
+            self.time_edit.set_edit_text('')
             self.time_w.set_attr_map({None: 'greyed'})
             self.time_w.set_focus_map({None: 'focus_greyed'})
         else:
+            almost_now = datetime.datetime.now() - datetime.timedelta(seconds=10)
+            self.time_edit.set_edit_text(almost_now.strftime('%H:%M:%S'))
             self.time_w.set_attr_map({None: 'default'})
             self.time_w.set_focus_map({None: 'focus'})
+
+    def set_starttime(self, widget, arg):
+        """
+        handler for time edit widget
+        """
+        time_raw = self.time_edit.get_edit_text()
+        try:
+            starttime = datetime.time(*list(map(int, time_raw.split(':'))))
+        except ValueError:
+            self.start_time = None
+            if self.time_live:
+                self.time_title.set_text('Time: (live)')
+            else:
+                self.time_title.set_text('Time: (unparsable)')
+        else:
+            self.time_title.set_text('Time:')
+            self.start_time = time_raw
 
     def start_playback(self, button):
         """
         start playback (handler for play button)
         """
         self._switch_widgets('play')
+        if self.start_time:
+            self.wt_player.set_starttime(self.start_time)
         self.wt_player.play(output_fd=self.mpv_stdout)
         # thread that waits for wt_player to stop
         waiter = threading.Thread(target=self._player_wait, args=(self.wt_player,))
