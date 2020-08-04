@@ -81,6 +81,48 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+def guess_date(start):
+    """
+    if midnight is not long ago, assume evening times to be
+    from yesterday
+    """
+    extend_old_day_hours = 4
+    now = datetime.now()
+    today = now.date()
+    dt1 = datetime.combine(today, time(0, 0)) + timedelta(hours=extend_old_day_hours)
+    dt2 = datetime.combine(today, time(0, 0)) - timedelta(hours=extend_old_day_hours)
+    past_midnight = dt1.time()
+    before_midnight = dt2.time()
+    if now.time() < past_midnight and start > before_midnight:
+        return today - timedelta(days=1)
+    elif now.time() > before_midnight and start < past_midnight:
+        return today + timedelta(days=1)
+    return today
+
+def evaluate_time(tstr):
+    """
+    convert time part to time object
+    """
+    try:
+        return time(*list(map(int, tstr.split(':'))))
+    except ValueError:
+        print('Cannot parse given time: ' + tstr)
+        raise wt.WatchTeleboyError
+
+def evaluate_date(dstr):
+    """
+    convert date part to date object
+    """
+    try:
+        if dstr == 'tomorrow':
+            return date.today() + timedelta(days=1)
+        elif dstr == 'yesterday':
+            return date.today() + timedelta(days=-1)
+        return date(*list(map(int, dstr.split('-'))))
+    except ValueError:
+        print('Cannot parse given date: '  + dstr)
+        raise wt.WatchTeleboyError
+
 def parse_time_string(rawstring):
     """
     Returns a datetime object from a string containing time. It does some magic
@@ -88,47 +130,6 @@ def parse_time_string(rawstring):
     'tomorrow' as dates.
     Format: [YYYY-MM-DD ]HH:MM[:ss]
     """
-    def guess_date(start):
-        """
-        if midnight is not long ago, assume evening times to be
-        from yesterday
-        """
-        extend_old_day_hours = 4
-        now = datetime.now()
-        today = now.date()
-        dt1 = datetime.combine(today, time(0, 0)) + timedelta(hours=extend_old_day_hours)
-        dt2 = datetime.combine(today, time(0, 0)) - timedelta(hours=extend_old_day_hours)
-        past_midnight = dt1.time()
-        before_midnight = dt2.time()
-        if now.time() < past_midnight and start > before_midnight:
-            return today - timedelta(days=1)
-        elif now.time() > before_midnight and start < past_midnight:
-            return today + timedelta(days=1)
-        return today
-
-    def evaluate_time(tstr):
-        """
-        convert time part to time object
-        """
-        try:
-            return time(*list(map(int, tstr.split(':'))))
-        except ValueError:
-            print('Cannot parse given time: ' + tstr)
-            raise wt.WatchTeleboyError
-
-    def evaluate_date(dstr):
-        """
-        convert date part to date object
-        """
-        try:
-            if dstr == 'tomorrow':
-                return date.today() + timedelta(days=1)
-            elif dstr == 'yesterday':
-                return date.today() + timedelta(days=-1)
-            return date(*list(map(int, dstr.split('-'))))
-        except ValueError:
-            print('Cannot parse given date: '  + dstr)
-            raise wt.WatchTeleboyError
 
     dtstr = rawstring.split(' ')
     if len(dtstr) == 1:
