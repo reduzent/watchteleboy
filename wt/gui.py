@@ -163,9 +163,9 @@ class WatchTeleboyGUI:
         # Stitching boxes together
         right = urwid.Pile([
             ('pack', right1_box),
+            ('pack', right4_box),
             ('pack', right2_box),
             ('pack', right3_box),
-            ('pack', right4_box),
             urwid.LineBox(urwid.SolidFill(' '))
         ])
 
