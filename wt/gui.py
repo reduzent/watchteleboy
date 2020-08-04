@@ -147,10 +147,9 @@ class WatchTeleboyGUI:
                                     'title')
         self.time_edit = urwid.Edit(edit_text='')
         urwid.connect_signal(self.time_edit, 'postchange', self.set_starttime)
+        self.time_live_cb = urwid.CheckBox('live', state=self.time_live, on_state_change=self.set_time_live)
         self.time_w = urwid.AttrMap(self.time_edit, 'greyed', focus_map='focus_greyed')
-        time_live_w = urwid.AttrMap(urwid.CheckBox('live', state=self.time_live,
-                                                  on_state_change=self.set_time_live),
-                                   '', focus_map='focus')
+        time_live_w = urwid.AttrMap(self.time_live_cb, '', focus_map='focus')
         time_grid = urwid.GridFlow([time_live_w, self.time_w], 8, 2, 0, 'left')
         right4_pile = urwid.Pile([
             ('pack', time_header),
@@ -254,6 +253,7 @@ class WatchTeleboyGUI:
         switch channel (handler for channel radio)"
         """
         if state:
+            self.time_live_cb.set_state(True)
             self.channel, mpd_url = self.wt_session.get_stream_url(channel)
             self.wt_player.set_mpd_url(mpd_url, self.channel)
             self.refresh_representations()
