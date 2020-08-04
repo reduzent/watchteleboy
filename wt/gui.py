@@ -204,9 +204,13 @@ class WatchTeleboyGUI:
     def _player_receive_output(self, mpv_out):
         output = mpv_out[4:-1].decode('utf8')
         output_list = output.split(' ')
+        if output_list[0] == '(Paused)':
+            output_list = output_list[1:]
         try:
             output_list[1] = convert_mpv_timestring(output_list[1])
             output_list[3] = convert_mpv_timestring(output_list[3]).split(' ')[1]
+            self.start_time = output_list[1].split(' ')[1]
+            self.time_edit.set_edit_text(self.start_time)
         except (IndexError, ValueError):
             pass
         self.mpv_output_w.set_text(' '.join(output_list))
