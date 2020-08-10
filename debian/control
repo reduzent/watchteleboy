@@ -2,7 +2,7 @@ Source: watchteleboy
 Priority: optional
 Maintainer: Roman Haefeli <reduzent@gmail.com>
 Build-Depends: debhelper
-Standards-Version: 3.9.5
+Standards-Version: 4.4.0
 Section: misc
 Homepage: http://github.com/reduzent/watchteleboy
 
