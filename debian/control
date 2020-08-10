@@ -8,9 +8,10 @@ Homepage: http://github.com/reduzent/watchteleboy
 
 Package: watchteleboy
 Architecture: all
-Depends: python3,
+Depends: python3 (>= 3.6),
          python3-crontab,
          python3-requests,
+         python3-urwid,
          ${misc:Depends}
 Recommends: mpv,
             ffmpeg
