@@ -1,3 +1,9 @@
+watchteleboy (2.1~focal~ppa1) focal; urgency=low
+
+  * fix debian packaging
+
+ -- Roman Haefeli <reduzent@gmail.com>  Tue, 11 Aug 2020 00:01:03 +0200
+
 watchteleboy (2.1~focal~ppa0) focal; urgency=low
 
   * addition of terminal user interface based on urwid
