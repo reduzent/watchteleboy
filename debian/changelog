@@ -1,3 +1,9 @@
+watchteleboy (2.1~focal~ppa0) focal; urgency=low
+
+  * addition of terminal user interface based on urwid
+
+ -- Roman Haefeli <reduzent@gmail.com>  Mon, 10 Aug 2020 23:25:38 +0200
+
 watchteleboy (2.0~bionic~ppa0) bionic; urgency=low
 
   * First release of script rewritten in Python.
