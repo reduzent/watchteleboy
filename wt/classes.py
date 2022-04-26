@@ -36,7 +36,7 @@ class WatchTeleboySession:
     headers = {
         'User-Agent': user_agent
     }
-    api_key = '6ca99ddb3e659e57bbb9b1874055a711b254425815905abaacf262b64f02eb3d'
+    api_key = 'e899f715940a209148f834702fc7f340b6b0496b62120b3ed9c9b3ec4d7dca00'
 
     def __init__(self, cachefile=None):
         self.cache_file = cachefile
