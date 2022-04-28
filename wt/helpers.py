@@ -28,6 +28,11 @@ teleboy_pass = {teleboy_pass}
 # channel selection. Allowed values: 'all', 'custom'
 channel_selection = {channel_selection}
 
+# Color theme
+# Optimize color palette for light or dark themed terminal.
+# Available values: light (default), dark
+color_theme = {color_theme}
+
 # Additional flags passed to mpv
 mpv_opts = {mpv_opts}
 
@@ -216,6 +221,7 @@ def create_config(defaults):
         mpv_opts=defaults['mpv_opts'],
         record_dir=defaults['record_dir'],
         channel_selection=defaults['channel_selection'],
+        color_theme=defaults['color_theme'],
         max_bitrate=defaults['max_bitrate'])
     with open(defaults['configfile'], 'w') as configfile:
         configfile.write(config_content)
