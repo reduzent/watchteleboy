@@ -18,7 +18,8 @@ class WatchTeleboyGUI:
 
     autoplay = True
 
-    palette = [
+    palette = {}
+    palette['light'] = [
         ('title', '', '', '', '#008,bold', '#fdf'),
         ('body', '', '', '', 'default', 'default'),
         ('focus', '', '', '', 'default', '#ddd'),
@@ -28,6 +29,18 @@ class WatchTeleboyGUI:
         ('button', '', '', '', 'default,bold', '#dff'),
         ('border', '', '', '', '#a4f', 'default')
     ]
+
+    palette['dark'] = [
+        ('title', '', '', '', '#008,bold', '#fdf'),
+        ('body', '', '', '', 'default', 'default'),
+        ('focus', '', '', '', 'default', '#444'),
+        ('focus_greyed', '', '', '', '#222', '#ddd'),
+        ('greyed', '', '', '', '#222', 'default'),
+        ('underline', '', '', '', 'default,underline', 'default'),
+        ('button', '', '', '', '#333,bold', '#dff'),
+        ('border', '', '', '', '#a4f', 'default')
+    ]
+
 
     line_box_chars = {
         'tlcorner': '\N{Lower half block}',
@@ -51,6 +64,12 @@ class WatchTeleboyGUI:
         self.audio_language = None
         self.time_live = True
         self.start_time = None
+
+        # validate color_theme
+        try:
+            assert self.wt_player.env['color_theme'] in ['light', 'dark']
+        except (AssertionError):
+            self.wt_player.env['color_theme'] = 'light'
 
         # init some widgets
         self.div = urwid.Divider()
@@ -180,7 +199,7 @@ class WatchTeleboyGUI:
         content = urwid.AttrMap(urwid.Frame(columns_padded, header=title, footer=footer), 'body')
         lbc = urwid.LineBox(content, **self.line_box_chars)
         hlbc = urwid.AttrMap(urwid.Padding(lbc, left=1, right=1), 'border')
-        self.loop = urwid.MainLoop(hlbc, palette=self.palette)
+        self.loop = urwid.MainLoop(hlbc, palette=self.palette[self.wt_player.env['color_theme']])
         self.loop.screen.set_terminal_properties(colors=256)
 
         # mpv output
