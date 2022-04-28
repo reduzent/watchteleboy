@@ -1,3 +1,10 @@
+watchteleboy (2.2~jammy~ppa0) jammy; urgency=low
+
+  * replace teleboy API key (script works again now)
+  * add color_theme parameter. Options: light, dark
+
+ -- Roman Haefeli <reduzent@gmail.com>  Thu, 28 Apr 2022 23:42:28 +0200
+
 watchteleboy (2.1~focal~ppa1) focal; urgency=low
 
   * fix debian packaging
