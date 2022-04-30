@@ -31,13 +31,13 @@ class WatchTeleboyGUI:
     ]
 
     palette['dark'] = [
-        ('title', '', '', '', '#008,bold', '#fdf'),
+        ('title', '', '', '', '#fdf,bold', '#408'),
         ('body', '', '', '', 'default', 'default'),
         ('focus', '', '', '', 'default', '#444'),
         ('focus_greyed', '', '', '', '#222', '#ddd'),
         ('greyed', '', '', '', '#222', 'default'),
         ('underline', '', '', '', 'default,underline', 'default'),
-        ('button', '', '', '', '#333,bold', '#dff'),
+        ('button', '', '', '', '#dff,bold', '#222'),
         ('border', '', '', '', '#a4f', 'default')
     ]
 
