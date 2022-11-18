@@ -9,6 +9,7 @@ import subprocess
 import sys
 import threading
 from time import sleep
+from urllib.parse import urlsplit, urlunsplit
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
@@ -76,7 +77,8 @@ class WatchTeleboySession:
             print('failed to retrieve channel data')
             raise WatchTeleboyError
         channel_data = json.loads(r_api.content.decode())
-        return (channel, channel_data['data']['stream']['url'])
+        url = self.__transform_url_into_non_drm_form(channel_data['data']['stream']['url'])
+        return (channel, url)
 
     def get_channels(self):
         """
@@ -190,6 +192,27 @@ class WatchTeleboySession:
                             for channel in channels['data']['items']}
         self.channel_ids['__selection__'] = self.channel_selection
         return True
+
+    @staticmethod
+    def __transform_url_into_non_drm_form(url):
+        """
+        This is an attempt to fix this issue:
+        https://github.com/reduzent/watchteleboy/issues/34
+        We simply try to transform URLs of drm-protected manifests to non-drm manifest
+        by replacing the server and the manifest file.
+        """
+        u_elements = list(urlsplit(url))
+        server_elements = u_elements[1].split('.')
+        host_elements = server_elements[0].split('-')
+        if (host_elements[2]) == 'dashenc':
+            host_elements[2] = 'dash'
+            server_elements[0] = '-'.join(host_elements)
+            u_elements[1] = '.'.join(server_elements)
+            path_elements = u_elements[2].split('/')
+            path_elements[2] = 'm.mpd'
+            u_elements[2] = '/'.join(path_elements)
+            url = urlunsplit(u_elements)
+        return(url)
 
     def __restore_session(self):
         """
