@@ -77,6 +77,12 @@ class WatchTeleboySession:
             print('failed to retrieve channel data')
             raise WatchTeleboyError
         channel_data = json.loads(r_api.content.decode())
+        # If we're going to play widevine protected streams, we somehow need to acquire the
+        # drm license from channel_data. However, it seems that drm streams are also available
+        # in a non-drm variant which we can access by modifying the server name and mpd
+        # manifest path.
+        #if 'drm' in channel_data['data']['stream']:
+        #    print(channel_data['data']['stream']['drm'])
         url = self.__transform_url_into_non_drm_form(channel_data['data']['stream']['url'])
         return (channel, url)
 
