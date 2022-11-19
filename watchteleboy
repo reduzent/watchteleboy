@@ -12,7 +12,7 @@ import sys
 import wt
 
 DEFAULTS = {
-    'wt_version': '2.2',
+    'wt_version': '2.3',
     'wt_abspath': os.path.abspath(__file__),
     'home_dir': os.path.expanduser('~'),
     'wt_dir': '{home_dir}/.watchteleboy',
