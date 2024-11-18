@@ -1,3 +1,10 @@
+watchteleboy (2.4~noble~ppa0) noble; urgency=low
+
+  * fix playback when using more recent versions of mpv by directing
+    mpv's stdout to /dev/null, so that it doesn't block
+
+ -- Roman Haefeli <reduzent@gmail.com>  Mon, 18 Nov 2024 19:14:44 +0100
+
 watchteleboy (2.3~jammy~ppa0) jammy; urgency=low
 
   * fix playback of RTL group (they switched to widevine drm streams
