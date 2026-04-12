@@ -132,7 +132,7 @@ class WatchTeleboySession:
             print("Visit https://www.teleboy.ch/ and try again.")
             return False
         try:
-            self.session.cookies['cinergy_auth']
+            self.session.cookies['cinergy_s']
         except KeyError:
             print('Login failed')
             return False
@@ -147,7 +147,7 @@ class WatchTeleboySession:
         """
         try:
             self.session.cookies.clear_expired_cookies()
-            _s = self.session.cookies['cinergy_auth']
+            _s = self.session.cookies['cinergy_s']
             return True
         except KeyError:
             return False
